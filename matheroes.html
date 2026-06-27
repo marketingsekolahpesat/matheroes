@@ -1,0 +1,3018 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Matheroes</title>
+<style>
+:root{
+  --ink:#17171F;--ink-soft:#33333F;--paper:#F5F5F2;
+  --indigo:#5B4BE6;--indigo-deep:#3A2FB0;--indigo-light:#eeecff;
+  --gold:#C9881F;--gold-light:#fff3dc;
+  --danger:#C2433A;--danger-light:#fbecea;
+  --green:#11876F;--green-light:#e9f6f2;
+  --mute:#6C6C77;
+  --bg:#0f0f1a;--bg2:#16213e;--bg3:#1a2a52;
+  --c-kuat:#e8a835;--c-tegar:#3dd4b0;--c-pintar:#9b95ff;--c-gesit:#f5e042;
+  --hp-color:#C2433A;--mana-color:#5B4BE6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{
+  min-height:100dvh;background:var(--bg);color:#fff;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px;line-height:1.5;
+  display:flex;justify-content:center;align-items:flex-start;
+  overflow-x:hidden;
+}
+.screen{
+  display:none;flex-direction:column;
+  width:100%;max-width:440px;min-height:100dvh;
+  padding:20px 18px 32px;
+}
+.screen.on{display:flex}
+/* type */
+.eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.38);font-family:ui-monospace,monospace;margin-bottom:5px}
+h1{font-size:clamp(42px,13vw,66px);font-weight:900;letter-spacing:-.025em;line-height:.92}
+h2{font-size:21px;font-weight:800;line-height:1.2;margin-bottom:8px}
+h3{font-size:17px;font-weight:700;margin-bottom:5px}
+p{color:rgba(255,255,255,.78);margin-bottom:10px}
+p:last-child{margin-bottom:0}
+.muted{color:rgba(255,255,255,.38);font-size:12px}
+.spacer{flex:1}
+.g6{height:6px}.g12{height:12px}.g20{height:20px}.g28{height:28px}
+/* buttons */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;padding:15px 18px;border:none;border-radius:14px;
+  font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;
+  transition:transform .12s,filter .12s;letter-spacing:-.01em;
+  -webkit-user-select:none;user-select:none;
+}
+.btn:active{transform:scale(.96);filter:brightness(.88)}
+.btn+.btn{margin-top:9px}
+.btn-primary{background:var(--indigo);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-red{background:var(--danger);color:#fff}
+.btn-ghost{background:rgba(255,255,255,.08);color:#fff}
+.btn-sm{padding:10px 14px;font-size:13px;border-radius:11px}
+.btn:disabled{opacity:.35;pointer-events:none}
+/* inputs */
+input[type=number],input[type=text]{
+  width:100%;padding:16px 18px;
+  background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.13);
+  border-radius:14px;color:#fff;font-size:28px;font-weight:700;
+  font-family:inherit;text-align:center;outline:none;
+  transition:border-color .15s,background .15s;-webkit-appearance:none;appearance:none;
+}
+input:focus{border-color:var(--indigo);background:rgba(91,75,230,.12)}
+input::placeholder{color:rgba(255,255,255,.22);font-weight:400;font-size:15px}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+/* cards */
+.card{background:var(--bg2);border-radius:14px;padding:14px 15px;margin-bottom:12px;border:1px solid rgba(255,255,255,.07)}
+.card-light{background:#fff;color:var(--ink);border-radius:14px;padding:15px;margin-bottom:12px}
+.card-light p,.card-light h3{color:var(--ink-soft)}
+/* HP / MANA BARS */
+.bar-wrap{margin-bottom:8px}
+.bar-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.bar-label-txt{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.38)}
+.bar-label-val{font-family:ui-monospace,monospace;font-size:11px;font-weight:700;color:rgba(255,255,255,.7)}
+.bar-track{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .3s ease}
+.bar-hp .bar-fill{background:var(--hp-color)}
+.bar-mana .bar-fill{background:var(--mana-color)}
+/* stat pills */
+.stat-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.stat-pill{
+  display:flex;align-items:center;gap:5px;
+  padding:4px 9px;border-radius:20px;
+  font-size:11px;font-weight:700;border:1px solid;
+}
+.sp-kuat{background:rgba(232,168,53,.1);color:var(--c-kuat);border-color:rgba(232,168,53,.25)}
+.sp-tegar{background:rgba(61,212,176,.1);color:var(--c-tegar);border-color:rgba(61,212,176,.25)}
+.sp-pintar{background:rgba(155,149,255,.1);color:var(--c-pintar);border-color:rgba(155,149,255,.25)}
+.sp-gesit{background:rgba(245,224,66,.1);color:var(--c-gesit);border-color:rgba(245,224,66,.25)}
+/* enemy arena */
+.enemy-arena{display:flex;flex-direction:column;align-items:center;padding:10px 0 6px}
+.enemy-emoji{font-size:80px;line-height:1;display:block;text-align:center;position:relative}
+@keyframes hit{0%{transform:scale(1)}25%{transform:scale(1.4) rotate(-8deg);filter:brightness(3)}100%{transform:scale(1);filter:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.anim-hit{animation:hit .35s ease}
+.anim-shake{animation:shake .4s ease}
+.anim-bounce{animation:bounce .6s ease infinite}
+.enemy-name{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:8px;font-family:ui-monospace,monospace}
+/* floating damage */
+.float-dmg{
+  position:fixed;font-size:28px;font-weight:900;pointer-events:none;z-index:300;
+  animation:floatUp .8s ease forwards;
+}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-60px)}}
+/* question box */
+.q-box{background:rgba(255,255,255,.07);border-radius:16px;padding:20px 16px;text-align:center;margin-bottom:14px}
+.q-text{font-size:clamp(34px,11vw,50px);font-weight:900;letter-spacing:-.02em;line-height:1}
+.q-text.story{font-size:clamp(17px,5vw,21px);font-weight:700;letter-spacing:normal;line-height:1.4}
+.q-sub-text{font-size:12px;color:rgba(255,255,255,.38);margin-top:6px;margin-bottom:0}
+/* timer */
+.timer-wrap{margin-bottom:10px}
+.timer-track{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.timer-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .1s linear}
+.timer-fill.danger{background:var(--danger)}
+/* streak */
+.streak-chip{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.07);border-radius:20px;padding:3px 9px;font-size:12px;font-weight:700;font-family:ui-monospace,monospace}
+/* defend overlay */
+.defend-banner{
+  display:none;background:rgba(194,67,58,.15);border:1px solid rgba(194,67,58,.35);
+  border-radius:12px;padding:10px 14px;margin-bottom:10px;
+  flex-direction:column;align-items:center;gap:4px;
+}
+.defend-banner.on{display:flex}
+.defend-banner .db-title{font-weight:800;font-size:13px;color:#f07070;text-align:center}
+.defend-banner .db-skill{font-size:11px;color:rgba(255,255,255,.55);text-align:center}
+/* hero select */
+.hero-cards{display:flex;flex-direction:column;gap:10px}
+.hero-card{
+  display:flex;align-items:center;gap:14px;
+  background:var(--bg2);border:2px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:14px 15px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.hero-card:hover,.hero-card.selected{border-color:var(--indigo);background:var(--bg3)}
+.hero-card .hico{font-size:40px;flex-shrink:0}
+.hero-card .hinfo{flex:1}
+.hero-card .hname{font-weight:800;font-size:15px;margin-bottom:2px}
+.hero-card .htitle{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:6px}
+.hero-card .hbonuses{display:flex;gap:5px;flex-wrap:wrap}
+/* teach */
+.teach-step{display:none;flex-direction:column}
+.teach-step.on{display:flex}
+.step-dots{display:flex;gap:5px;justify-content:center;margin-bottom:16px}
+.sdot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18);transition:background .2s}
+.sdot.on{background:var(--gold)}.sdot.done{background:var(--green)}
+.cpa-box{border-radius:13px;padding:16px;text-align:center;margin-bottom:14px}
+.cpa-box.light{background:var(--gold-light);color:var(--ink)}
+.cpa-box.dark{background:rgba(255,255,255,.05)}
+.cpa-row{font-size:clamp(24px,7vw,34px);line-height:1.4;margin-bottom:5px}
+.cpa-result{font-size:16px;font-weight:700;color:var(--green);margin-top:5px}
+/* map */
+.skill-row{
+  display:flex;align-items:center;gap:11px;padding:12px 14px;
+  background:var(--bg2);border-radius:12px;margin-bottom:9px;
+  border:1px solid rgba(255,255,255,.06);
+  transition:background .15s;
+}
+.skill-row:not(.locked){cursor:pointer}
+.skill-row:not(.locked):active{background:var(--bg3)}
+.skill-row.locked{opacity:.32}
+.sr-icon{font-size:28px;flex-shrink:0}
+.sr-info{flex:1}
+.sr-name{font-weight:700;font-size:14px}
+.sr-desc{font-size:11px;color:rgba(255,255,255,.42)}
+.badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0}
+.badge-locked{background:rgba(255,255,255,.07);color:rgba(255,255,255,.3)}
+.badge-learning{background:var(--indigo-light);color:var(--indigo-deep)}
+.badge-accurate{background:var(--gold-light);color:#7a4a00}
+.badge-mastered{background:var(--green-light);color:#0a5244}
+.badge-review{background:var(--gold);color:#fff}
+/* job up */
+.job-cards{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.job-card{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--bg2);border:2px solid rgba(255,255,255,.1);
+  border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.job-card:hover{border-color:var(--gold);background:var(--bg3)}
+.job-card .jico{font-size:32px;flex-shrink:0}
+.job-card .jinfo .jname{font-weight:800;font-size:14px;margin-bottom:2px}
+.job-card .jinfo .jdesc{font-size:11px;color:rgba(255,255,255,.5)}
+/* guide */
+.guide-step{background:rgba(255,255,255,.05);border-radius:11px;padding:13px;margin-bottom:10px;text-align:center}
+.guide-arrow{font-size:16px;color:rgba(255,255,255,.3);margin:7px 0}
+/* feedback */
+.fb-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:200}
+.fb-text{font-size:68px;opacity:0;transform:scale(.4);transition:opacity .12s,transform .12s}
+.fb-text.show{opacity:1;transform:scale(1)}
+.fb-text.hide{opacity:0;transform:scale(1.6);transition:opacity .28s .18s,transform .28s .18s}
+/* stat detail */
+.stat-detail{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.sd-card{background:var(--bg2);border-radius:11px;padding:11px 12px;border:1px solid rgba(255,255,255,.07)}
+.sd-head{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.sd-ico{font-size:18px}
+.sd-name{font-size:12px;font-weight:800}
+.sd-xp{font-size:10px;color:rgba(255,255,255,.38);font-family:ui-monospace,monospace}
+.sd-bar{height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin:4px 0 5px}
+.sd-bar-fill{height:100%;border-radius:2px;background:var(--c)}
+.sd-effect{font-size:11px;color:rgba(255,255,255,.6);line-height:1.4}
+/* stat level up toast */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(30px);
+  background:var(--bg2);border:1px solid var(--gold);border-radius:12px;
+  padding:10px 16px;font-size:13px;font-weight:700;color:var(--c-kuat);
+  white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;z-index:250;
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* stat row in encounter */
+.enc-stat-row{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+/* skill button */
+.skill-btn{
+  background:rgba(91,75,230,.2);border:1px solid rgba(91,75,230,.4);color:var(--c-pintar);
+  font-size:13px;font-weight:700;border-radius:11px;padding:9px 14px;
+  display:none;cursor:pointer;text-align:center;margin-bottom:10px;
+  transition:background .15s;font-family:inherit;
+}
+.skill-btn.on{display:block}
+.skill-btn:active{background:rgba(91,75,230,.4)}
+/* mastery/victory stat row */
+.mv-stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14px}
+.mv-stat:last-child{border-bottom:none}
+.mv-val{font-weight:700;color:var(--gold)}
+/* diagnosa counter */
+.diag-ctr{font-family:ui-monospace,monospace;font-size:11px;color:rgba(255,255,255,.38);text-align:center;margin-bottom:6px}
+/* companion bubble di arena */
+.comp-bubble{display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;color:var(--gold);min-height:20px;margin:2px 0 6px;opacity:0;transition:opacity .25s}
+.comp-bubble.show{opacity:1}
+/* koleksi */
+.coll-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.coll-cell{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 8px;text-align:center}
+.coll-cell.locked{opacity:.4}
+.coll-name{font-size:12px;font-weight:700;margin-top:4px;color:rgba(255,255,255,.85)}
+.coll-meta{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;font-family:ui-monospace,monospace}
+/* tombol mute (audio) */
+#mute-btn{
+  position:fixed;top:8px;right:8px;z-index:210;
+  width:34px;height:34px;padding:0;border:1px solid rgba(255,255,255,.18);border-radius:50%;
+  background:rgba(255,255,255,.12);color:#fff;font-size:16px;line-height:32px;text-align:center;
+  cursor:pointer;opacity:.7;transition:opacity .15s,transform .12s;
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;
+}
+#mute-btn:hover{opacity:1}
+#mute-btn:active{transform:scale(.88)}
+/* responsive */
+@media(max-width:380px){.screen{padding:16px 14px 28px}h1{font-size:38px}.q-text{font-size:30px}.enemy-emoji{font-size:66px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<button id="mute-btn" type="button" onclick="toggleMute()" aria-label="Matikan suara" title="Matikan suara">🔊</button>
+
+<!-- INTRO -->
+<div id="s-intro" class="screen on">
+  <div class="spacer"></div>
+  <div>
+    <p class="eyebrow">Game Numerasi RPG · Offline</p>
+    <h1>MATH<span style="color:var(--gold)">EROES</span></h1>
+    <p style="font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.1em;color:rgba(255,255,255,.3);text-transform:uppercase;margin:5px 0 20px">matematika = aksi, bukan pajak</p>
+    <p style="font-size:clamp(16px,4.5vw,19px);line-height:1.55;color:rgba(255,255,255,.85);max-width:27ch">
+      Statistikmu tumbuh dari matematika yang kamu kuasai.
+      <strong style="color:var(--gold)">Jawaban benar = serangan nyata.</strong>
+    </p>
+    <p style="font-size:13px;line-height:1.55;color:rgba(255,255,255,.55);max-width:30ch;margin-top:14px">
+      <strong style="color:#fff">Kekacauan</strong> mencuri angka-angka dari negeri. Bersama Pijar, pulihkan tiap wilayah dengan menguasai matematika!
+    </p>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" id="btn-lanjut" style="display:none" onclick="G.cont()">▶ Lanjutkan</button>
+  <button class="btn btn-primary" id="btn-newgame" onclick="G.newGame()">Mulai Petualangan</button>
+</div>
+
+<!-- NAME -->
+<div id="s-name" class="screen">
+  <div class="spacer"></div>
+  <p class="eyebrow">Membuat Karakter</p>
+  <h2>Siapa namamu, Pahlawan?</h2>
+  <p>Nama ini terukir di setiap kemenangan.</p>
+  <div class="g20"></div>
+  <input type="text" id="inp-name" placeholder="Ketik namamu…" maxlength="20" autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="g6"></div>
+  <input type="text" id="inp-kelas" placeholder="Kode kelas (opsional, dari gurumu)" maxlength="16" autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')G.confirmName()">
+  <p class="muted" style="font-size:11px;margin-top:6px">Kode kelas membantu gurumu melihat kemajuanmu. Kosongkan kalau tidak ada.</p>
+  <div class="g12"></div>
+  <button class="btn btn-gold" onclick="G.confirmName()">Lanjut →</button>
+</div>
+
+<!-- HERO SELECT -->
+<div id="s-hero" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow">Pilih Karakter</p>
+  <h2>Kamu mau jadi siapa?</h2>
+  <p>Bonus awal berbeda — jalur belajarnya sama.</p>
+  <div class="g12"></div>
+  <div class="hero-cards">
+    <div class="hero-card" id="hc-adira" onclick="G.pickHero('adira')">
+      <span class="hico">⚔️</span>
+      <div class="hinfo">
+        <div class="hname">ADIRA</div>
+        <div class="htitle">Ksatria Muda — Penjumlah</div>
+        <div class="hbonuses">
+          <span class="stat-pill sp-kuat">💪 KUAT +3</span>
+          <span class="stat-pill sp-tegar">🛡️ TEGAR +1</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-card" id="hc-kira" onclick="G.pickHero('kira')">
+      <span class="hico">✨</span>
+      <div class="hinfo">
+        <div class="hname">KIRA</div>
+        <div class="htitle">Penyihir Berbakat — Perkalian</div>
+        <div class="hbonuses">
+          <span class="stat-pill sp-pintar">✨ PINTAR +3</span>
+          <span class="stat-pill sp-gesit">⚡ GESIT +1</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-card" id="hc-reno" onclick="G.pickHero('reno')">
+      <span class="hico">🏹</span>
+      <div class="hinfo">
+        <div class="hname">RENO</div>
+        <div class="htitle">Petualang Cepat — Pengurangan</div>
+        <div class="hbonuses">
+          <span class="stat-pill sp-gesit">⚡ GESIT +3</span>
+          <span class="stat-pill sp-kuat">💪 KUAT +1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-hero-confirm" style="display:none" onclick="G.confirmHero()">Pilih Karakter Ini →</button>
+</div>
+
+<!-- COMPANION ONBOARDING -->
+<div id="s-buddy" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow">Teman Petualangan</p>
+  <h2>Seekor makhluk kecil mendekat…</h2>
+  <p>Dia menemanimu tiap bertarung, menyemangati saat sulit, dan tumbuh makin besar tiap kalian main bareng. Beri dia nama!</p>
+  <div class="g12"></div>
+  <div style="text-align:center">
+    <div style="font-size:72px;line-height:1">🥚</div>
+    <div class="g6"></div>
+    <p class="muted" style="font-size:12px">Telur Semangat — akan menetas saat kalian makin akrab</p>
+  </div>
+  <div class="g12"></div>
+  <input type="text" id="inp-buddy" maxlength="12" placeholder="Nama temanmu…" autocomplete="off" value="Pijar" onkeydown="if(event.key==='Enter')G.confirmBuddy()">
+  <div class="g12"></div>
+  <button class="btn btn-primary" onclick="G.confirmBuddy()">Jadi teman! →</button>
+</div>
+
+<!-- PROLOG: INTRO -->
+<div id="s-prolog-intro" class="screen">
+  <div class="spacer"></div>
+  <div style="text-align:center">
+    <div style="font-size:72px;line-height:1">🌑</div>
+    <p class="eyebrow" style="color:var(--gold)">Prolog</p>
+    <h2>Kamu adalah Sang Legenda</h2>
+    <p>Kekacauan menelan angka-angka negeri. Lepaskan <strong>semua jurus pamungkasmu</strong> — penjumlahan, pengurangan, perkalian, pembagian, dan jurus nalar — dan hancurkan dia!</p>
+    <div class="g12"></div>
+    <p class="muted">20 jurus. Jangan ragu — yang meleset pun tetap melukai Kekacauan.</p>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" onclick="G.startPrologFight()">Lepaskan Jurus! ⚡</button>
+</div>
+
+<!-- PROLOG: PERTARUNGAN -->
+<div id="s-prolog" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Prolog · Sang Legenda</p>
+  <h2 id="prolog-wave" style="font-size:19px">⚡ JURUS PENJUMLAHAN</h2>
+  <p class="diag-ctr" id="prolog-ctr">Jurus 1 / 16</p>
+  <div class="enemy-arena">
+    <div class="enemy-name">KEKACAUAN</div>
+    <span class="enemy-emoji" id="prolog-boss">🌑</span>
+    <div class="g6"></div>
+    <div class="bar-wrap bar-hp" style="width:100%;max-width:260px">
+      <div class="bar-label"><span class="bar-label-txt">HP Kekacauan</span><span class="bar-label-val" id="prolog-hp-val">100%</span></div>
+      <div class="bar-track"><div class="bar-fill" id="prolog-hp-fill" style="width:100%;background:var(--danger)"></div></div>
+    </div>
+  </div>
+  <div class="q-box"><div class="q-text" id="prolog-q">3 + 4 = ?</div></div>
+  <input type="number" id="inp-prolog" placeholder="Lepas jurus…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitProlog()">
+  <div class="g12"></div>
+  <button class="btn btn-gold" id="prolog-btn" onclick="G.submitProlog()">Lepas Jurus! ⚡</button>
+</div>
+
+<!-- UJIAN KEKUATAN PENJUMLAHAN (adaptif + berwaktu) -->
+<div id="s-trial" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Ujian Kekuatan · Penjumlahan</p>
+  <h2 id="trial-title" style="font-size:19px">Rasakan kekuatanmu terbangun ⚡</h2>
+  <p class="diag-ctr" id="trial-ctr">Jurus 1 / 6</p>
+  <div class="enemy-arena">
+    <div class="enemy-name">Kekuatan Penjumlahan</div>
+    <span class="enemy-emoji" id="trial-orb">🔆</span>
+    <div class="g6"></div>
+    <div class="bar-wrap" style="width:100%;max-width:260px">
+      <div class="bar-label"><span class="bar-label-txt">Kekuatan</span><span class="bar-label-val" id="trial-power-val">Lv.3</span></div>
+      <div class="bar-track"><div class="bar-fill" id="trial-power-fill" style="width:50%;background:var(--gold);transition:width .35s ease"></div></div>
+    </div>
+  </div>
+  <!-- jendela "cepat": jawab sebelum habis = kekuatan ekstra (bukan timeout/hukuman) -->
+  <div class="timer-wrap" style="margin-bottom:10px"><div class="timer-track"><div class="timer-fill" id="trial-timer-fill" style="width:100%;background:var(--gold)"></div></div></div>
+  <div class="q-box"><div class="q-text" id="trial-q">7 + 8 = ?</div><div class="q-sub-text" id="trial-sub">Makin cepat &amp; tepat, makin kuat!</div></div>
+  <input type="number" id="inp-trial" placeholder="Lepas jurus…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="999" onkeydown="if(event.key==='Enter')G.submitTrial()">
+  <div class="g12"></div>
+  <button class="btn btn-gold" onclick="G.submitTrial()">Lepas Jurus! ⚡</button>
+</div>
+
+<!-- DIAGNOSIS RESULT -->
+<div id="s-diagresult" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Kekuatan Legenda Meredup…</p>
+  <h2 id="dr-title">Bakat terbesarmu: Penjumlahan!</h2>
+  <p>Sang Legenda mewariskan kekuatannya. Bekal awalmu:</p>
+  <div class="g8"></div>
+  <div id="dr-bars"></div>
+  <div class="g8"></div>
+  <div class="card" style="padding:12px 14px">
+    <p class="eyebrow" style="margin-bottom:8px">Bekal stat awalmu</p>
+    <div class="stat-row" style="margin-bottom:0" id="dr-stat-pills"></div>
+  </div>
+  <div class="g8"></div>
+  <p class="muted" id="dr-start" style="font-size:12px;text-align:center"></p>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" onclick="G._afterDiagResult()">Kini giliranmu — pilih pahlawan →</button>
+</div>
+
+<!-- UJI KEMAMPUAN (POST-TEST) — instrumen sama dgn prolog, utk skor_akhir -->
+<div id="s-posttest" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Uji Kemampuan</p>
+  <h2 id="post-wave" style="font-size:19px">➕ JURUS PENJUMLAHAN</h2>
+  <p class="diag-ctr" id="post-ctr">Soal 1 / 20</p>
+  <div class="enemy-arena">
+    <div class="enemy-name">Tantangan Akhir</div>
+    <span class="enemy-emoji" id="post-orb">🌟</span>
+    <div class="g6"></div>
+    <div class="bar-wrap" style="width:100%;max-width:260px">
+      <div class="bar-label"><span class="bar-label-txt">Kemajuan uji</span><span class="bar-label-val" id="post-prog-val">0%</span></div>
+      <div class="bar-track"><div class="bar-fill" id="post-prog-fill" style="width:0%;background:var(--gold);transition:width .35s ease"></div></div>
+    </div>
+  </div>
+  <div class="q-box"><div class="q-text" id="post-q">3 + 4 = ?</div><div class="q-sub-text" id="post-sub">Tunjukkan kemampuanmu sekarang!</div></div>
+  <input type="number" id="inp-post" placeholder="Jawaban…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitPost()">
+  <div class="g12"></div>
+  <button class="btn btn-gold" onclick="G.submitPost()">Jawab →</button>
+  <div class="g6"></div>
+  <button class="btn btn-ghost btn-sm" onclick="G.goMap()">← Batalkan</button>
+</div>
+
+<!-- RAPOR KEMAMPUAN (before/after) — untuk guru -->
+<div id="s-measure" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Rapor Kemampuan</p>
+  <h2 id="meas-title">Kemajuan Belajar</h2>
+  <p id="meas-sub" class="muted" style="font-size:12px"></p>
+  <div class="g8"></div>
+  <div id="meas-body"></div>
+  <div class="g8"></div>
+  <div class="card" style="padding:11px 13px">
+    <div class="mv-stat"><span>⏱️ Waktu main</span><span class="mv-val" id="meas-minutes">0 menit</span></div>
+    <div class="mv-stat"><span>🆔 Kode anak</span><span class="mv-val" id="meas-id" style="font-size:11px;font-family:ui-monospace,monospace"></span></div>
+  </div>
+  <p class="muted" style="font-size:11px;margin-top:8px">Skor = jawaban benar dari <span id="meas-max">4</span> soal tiap topik (awal dari Prolog, akhir dari Uji Kemampuan). Pecahan diukur menyusul.</p>
+  <div class="g8"></div>
+  <!-- panel sinkron Google Sheets (guru) -->
+  <div class="card" style="padding:11px 13px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+      <span style="font-weight:800;font-size:12px;letter-spacing:.04em">☁️ SINKRON SHEET <span style="opacity:.6;font-weight:400">(guru)</span></span>
+      <span id="meas-sync-status" style="font-size:10px;color:rgba(255,255,255,.55)">—</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="G.syncNow()" style="flex:1">☁️ Sinkron sekarang</button>
+      <button class="btn btn-ghost btn-sm" onclick="G.setSyncUrl()" style="flex:1">🔗 Atur URL Sheet</button>
+    </div>
+    <p class="muted" style="font-size:10px;margin-top:7px">Offline-first: data tersimpan di perangkat; terkirim otomatis saat masuk peta / selesai uji bila online & URL terpasang.</p>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" id="meas-run" onclick="G.startPostTest()">🎓 Jalankan Uji Kemampuan</button>
+  <div class="g6"></div>
+  <button class="btn btn-ghost" onclick="G.goMap()">← Peta</button>
+</div>
+
+<!-- TEACH -->
+<div id="s-teach" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" id="teach-kicker">Jurus Baru</p>
+  <h2 id="teach-title">Belajar Menjumlahkan</h2>
+  <div class="step-dots" id="teach-dots">
+    <div class="sdot on" id="sd0"></div><div class="sdot" id="sd1"></div><div class="sdot" id="sd2"></div>
+  </div>
+  <div class="teach-step on" id="ts0">
+    <div class="card-light">
+      <p class="eyebrow" style="color:var(--mute)">Langkah 1 — Benda Nyata</p>
+      <h3 id="teach-c-title">Gabungkan Dua Kelompok</h3>
+      <p id="teach-c-desc">Bayangkan apel di dua tangan — gabungkan semua.</p>
+    </div>
+    <div class="cpa-box light" id="teach-concrete"></div>
+    <button class="btn btn-primary" onclick="G.nextTeach()">Mengerti! →</button>
+  </div>
+  <div class="teach-step" id="ts1">
+    <div class="card-light">
+      <p class="eyebrow" style="color:var(--mute)">Langkah 2 — Titik / Gambar</p>
+      <h3>Ganti dengan Titik</h3>
+      <p>Maknanya sama, tampilannya ringkas.</p>
+    </div>
+    <div class="cpa-box dark" id="teach-pictorial"></div>
+    <button class="btn btn-primary" onclick="G.nextTeach()">Paham! →</button>
+  </div>
+  <div class="teach-step" id="ts2">
+    <div class="card-light">
+      <p class="eyebrow" style="color:var(--mute)">Langkah 3 — Simbol Angka</p>
+      <h3>Pakai Angka</h3>
+      <p>Ini yang muncul saat pertarungan!</p>
+    </div>
+    <div class="q-box" style="background:var(--indigo-light);margin-bottom:14px">
+      <div class="q-text" id="teach-abstract" style="color:var(--indigo-deep)"></div>
+      <div class="q-sub-text" style="color:var(--indigo)">Format persis seperti soal pertarungan</div>
+    </div>
+    <button class="btn btn-gold" onclick="G.finishTeach()">Siap Bertarung! ⚔️</button>
+  </div>
+</div>
+
+<!-- MAP -->
+<div id="s-map" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow">Peta Petualangan</p>
+  <h2 id="map-hi">Halo, Pahlawan!</h2>
+  <p id="map-sub">Pilih wilayah untuk berlatih.</p>
+  <div id="map-quest" style="font-size:12px;color:var(--gold);background:rgba(201,136,31,.1);border:1px solid rgba(201,136,31,.25);border-radius:10px;padding:8px 11px;margin-top:8px"></div>
+  <div class="g6"></div>
+  <!-- player summary -->
+  <div class="card" style="padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-weight:800;font-size:14px" id="map-lvl">Lv. 1</span>
+      <span id="map-job" style="font-size:11px;color:rgba(255,255,255,.45);font-family:ui-monospace,monospace"></span>
+    </div>
+    <div class="bar-wrap bar-hp">
+      <div class="bar-label"><span class="bar-label-txt">HP</span><span class="bar-label-val" id="map-hp-val">20/20</span></div>
+      <div class="bar-track"><div class="bar-fill" id="map-hp-fill" style="width:100%"></div></div>
+    </div>
+    <div class="stat-row" style="margin-bottom:0" id="map-stat-pills"></div>
+  </div>
+  <div class="g6"></div>
+  <!-- companion -->
+  <div class="card" id="map-comp-card" style="padding:10px 12px;display:flex;align-items:center;gap:11px;cursor:default">
+    <span style="font-size:30px;line-height:1" id="map-comp-emoji">🥚</span>
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <span style="font-weight:800;font-size:13px" id="map-comp-name">Pijar</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.45)" id="map-comp-title">Telur Semangat</span>
+      </div>
+      <div class="bar-track" style="margin-top:5px;height:6px"><div class="bar-fill" id="map-comp-bond" style="width:0%;background:var(--gold)"></div></div>
+    </div>
+  </div>
+  <div id="map-pijar-say" style="display:none;font-size:11px;font-style:italic;color:rgba(255,255,255,.5);margin:-2px 4px 0"></div>
+  <div class="g6"></div>
+  <!-- M7: kemajuan diri (kemarin → hari ini) -->
+  <div class="card" id="map-progress" style="padding:11px 13px;display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+      <span style="font-weight:800;font-size:12px;letter-spacing:.04em">📈 KEMAJUANMU</span>
+      <span id="prog-rec" style="font-size:10px;color:rgba(255,255,255,.45)"></span>
+    </div>
+    <div id="prog-body" style="font-size:12px;color:rgba(255,255,255,.8)"></div>
+  </div>
+  <div class="g6"></div>
+  <!-- misi harian -->
+  <div class="card" id="map-missions" style="padding:11px 13px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+      <span style="font-weight:800;font-size:12px;letter-spacing:.04em">📋 MISI HARI INI</span>
+      <span id="mission-count" style="font-size:10px;color:rgba(255,255,255,.45)"></span>
+    </div>
+    <div id="mission-list"></div>
+  </div>
+  <div class="g6"></div>
+  <div id="map-skills"></div>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost btn-sm" onclick="G.openMeasure()" style="background:rgba(201,136,31,.1);color:var(--gold);margin-top:8px">🎓 Uji Kemampuan &amp; Rapor <span style="opacity:.6;font-weight:400">(guru)</span></button>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <button class="btn btn-ghost btn-sm" onclick="G.showStats()" style="flex:1">📊 Statistik</button>
+    <button class="btn btn-ghost btn-sm" onclick="G.showCollection()" style="flex:1">🎒 Koleksi</button>
+    <button class="btn btn-ghost btn-sm" onclick="G.restHP()" id="map-rest-btn" style="flex:1">😴 Istirahat</button>
+  </div>
+</div>
+
+<!-- ENCOUNTER -->
+<div id="s-enc" class="screen">
+  <!-- defend banner -->
+  <div class="defend-banner" id="defend-banner">
+    <div class="db-title" id="def-title">⚠️ MUSUH MENYERANG!</div>
+    <div class="db-skill" id="def-skill-name">Rock Slam!</div>
+  </div>
+  <!-- player HUD -->
+  <div class="card" style="padding:10px 12px;margin-bottom:8px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <span style="font-size:13px;font-weight:800;color:rgba(255,255,255,.7)" id="enc-hero-name">ADIRA</span>
+      <div class="spacer"></div>
+      <div class="streak-chip">🔥 <span id="enc-streak">×0</span></div>
+    </div>
+    <div class="bar-wrap bar-hp" style="margin-bottom:6px">
+      <div class="bar-label"><span class="bar-label-txt">HP</span><span class="bar-label-val" id="enc-hp-val">20/20</span></div>
+      <div class="bar-track"><div class="bar-fill" id="enc-hp-fill" style="width:100%"></div></div>
+    </div>
+    <div class="bar-wrap bar-mana" style="margin-bottom:0">
+      <div class="bar-label"><span class="bar-label-txt">Mana</span><span class="bar-label-val" id="enc-mp-val">15/15</span></div>
+      <div class="bar-track"><div class="bar-fill" id="enc-mp-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <!-- timer -->
+  <div class="timer-wrap" id="timer-wrap" style="display:none">
+    <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+  </div>
+  <!-- enemy -->
+  <div class="enemy-arena">
+    <div class="enemy-name" id="enc-ename">SLIMELING</div>
+    <span class="enemy-emoji" id="enc-emoji">🟢</span>
+    <div class="g6"></div>
+    <div class="bar-wrap bar-hp" style="width:100%;max-width:220px">
+      <div class="bar-label"><span class="bar-label-txt" id="enc-enemy-hp-label">Enemy HP</span><span class="bar-label-val" id="enc-enemy-hp-val">20/20</span></div>
+      <div class="bar-track"><div class="bar-fill" id="enc-enemy-hp-fill" style="width:100%;background:var(--green)"></div></div>
+    </div>
+  </div>
+  <!-- companion bubble -->
+  <div class="comp-bubble" id="comp-bubble"></div>
+  <!-- question -->
+  <div class="q-box">
+    <div class="q-text" id="enc-q">4 + 3 = ?</div>
+    <div class="q-sub-text" id="enc-q-sub"></div>
+  </div>
+  <!-- skill button -->
+  <button class="skill-btn" id="skill-btn" onclick="G.useSkill()">💫 Gunakan Jurus! (Mana penuh)</button>
+  <input type="number" id="inp-enc" placeholder="Jawaban…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitEnc()">
+  <div class="g12"></div>
+  <button class="btn btn-green" id="enc-action-btn" onclick="G.submitEnc()">Serang! ⚔️</button>
+  <div class="g6"></div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-ghost btn-sm" onclick="G.goMap()" style="flex:1">← Peta</button>
+    <button class="btn btn-ghost btn-sm" id="why-btn" onclick="G.showWhy()" style="flex:1;display:none">🤔 Kenapa?</button>
+  </div>
+</div>
+
+<!-- GUIDE -->
+<div id="s-guide" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" id="guide-eyebrow" style="color:rgba(255,180,0,.7)">Hampir — yuk tebus!</p>
+  <h2 id="guide-h2">Petunjuk kilat</h2>
+  <!-- Pijar: petunjuk SINGKAT (1 baris) -->
+  <div id="guide-comp" style="display:flex;align-items:flex-start;gap:8px;font-size:14px;color:rgba(255,255,255,.9);margin:6px 0;line-height:1.4"></div>
+  <!-- detail cara mengerjakan: OPSIONAL, tersembunyi (bisa di-skip) -->
+  <button class="btn btn-ghost btn-sm" id="guide-detail-toggle" onclick="G.toggleGuideDetail()" style="width:auto;align-self:flex-start;margin-top:2px">Lihat caranya 👁️</button>
+  <div id="guide-visual" style="display:none;margin-top:8px"></div>
+  <div class="g12"></div>
+  <!-- TEBUSAN: soal serupa untuk menebus -->
+  <div class="card" id="guide-redeem" style="background:rgba(91,75,230,.12);border-color:rgba(91,75,230,.28)">
+    <p class="eyebrow" style="color:var(--indigo)">Tebus — soal serupa</p>
+    <div class="q-text" id="guide-subq" style="font-size:clamp(20px,7vw,30px);margin:8px 0;line-height:1.25">2 + 1 = ?</div>
+    <input type="number" id="inp-guide" placeholder="Jawaban…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="9999" style="margin-top:10px" onkeydown="if(event.key==='Enter')G.submitGuide()">
+    <div class="g12"></div>
+    <button class="btn btn-primary" onclick="G.submitGuide()">Tebus! →</button>
+  </div>
+  <div class="g6"></div>
+  <button class="btn btn-ghost btn-sm" id="guide-skip" onclick="G.skipGuide()">Lewati dulu →</button>
+  <button class="btn btn-ghost" id="guide-back" style="display:none" onclick="G.closeWhy()">← Kembali bertarung</button>
+</div>
+
+<!-- VICTORY -->
+<div id="s-vic" class="screen">
+  <div class="spacer"></div>
+  <div style="text-align:center">
+    <div id="vic-ico" style="font-size:76px;margin-bottom:14px">⚡</div>
+    <p class="eyebrow">Musuh Dikalahkan!</p>
+    <h2 id="vic-title">Menang!</h2>
+    <p id="vic-desc">Matematikamu kuat!</p>
+    <div class="g12"></div>
+    <div class="card" id="vic-stats"></div>
+    <div id="vic-drop"></div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" onclick="G.afterVic()">Lanjut →</button>
+</div>
+
+<!-- MASTERY -->
+<div id="s-mas" class="screen">
+  <div class="spacer"></div>
+  <div style="text-align:center">
+    <div id="mas-ico" style="font-size:76px;margin-bottom:14px">🏆</div>
+    <p class="eyebrow" style="color:var(--gold)">Skill Dikuasai!</p>
+    <h2 id="mas-title">Luar Biasa!</h2>
+    <p id="mas-desc"></p>
+    <div class="g12"></div>
+    <div class="card" id="mas-stats"></div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" id="mas-cta" onclick="G.afterMas()">Lanjut →</button>
+</div>
+
+<!-- JOB UP -->
+<div id="s-jobup" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">✦ Naik Job!</p>
+  <h2>Kamu Siap Memilih Jalur</h2>
+  <p>Kamu sudah cukup kuat. Pilih spesialisasimu:</p>
+  <div class="job-cards">
+    <div class="job-card" onclick="G.pickJob('ksatria')">
+      <span class="jico">⚔️</span>
+      <div class="jinfo">
+        <div class="jname">Ksatria</div>
+        <div class="jdesc">Penjumlahan + Pengurangan · KUAT &amp; TEGAR tumbuh 2× lebih cepat</div>
+      </div>
+    </div>
+    <div class="job-card" onclick="G.pickJob('penyihir')">
+      <span class="jico">✨</span>
+      <div class="jinfo">
+        <div class="jname">Penyihir</div>
+        <div class="jdesc">Perkalian + Pecahan · PINTAR tumbuh 2× · Skill miss lebih jarang</div>
+      </div>
+    </div>
+    <div class="job-card" onclick="G.pickJob('pemanah')">
+      <span class="jico">🏹</span>
+      <div class="jinfo">
+        <div class="jname">Pemanah</div>
+        <div class="jdesc">Kecepatan & akurasi · GESIT tumbuh 2× · Timer jauh lebih panjang</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="s-stats" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow">Statistik</p>
+  <h2 id="stats-name">Pahlawan</h2>
+  <div class="stat-detail" id="stat-detail"></div>
+  <div id="stats-skills"></div>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost" onclick="G.goMap()">← Peta</button>
+  <div class="g6"></div>
+  <button class="btn btn-ghost btn-sm" style="background:rgba(194,67,58,.12);color:#f07070" onclick="G.resetGame()">Reset Game</button>
+</div>
+
+<!-- BREAK -->
+<div id="s-break" class="screen">
+  <div class="spacer"></div>
+  <div style="text-align:center">
+    <div style="font-size:68px;margin-bottom:14px">😴</div>
+    <h2>HP Habis — Waktunya Istirahat</h2>
+    <p>Otak juga perlu jeda. Itu bukan kalah — itu bagian dari belajar!</p>
+    <div id="brk-pijar" style="font-size:13px;color:var(--gold);margin-top:8px"></div>
+    <div class="g12"></div>
+    <p class="muted">Setelah istirahat, HP pulih penuh.</p>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-primary" onclick="G.afterBreak()">Sudah istirahat →</button>
+</div>
+
+<!-- COLLECTION -->
+<div id="s-collection" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Koleksi</p>
+  <h2>Buku Petualangan</h2>
+  <p id="coll-sub" class="muted">Monster 0/10 · Harta 0/8</p>
+  <div class="g8"></div>
+  <p class="eyebrow" style="margin-bottom:7px">👾 Buku Monster</p>
+  <div class="coll-grid" id="coll-monsters"></div>
+  <div class="g12"></div>
+  <p class="eyebrow" style="margin-bottom:7px">💎 Harta Karun</p>
+  <div class="coll-grid" id="coll-treasures"></div>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost" onclick="G.goMap()">← Peta</button>
+</div>
+
+<!-- DAILY WELCOME -->
+<div id="s-welcome" class="screen">
+  <div class="spacer"></div>
+  <div style="text-align:center">
+    <div id="wel-emoji" style="font-size:80px;margin-bottom:6px">✨</div>
+    <p class="eyebrow" style="color:var(--gold)" id="wel-streak">Hari ke-1 bareng Pijar</p>
+    <h2 id="wel-title">Selamat datang kembali!</h2>
+    <p id="wel-line" style="font-size:16px">Aku nungguin kamu~</p>
+    <p id="wel-recap" class="muted" style="margin-top:8px"></p>
+    <div class="g12"></div>
+    <div class="card" style="background:rgba(201,136,31,.12);border-color:rgba(201,136,31,.3)">
+      <p style="margin:0;font-size:13px;color:var(--gold)">🎁 Menang pertama hari ini dapat <strong>bonus semangat</strong>!</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-gold" onclick="G.afterWelcome()">Ayo main! →</button>
+</div>
+
+<!-- FEEDBACK OVERLAY -->
+<div class="fb-overlay" id="fb-ov"><div class="fb-text" id="fb-txt"></div></div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════
+const SAVE_KEY = 'matheroes-v2';
+// ↓↓↓ GURU: tempel "Web app URL" dari Google Apps Script di antara tanda kutip ini ↓↓↓
+// (atau isi lewat tombol "Atur URL Sheet" di layar Rapor — tersimpan per perangkat).
+// Kosong = game jalan offline penuh tanpa kirim data ke mana pun.
+const SYNC_URL = '';
+const SYNC_URL_KEY = 'matheroes-sync-url'; // override per-perangkat (localStorage)
+const TIMER_BASE = 15;
+const ENEMY_SKILL_EVERY = 4; // turns
+const OP_SYM = {add:'+', sub:'−', mul:'×', div:'÷'};
+const FRAC_SYM = {2:'½', 3:'⅓', 4:'¼', 5:'⅕'};
+// Contoh CPA per operasi (angka sengaja kecil & ramah)
+const TEACH_EX = {
+  add:{a:3, b:4},
+  sub:{a:7, b:3},
+  mul:{a:3, b:4},
+  div:{a:12, b:4},      // 12 ÷ 4 = 3
+  frac:{den:2, whole:8} // ½ dari 8 = 4
+};
+
+const HEROES = {
+  adira:{name:'ADIRA', icon:'⚔️', title:'Ksatria Muda', bonuses:{kuat:3,tegar:1,pintar:0,gesit:0}},
+  kira: {name:'KIRA',  icon:'✨', title:'Penyihir Berbakat', bonuses:{kuat:0,tegar:0,pintar:3,gesit:1}},
+  reno: {name:'RENO',  icon:'🏹', title:'Petualang Cepat', bonuses:{kuat:1,tegar:0,pintar:0,gesit:3}}
+};
+const JOBS = {
+  ksatria: {name:'Ksatria', icon:'⚔️', bonus:'kuat tegar'},
+  penyihir:{name:'Penyihir',icon:'✨', bonus:'pintar'},
+  pemanah: {name:'Pemanah', icon:'🏹', bonus:'gesit'}
+};
+
+const SKILL_DEFS = {
+  // ── PENJUMLAHAN · tumbuh KUAT 💪 ──
+  'add_0_10':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–10', desc:'Hasilnya ≤ 10', icon:'🟢', enemyName:'SLIMELING',
+    enemyHP:12, maxA:5, maxSum:10, xpStat:'kuat', prev:null, next:'add_0_20',
+    enemySkills:['Slam Lumpur','Ledak Busa']},
+  'add_0_20':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–20', desc:'Hasilnya ≤ 20', icon:'🪨', enemyName:'ROCK GOLEM',
+    enemyHP:15, maxA:10, maxSum:20, xpStat:'kuat', prev:'add_0_10', next:'add_0_100',
+    enemySkills:['Rock Slam','Stone Crush']},
+  'add_0_100':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–100', desc:'Hasilnya ≤ 100', icon:'⚡', enemyName:'THUNDER HAWK',
+    enemyHP:18, maxA:50, maxSum:100, xpStat:'kuat', prev:'add_0_20', next:'sub_0_20',
+    enemySkills:['Thunder Strike','Wing Blast']},
+  // ── PENGURANGAN · tumbuh TEGAR 🛡️ ──
+  'sub_0_20':{op:'sub', group:'Pengurangan', name:'Pengurangan 0–20', desc:'Hasil tidak minus', icon:'🦇', enemyName:'SHADOW BAT',
+    enemyHP:15, maxA:20, minA:5, xpStat:'tegar', prev:'add_0_100', next:'sub_0_100',
+    enemySkills:['Sayap Gelap','Gigit Senyap']},
+  'sub_0_100':{op:'sub', group:'Pengurangan', name:'Pengurangan 0–100', desc:'Hasil tidak minus', icon:'👻', enemyName:'VOID WRAITH',
+    enemyHP:18, maxA:100, minA:20, xpStat:'tegar', prev:'sub_0_20', next:'mul_1_5',
+    enemySkills:['Tarik Bayang','Erosi Jiwa']},
+  // ── PERKALIAN · tumbuh PINTAR ✨ ──
+  'mul_1_5':{op:'mul', group:'Perkalian', name:'Perkalian 1–5', desc:'Tabel 1 sampai 5', icon:'🔮', enemyName:'CRYSTAL SPRITE',
+    enemyHP:18, maxFactor:5, xpStat:'pintar', prev:'sub_0_100', next:'mul_1_10',
+    enemySkills:['Pantul Prisma','Gema Kristal']},
+  'mul_1_10':{op:'mul', group:'Perkalian', name:'Perkalian 1–10', desc:'Tabel 1 sampai 10', icon:'🐉', enemyName:'ARCANE DRAGON',
+    enemyHP:22, maxFactor:10, xpStat:'pintar', prev:'mul_1_5', next:'div_1_5',
+    enemySkills:['Napas Arcane','Lipat Ganda']},
+  // ── PEMBAGIAN · tumbuh PINTAR ✨ ──
+  'div_1_5':{op:'div', group:'Pembagian', name:'Pembagian 1–5', desc:'Bagi rata, hasil bulat', icon:'🧩', enemyName:'MIRROR GOLEM',
+    enemyHP:20, maxFactor:5, xpStat:'pintar', prev:'mul_1_10', next:'div_1_10',
+    enemySkills:['Pecah Cermin','Pantul Ganda']},
+  'div_1_10':{op:'div', group:'Pembagian', name:'Pembagian 1–10', desc:'Bagi rata, hasil bulat', icon:'🌀', enemyName:'CHAOS SPIRAL',
+    enemyHP:24, maxFactor:10, xpStat:'pintar', prev:'div_1_5', next:'frac_simple',
+    enemySkills:['Pusaran Hampa','Belah Jiwa']},
+  // ── PECAHAN · tumbuh PINTAR ✨ ──
+  'frac_simple':{op:'frac', group:'Pecahan', name:'Pecahan dari Bilangan', desc:'½, ⅓, ¼ dari sebuah jumlah', icon:'🍰', enemyName:'CAKE SPRITE',
+    enemyHP:22, maxDen:4, maxK:5, xpStat:'pintar', prev:'div_1_10', next:null,
+    enemySkills:['Iris Tipis','Bagi Adil']}
+};
+const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple'];
+
+// Companion "Pijar" — tumbuh dari bond (main + menang + reuni harian). Tema: cahaya/api.
+const COMPANION_STAGES=[
+  {min:0,  emoji:'🥚', title:'Telur Semangat'},
+  {min:6,  emoji:'✨', title:'Pijar Kecil'},
+  {min:18, emoji:'🔥', title:'Pijar'},
+  {min:36, emoji:'☄️', title:'Pijar Agung'},
+  {min:70, emoji:'🌟', title:'Pijar Legenda'}
+];
+// {n} diganti nama pemain. Reaksi salah SELALU menyemangati (bukan menyalahkan).
+const COMP_LINES={
+  welcome:['Kamu datang! Aku nungguin kamu~','Hai {n}! Ayo lanjut petualangan!','Senang ketemu kamu lagi!','Hari ini kita bakal makin kuat!','Yeay, {n} balik!'],
+  correct:['Keren!','Hebat, {n}!','Mantap!','Wow, jago!','Lanjutkan!','Kamu pintar!'],
+  wrong:['Nggak apa-apa, coba lagi!','Aku percaya kamu bisa!','Pelan-pelan ya~','Hampir benar, ayo!','Belajar dari ini, {n}!'],
+  master:['Kita berhasil!','Aku bangga sama kamu, {n}!','Luar biasaa!','Kita tim terbaik!']
+};
+
+// ═══════════════════════════════════════════
+// PIXEL SPRITES (retro) — fallback ke emoji bila key tak ada
+// ═══════════════════════════════════════════
+const SPRITES = {
+  'enemy_add_0_10':{pal:{o:'#1f3d2b',b:'#43c46f',h:'#a8ecbf',e:'#0e2117'},rows:[
+    '................','................','......oooo......','....oobbbboo....',
+    '...obbbbbbbbo...','..obhbbbbbbbbo..','..obbbbbbbbbbo..','.obbbbbbbbbbbbo.',
+    '.obbeebbbbeebbo.','.obbeebbbbeebbo.','.obbbbbbbbbbbbo.','.obbbbeeeebbbbo.',
+    '.obbbbbbbbbbbbo.','..obbbbbbbbbbo..','..oobbbbbbbboo..','...oooooooooo...']},
+  'enemy_add_0_20':{pal:{o:'#3a2e22',r:'#8a7a63',d:'#5e4f3c',e:'#ffd24d'},rows:[
+    '................','................','....oooooooo....','...orrrrrrrro...',
+    '..orrrrrrrrrro..','.orrrrrrrrrrrro.','.orreerrrreerro.','.orreerrrreerro.',
+    '.orrrrrrrrrrrro.','.orrrrddddrrrro.','.orrrrrrrrrrrro.','..orrrrrrrrrro..',
+    '...orrrrrrrro...','....oooooooo....','................','................']},
+  pijar:{pal:{o:'#7a3500',f:'#ff8a1e',y:'#ffce42',w:'#fff3c4'},rows:[
+    '................','.......o........','......oyo.......','......oyyo......',
+    '.....oyffyo.....','.....oyffyo.....','....oyffffyo....','....oyffffyo....',
+    '...oyffyyffyo...','...oyffwwffyo...','...oyffwwffyo...','...oyffffffyo...',
+    '....oyffffyo....','....ooyyyyoo....','.....oooooo.....','................']},
+  hero_adira:{pal:{o:'#0d1018',m:'#6f97d6',M:'#41639c',s:'#f2c79a',e:'#0d1018',c:'#e6b53f'},rows:[
+    '................','......cc........','.....occco......','....ommmmmo.....',
+    '...ommmmmmmo....','...omsssssmo....','...omeessemo....','...omsssssmo....',
+    '....ommmmmo.....','...ommmmmmmo....','..omMMMMMMMMo...','..omMMMMMMMMo...',
+    '..omMMMMMMMMo...','..oomMMMMmmoo...','...omM..Mmo.....','...oo....oo.....']},
+  hero_kira:{pal:{o:'#160f24',h:'#7a4fd0',r:'#9166e0',s:'#f2c79a',e:'#160f24',t:'#ffd24d'},rows:[
+    '........o.......','.......oho......','......ohhho.....','.....ohhhho.....',
+    '....ohhhhho.....','...ohhhhhho.....','..ooooooooooo...','....ossso..t....',
+    '....oseso..t....','....osso...t....','...orrrro..t....','..orrrrrro......',
+    '..orrrrrro......','..orrrrrro......','..orrrrrro......','...oo..oo.......']},
+  hero_reno:{pal:{o:'#0f1a12',g:'#4e9e5a',G:'#357a44',s:'#f2c79a',e:'#0f1a12',b:'#b07a36'},rows:[
+    '................','.....oooo.......','....oggggo......','...oggggggo.....',
+    '...ogsssggo.....','...ogessego.....','...oggsssgo.....','....oggggo......',
+    '...oggggggo.....','..oggGGGGGo.b...','..ogGGGGGGo.b...','..ogGGGGGGo.b...',
+    '..ooGGGGGoo.b...','...oG..Go...b...','...oG..Go.......','...oo..oo.......']}
+};
+function spriteCanvas(key,px){
+  const s=SPRITES[key]; if(!s) return null;
+  const W=s.rows[0].length,H=s.rows.length;
+  const scale=Math.max(1,Math.floor(px/Math.max(W,H)));
+  const cv=document.createElement('canvas');
+  cv.width=W*scale; cv.height=H*scale;
+  cv.style.imageRendering='pixelated'; cv.style.verticalAlign='middle';
+  const ctx=cv.getContext('2d');
+  for(let y=0;y<H;y++){const row=s.rows[y]||''; for(let x=0;x<W;x++){const c=row[x]; if(c&&c!=='.'&&s.pal[c]){ctx.fillStyle=s.pal[c]; ctx.fillRect(x*scale,y*scale,scale,scale);}}}
+  return cv;
+}
+function setSprite(el,key,px){ if(!el) return false; const cv=spriteCanvas(key,px); if(!cv) return false; el.textContent=''; el.appendChild(cv); return true; }
+
+// ═══════════════════════════════════════════
+// AUDIO — mesin SFX sintesis (Web Audio, TANPA file)
+// Ringan utk HP Android murah: oscillator + envelope pendek, dibuat saat dibutuhkan.
+// Pustaka nada bernama (LIB) diperluas di langkah berikutnya (benar/serang/menang/…).
+// ═══════════════════════════════════════════
+const SFX = (function(){
+  const MUTE_KEY = 'matheroes-muted';
+  const MASTER_VOL = 0.85;
+  let ctx = null, master = null, muted = false;
+  try { muted = (localStorage.getItem(MUTE_KEY) === '1'); } catch(e){}
+
+  // buat AudioContext saat pertama dibutuhkan (hindari warning autoplay)
+  function ensure(){
+    if(ctx) return ctx;
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : MASTER_VOL;
+      master.connect(ctx.destination);
+    }catch(e){ ctx = null; }
+    return ctx;
+  }
+  // mobile butuh resume() di dalam gesture pengguna
+  function unlock(){
+    const c = ensure(); if(!c) return;
+    if(c.state === 'suspended'){ try{ c.resume(); }catch(e){} }
+  }
+
+  // satu nada: {type, freq, to, dur, vol, atk}  (to = glide frekuensi opsional)
+  function tone(o){
+    const c = ensure(); if(!c || muted) return;
+    if(c.state === 'suspended'){ try{ c.resume(); }catch(e){} }
+    try{
+      const t = c.currentTime;
+      const osc = c.createOscillator(), g = c.createGain();
+      osc.type = o.type || 'sine';
+      const f0 = Math.max(1, o.freq || 440), f1 = Math.max(1, (o.to != null ? o.to : f0));
+      const dur = o.dur || 0.15, atk = (o.atk != null ? o.atk : 0.006), vol = (o.vol != null ? o.vol : 0.3);
+      osc.frequency.setValueAtTime(f0, t);
+      if(f1 !== f0) osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + atk);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(master);
+      osc.start(t); osc.stop(t + dur + 0.03);
+    }catch(e){}
+  }
+  // rangkaian nada (arpeggio) dgn jeda antar-nada (detik)
+  function seq(notes, gap){
+    gap = (gap != null ? gap : 0.08);
+    (notes || []).forEach((n, i) => setTimeout(() => tone(n), Math.round(i * gap * 1000)));
+  }
+
+  // pustaka SFX bernama — L1 cukup 'tap' (konfirmasi); event game disambung di L2/L3
+  const LIB = {
+    tap: () => tone({ type:'sine', freq:660, to:880, dur:0.07, vol:0.16 })
+  };
+  function play(name){
+    if(muted) return;
+    const fn = LIB[name];
+    if(fn){ try{ fn(); }catch(e){} }
+  }
+
+  function setMuted(m){
+    muted = !!m;
+    try{ localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); }catch(e){}
+    if(master){ try{ master.gain.value = muted ? 0 : MASTER_VOL; }catch(e){} }
+  }
+  function toggle(){ setMuted(!muted); if(!muted) play('tap'); return muted; }
+
+  return { play, tone, seq, toggle, setMuted, unlock, isMuted: () => muted, lib: LIB };
+})();
+
+// buka audio pada interaksi pertama (kebijakan autoplay mobile); aman dipanggil berulang
+['pointerdown','touchstart','keydown'].forEach(ev =>
+  window.addEventListener(ev, () => SFX.unlock(), { passive:true })
+);
+function updateMuteBtn(){
+  const b = document.getElementById('mute-btn'); if(!b) return;
+  const m = SFX.isMuted();
+  b.textContent = m ? '🔇' : '🔊';
+  b.setAttribute('aria-label', m ? 'Bunyikan suara' : 'Matikan suara');
+  b.title = m ? 'Bunyikan suara' : 'Matikan suara';
+}
+function toggleMute(){ SFX.toggle(); updateMuteBtn(); }
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let S = null;
+
+function blankSkill(){
+  return{status:'locked',accuracyRecent:0,streak:0,attempts:0,correct:0,
+         nextReviewSession:null,reviewInterval:1,sessionAnswers:[]};
+}
+function computeStats(st){
+  const lv = k=>Math.floor(st.statXP[k]/10);
+  return{
+    kuatLv: lv('kuat'),  tegarLv: lv('tegar'),
+    pintarLv: lv('pintar'), gesitLv: lv('gesit')
+  };
+}
+function computeMaxHP(st){
+  return 20 + computeStats(st).tegarLv * 5;
+}
+function computeMaxMana(st){
+  return 15 + computeStats(st).pintarLv * 5;
+}
+function computeDamage(st){
+  return 3 + Math.floor(computeStats(st).kuatLv / 2);
+}
+function computeTimer(st){
+  return TIMER_BASE + Math.floor(computeStats(st).gesitLv / 2);
+}
+function computeMissChance(st){
+  return Math.max(0, 30 - computeStats(st).pintarLv);
+}
+// damage giliran BERTAHAN saat salah: MODERAT & bisa pulih.
+// Proporsional thd HP maks (~13–18%) jadi adil di tiap level; TIDAK mematikan
+// dari kondisi sehat — satu kali salah ≠ langsung kalah (sisakan minimal 1 HP).
+function defendDamage(){
+  const maxHP=computeMaxHP(S.player);
+  let dmg=Math.round(maxHP*0.13)+rand(0,Math.max(1,Math.round(maxHP*0.05)));
+  dmg=Math.max(2,dmg);
+  if(S.player.hp>maxHP*0.25) dmg=Math.min(dmg,S.player.hp-1); // sehat → tak bisa habis sekali pukul
+  return Math.max(1,dmg);
+}
+// pemulihan HP saat MENANG: ~25% HP maks (min 3) → mistake bisa ditebus dgn terus maju.
+function victoryHeal(){
+  return Math.max(3, Math.round(computeMaxHP(S.player)*0.25));
+}
+
+// ═══════════════════════════════════════════
+// COMPANION (Pijar)
+// ═══════════════════════════════════════════
+function compStage(bond){
+  let s=COMPANION_STAGES[0];
+  for(const st of COMPANION_STAGES) if(bond>=st.min) s=st;
+  return s;
+}
+function compNextStage(bond){
+  for(const st of COMPANION_STAGES) if(bond<st.min) return st;
+  return null; // sudah maksimal
+}
+function addBond(n){
+  if(!S.player.companion) return;
+  const before=compStage(S.player.companion.bond);
+  S.player.companion.bond+=n;
+  const after=compStage(S.player.companion.bond);
+  if(after.title!==before.title){
+    setTimeout(()=>showToast(`${after.emoji} ${S.player.companion.name} berkembang jadi ${after.title}!`,2800),300);
+  }
+  sv();
+}
+function pickCompLine(type){
+  const arr=COMP_LINES[type]||COMP_LINES.correct;
+  return arr[Math.floor(Math.random()*arr.length)].replace('{n}', S.player.name||'kawan');
+}
+// gelembung ucapan companion di layar pertarungan
+function companionSay(type){
+  const b=document.getElementById('comp-bubble');
+  if(!b||!S.player.companion) return;
+  b.innerHTML=`<span style="font-size:17px">${compStage(S.player.companion.bond).emoji}</span><span>${pickCompLine(type)}</span>`;
+  b.classList.add('show');
+  clearTimeout(companionSay._t);
+  companionSay._t=setTimeout(()=>b.classList.remove('show'),1900);
+}
+// deteksi hari baru → true bila perlu tampilkan layar sambutan (streak LEMBUT, tanpa hukuman)
+function todayStr(){try{return new Date().toDateString();}catch(e){return null;}}
+function checkNewDay(){
+  if(!S.meta) S.meta={lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null};
+  const today=todayStr();
+  if(!today||S.meta.lastDay===today) return false;
+  let yest=null; try{yest=new Date(Date.now()-86400000).toDateString();}catch(e){}
+  S.meta.dayStreak = (S.meta.lastDay && S.meta.lastDay===yest) ? (S.meta.dayStreak+1) : 1;
+  S.meta.lastDay=today;
+  S.meta.totalDays=(S.meta.totalDays||0)+1;
+  S.meta.firstWinDay=today; // bonus "kemenangan pertama hari ini" menanti
+  addBond(2);               // bond reuni harian
+  sv();
+  return true;
+}
+
+// ═══════════════════════════════════════════
+// NARASI & MISI HARIAN
+// ═══════════════════════════════════════════
+const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan'};
+const MISSION_POOL=[
+  {id:'win',    target:3,  reward:4, label:t=>`Menangkan ${t} pertarungan`},
+  {id:'play',   target:5,  reward:3, label:t=>`Mainkan ${t} pertarungan`},
+  {id:'correct',target:12, reward:4, label:t=>`Jawab ${t} soal dengan benar`},
+  {id:'streak', target:5,  reward:5, label:t=>`Capai beruntun ${t}× sekali tempur`},
+  {id:'master', target:1,  reward:8, label:t=>`Kuasai 1 skill baru`}
+];
+function genDailyMissions(){
+  const idx=[0,1,2,3,4];
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  return idx.slice(0,3).map(i=>{const m=MISSION_POOL[i];return{id:m.id,target:m.target,reward:m.reward,label:m.label(m.target),progress:0,done:false};});
+}
+function ensureMissions(){
+  if(!S.meta) return;
+  const today=todayStr();
+  if(S.meta.missionDay!==today || !S.meta.missions || !S.meta.missions.length){
+    S.meta.missions=genDailyMissions(); S.meta.missionDay=today; sv();
+  }
+}
+
+// ── M7: KEMAJUAN "REKOR DIRI" (kemarin → hari ini) — bandingkan anak dgn DIRINYA sendiri ──
+function rolloverProg(prog, today, level){
+  if(!prog) return {day:today,todayCorrect:0,todayWins:0,todayBestStreak:0,levelStart:level,yesterday:null,beatYesterdayShown:false};
+  if(prog.day===today) return prog; // hari sama → tak berubah
+  // hari berganti → simpan ringkasan kemarin, reset hari ini
+  return {day:today,todayCorrect:0,todayWins:0,todayBestStreak:0,levelStart:level,
+    yesterday:{correct:prog.todayCorrect,wins:prog.todayWins,bestStreak:prog.todayBestStreak,levelGain:Math.max(0,level-(prog.levelStart||level))},
+    beatYesterdayShown:false};
+}
+function ensureDailyProgress(){
+  if(!S.meta) S.meta={lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null};
+  const today=todayStr(); if(!today) return;
+  S.meta.prog=rolloverProg(S.meta.prog, today, S.player.level); sv();
+}
+function beatYesterday(pg){ // tepat saat melampaui jumlah benar kemarin (sekali)
+  return !!(pg && !pg.beatYesterdayShown && pg.yesterday && pg.yesterday.correct>0 && pg.todayCorrect===pg.yesterday.correct+1);
+}
+function progOnCorrect(streak){
+  const pg=S.meta&&S.meta.prog; if(!pg) return;
+  pg.todayCorrect++;
+  if(streak>pg.todayBestStreak) pg.todayBestStreak=streak;
+  if(beatYesterday(pg)){ pg.beatYesterdayShown=true; showToast(`🎉 Kamu lampaui dirimu kemarin! (${pg.yesterday.correct} → ${pg.todayCorrect} benar)`,2800); }
+}
+
+// ── M8: ADAB DALAM SISTEM — Pijar menanamkan akhlak secara subtil (tidak menggurui) ──
+const ADAB={
+  humble:[ // saat menang besar — jangan sombong
+    'Menang besar! Tapi pahlawan sejati tetap rendah hati ya. 😊',
+    'Hebat! Kekuatan dipakai untuk menolong, bukan menyombong.',
+    'Keren! Juara yang baik bikin teman ikut semangat, bukan minder.'
+  ],
+  pace:[   // tiap anak beda kecepatan
+    'Tiap orang punya kecepatan sendiri — yang penting terus melangkah. 🌱',
+    'Pelan tak apa, asal tekun. Kamu tumbuh dengan caramu sendiri.',
+    'Ini lomba dengan dirimu kemarin, bukan dengan orang lain.'
+  ],
+  friends:[ // semangati teman / kerja sama
+    'Kalau ada teman kesulitan, semangati ya — kita satu tim! 🤝',
+    'Kita semua pahlawan numerasi, sama-sama usir Kekacauan. ✨',
+    'Berbagi semangat ke teman itu kekuatan super juga, lho.'
+  ]
+};
+let _adabCD=0; // cooldown antar-pesan adab biar "sesekali", tak menggurui
+function pickAdab(cat){ const a=ADAB[cat]||ADAB.pace; return a[Math.floor(Math.random()*a.length)]; }
+function maybeAdab(cat, chance){
+  if(_adabCD>0){ _adabCD--; return null; }
+  if(Math.random()>=chance) return null;
+  _adabCD=2; // setelah tampil, lewati 2 kesempatan berikutnya
+  return pickAdab(cat);
+}
+function pijarSays(line, ms){ if(!line) return; const nm=(S.player&&S.player.companion&&S.player.companion.name)||'Pijar'; showToast(`${nm}: ${line}`, ms||3000); }
+function missionProgress(id,amount,isAbsolute){
+  if(!S.meta||!S.meta.missions) return;
+  for(const m of S.meta.missions){
+    if(m.id!==id||m.done) continue;
+    m.progress = isAbsolute ? Math.max(m.progress,amount) : m.progress+amount;
+    if(m.progress>=m.target){
+      m.progress=m.target; m.done=true; addBond(m.reward);
+      setTimeout(()=>showToast(`✅ Misi: ${m.label} — selesai! (+${m.reward} bond)`,2400),200);
+      if(S.meta.missions.every(x=>x.done)){
+        const mt=dropTreasure(true,true); // peti misteri: pasti drop, condong langka
+        setTimeout(()=>showToast(`🎁 Peti misteri terbuka! Kamu dapat ${mt.emoji} ${mt.name}!`,2900),1300);
+      }
+    }
+  }
+  sv();
+}
+// berapa wilayah (grup operasi) yang sudah pulih (semua skill di grup dikuasai)
+function restoredRegions(){
+  const groups={};
+  for(const id of SKILL_ORDER){const g=SKILL_DEFS[id].group; (groups[g]=groups[g]||[]).push(S.skills[id].status==='mastered');}
+  const names=Object.keys(groups);
+  return {restored:names.filter(g=>groups[g].every(Boolean)).length, total:names.length};
+}
+
+// ═══════════════════════════════════════════
+// KEJUTAN & KOLEKSI
+// ═══════════════════════════════════════════
+const SHINY_CHANCE=0.10; // peluang musuh langka tiap pertarungan
+const TREASURES=[
+  {id:'koin',    emoji:'🪙', name:'Koin Emas',      rare:1},
+  {id:'bintang', emoji:'⭐', name:'Bintang Jatuh',  rare:1},
+  {id:'permata', emoji:'💎', name:'Permata',        rare:2},
+  {id:'gulungan',emoji:'📜', name:'Gulungan Kuno',  rare:2},
+  {id:'kristal', emoji:'🔮', name:'Bola Kristal',   rare:3},
+  {id:'kunci',   emoji:'🗝️', name:'Kunci Rahasia',  rare:3},
+  {id:'mahkota', emoji:'👑', name:'Mahkota Angka',  rare:4},
+  {id:'pelangi', emoji:'🌈', name:'Kristal Pelangi',rare:4}
+];
+function rollShiny(){ return Math.random()<SHINY_CHANCE; }
+function recordMonster(sid,shiny){
+  if(!S.collection) S.collection={monsters:{},treasures:{}};
+  const m=S.collection.monsters[sid]||{defeated:0,shiny:false};
+  m.defeated++; if(shiny) m.shiny=true;
+  S.collection.monsters[sid]=m; sv();
+}
+// drop harta: normal 30% (umum lebih sering), force/biasRare → pasti & condong langka
+function dropTreasure(force,biasRare){
+  if(!force && Math.random()>0.30) return null;
+  const w=TREASURES.map(t=> biasRare ? t.rare : (5-t.rare));
+  let tot=w.reduce((a,b)=>a+b,0), r=Math.random()*tot, pick=TREASURES[0];
+  for(let i=0;i<TREASURES.length;i++){ r-=w[i]; if(r<=0){pick=TREASURES[i];break;} }
+  if(!S.collection) S.collection={monsters:{},treasures:{}};
+  S.collection.treasures[pick.id]=(S.collection.treasures[pick.id]||0)+1;
+  sv(); return pick;
+}
+function collectionCounts(){
+  const mons=(S.collection&&S.collection.monsters)||{}, tre=(S.collection&&S.collection.treasures)||{};
+  return {
+    mf:SKILL_ORDER.filter(id=>mons[id]&&mons[id].defeated>0).length, mt:SKILL_ORDER.length,
+    tf:TREASURES.filter(t=>tre[t.id]>0).length, tt:TREASURES.length
+  };
+}
+function renderCollection(){
+  const c=collectionCounts();
+  document.getElementById('coll-sub').textContent=`Monster ${c.mf}/${c.mt} · Harta ${c.tf}/${c.tt}`;
+  const mons=(S.collection&&S.collection.monsters)||{};
+  document.getElementById('coll-monsters').innerHTML=SKILL_ORDER.map(id=>{
+    const d=SKILL_DEFS[id], rec=mons[id];
+    return (rec&&rec.defeated>0)
+      ? `<div class="coll-cell"><span style="font-size:28px">${d.icon}</span><div class="coll-name">${rec.shiny?'✨':''}${d.enemyName}</div><div class="coll-meta">×${rec.defeated}</div></div>`
+      : `<div class="coll-cell locked"><span style="font-size:28px">❓</span><div class="coll-name">???</div><div class="coll-meta">belum</div></div>`;
+  }).join('');
+  const tre=(S.collection&&S.collection.treasures)||{};
+  document.getElementById('coll-treasures').innerHTML=TREASURES.map(t=>{
+    const n=tre[t.id]||0;
+    return n>0
+      ? `<div class="coll-cell"><span style="font-size:28px">${t.emoji}</span><div class="coll-name">${t.name}</div><div class="coll-meta">×${n}</div></div>`
+      : `<div class="coll-cell locked"><span style="font-size:28px">❓</span><div class="coll-name">???</div><div class="coll-meta">belum</div></div>`;
+  }).join('');
+}
+
+function blankState(){
+  const hero='adira';
+  return{
+    player:{name:'',hero,level:1,jobLevel:0,job:null,
+      hp:20,mana:15,
+      companion:{name:'Pijar',bond:0},
+      statXP:{kuat:0,tegar:0,pintar:0,gesit:0}},
+    skills:{
+      'add_0_10':blankSkill(),'add_0_20':blankSkill(),'add_0_100':blankSkill(),
+      'sub_0_20':blankSkill(),'sub_0_100':blankSkill(),
+      'mul_1_5':blankSkill(),'mul_1_10':blankSkill(),
+      'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill()
+    },
+    session:{count:0},
+    meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null},
+    collection:{monsters:{},treasures:{}},
+    student:{id:genStudentId(),kelas:''},          // identitas ringan: kunci 1 baris/anak (layer pengukuran)
+    measure:{pre:null,post:null,playSeconds:0,dirty:false,lastSync:null}, // before/after per topik + waktu main
+    diagDone:false,
+    currentSkill:'add_0_10'
+  };
+}
+
+// ═══════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════
+function sv(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+function ld(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY);
+    if(r){
+      S=JSON.parse(r);
+      for(const id of SKILL_ORDER){
+        if(!S.skills[id])S.skills[id]=blankSkill();
+        if(!S.skills[id].sessionAnswers)S.skills[id].sessionAnswers=[];
+        if(!S.skills[id].reviewInterval)S.skills[id].reviewInterval=1;
+      }
+      if(!S.player.statXP)S.player.statXP={kuat:0,tegar:0,pintar:0,gesit:0};
+      if(!S.player.mana)S.player.mana=computeMaxMana(S.player);
+      if(!S.player.companion)S.player.companion={name:'Pijar',bond:0};
+      if(!S.meta)S.meta={lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null};
+      if(!S.meta.missions)S.meta.missions=[];
+      if(S.meta.missionDay===undefined)S.meta.missionDay=null;
+      if(!S.collection)S.collection={monsters:{},treasures:{}};
+      // ── migrasi LAYER PENGUKURAN (save lama: belum ada identitas/snapshot) ──
+      if(!S.student)S.student={id:'',kelas:''};
+      if(!S.student.id)S.student.id=genStudentId();
+      if(!S.measure)S.measure={pre:null,post:null,playSeconds:0,dirty:false,lastSync:null};
+      if(S.measure.playSeconds==null)S.measure.playSeconds=0;
+      if(S.measure.lastSync===undefined)S.measure.lastSync=null;
+    }
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// LAYER PENGUKURAN (before/after per topik) — LOKAL & offline-first
+// Data utama di localStorage; measureRow() = SATU baris snapshot per anak.
+// SYNC ke Google Sheets = best-effort (lihat syncMeasure): gagal/offline → game
+// tetap jalan, data tetap tersimpan (dirty), dicoba lagi di checkpoint berikutnya.
+// ═══════════════════════════════════════════
+// id stabil per-anak → kunci "1 baris per anak" saat sync nanti (tahan rename)
+function genStudentId(){
+  let r='';try{r=Math.random().toString(36).slice(2,7);}catch(e){r='xxxxx';}
+  let t='0';try{t=Date.now().toString(36);}catch(e){}
+  return 'mh_'+t+'_'+r;
+}
+// akumulasi waktu main (wall-clock) — MURNI pengukuran, TIDAK memengaruhi gameplay/timer
+let _playStart=0;
+function startPlayClock(){ _playStart=nowMs(); }
+function accruePlay(){
+  if(!_playStart) return;
+  if(!S||!S.measure){ _playStart=0; return; }
+  const sec=(nowMs()-_playStart)/1000;
+  if(sec>0 && sec<7200){ S.measure.playSeconds=(S.measure.playSeconds||0)+sec; S.measure.dirty=true; } // buang outlier (tab nganggur > 2 jam)
+  _playStart=0; sv();
+}
+// rekam hasil diagnosa. which='pre' (baseline, sekali) | 'post' (uji akhir, run terbaru menang)
+// scores = {tambah,kurang,kali,bagi,nalar} masing-masing jumlah benar dari DIAG_MAX soal
+function recordDiag(which, scores){
+  if(!S.measure) S.measure={pre:null,post:null,playSeconds:0,dirty:false};
+  let ts=0; try{ts=Date.now();}catch(e){}
+  const rec={...scores, ts};
+  if(which==='pre'){ if(!S.measure.pre) S.measure.pre=rec; } // baseline tak ditimpa
+  else S.measure.post=rec;
+  S.measure.dirty=true; sv();
+}
+function diagGain(){
+  const p=S.measure&&S.measure.pre, q=S.measure&&S.measure.post;
+  if(!p||!q) return null;
+  let g=0; for(const k of ['tambah','kurang','kali','bagi','nalar']) g+=((q[k]||0)-(p[k]||0));
+  return g;
+}
+// Bentuk SATU baris snapshot per anak — dipakai untuk tampilan rapor & (nanti) sync Sheets.
+function measureRow(){
+  const pre=(S.measure&&S.measure.pre)||{}, post=(S.measure&&S.measure.post)||{};
+  const cell=(o,k)=>(o&&o[k]!=null)?o[k]:'';
+  let tgl='';try{tgl=new Date().toISOString().slice(0,10);}catch(e){}
+  return {
+    id:(S.student&&S.student.id)||'', nama:(S.player&&S.player.name)||'', kelas:(S.student&&S.student.kelas)||'',
+    tambah_awal:cell(pre,'tambah'), tambah_akhir:cell(post,'tambah'),
+    kurang_awal:cell(pre,'kurang'), kurang_akhir:cell(post,'kurang'),
+    kali_awal:cell(pre,'kali'),     kali_akhir:cell(post,'kali'),
+    bagi_awal:cell(pre,'bagi'),     bagi_akhir:cell(post,'bagi'),
+    pecahan_awal:'', pecahan_akhir:'',           // diagnosa pecahan = ITEM 4 (belum); kolom dicadangkan
+    nalar_awal:cell(pre,'nalar'),   nalar_akhir:cell(post,'nalar'),
+    total_gain: (diagGain()!=null?diagGain():''),
+    menit_main: Math.round(((S.measure&&S.measure.playSeconds)||0)/60),
+    sesi:(S.session&&S.session.count)||0,
+    diag_max:DIAG_MAX,                            // tiap skor dari DIAG_MAX soal (konteks pembaca Sheet)
+    terakhir:tgl, versi:SAVE_KEY
+  };
+}
+
+// URL tujuan sync: override per-perangkat (localStorage) > konstanta SYNC_URL.
+function effectiveSyncUrl(){
+  try{ const u=localStorage.getItem(SYNC_URL_KEY); if(u&&u.trim()) return u.trim(); }catch(e){}
+  return (SYNC_URL||'').trim();
+}
+function isOnline(){ try{ return ('onLine' in navigator)? navigator.onLine : true; }catch(e){ return true; } }
+// Kirim SATU baris snapshot anak ke Google Sheets — best-effort, offline-first.
+// - Hanya saat ada perubahan (dirty) & URL terpasang & online.
+// - 1 baris per anak, dipanggil per CHECKPOINT (masuk peta / selesai uji) — BUKAN per jawaban.
+// - mode 'no-cors' + text/plain → tanpa preflight; respons opaque → resolve dianggap terkirim.
+// - GAGAL (offline/jaringan) → biarkan dirty=true, game tetap jalan, retry di checkpoint berikutnya.
+function syncMeasure(force){
+  const url=effectiveSyncUrl();
+  if(!url || !S || !S.measure) return;
+  if(!force && !S.measure.dirty) return;
+  if(!isOnline()){ return; } // simpan dulu, sync nyusul
+  let body=''; try{ body=JSON.stringify(measureRow()); }catch(e){ return; }
+  S.measure.lastSyncTry=Date.now();
+  try{
+    fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body,keepalive:true})
+      .then(()=>{ if(S&&S.measure){ S.measure.dirty=false; S.measure.lastSync=Date.now(); sv(); _syncUI&&_syncUI(); } })
+      .catch(()=>{ /* gagal → tetap dirty, dicoba lagi nanti */ _syncUI&&_syncUI(); });
+  }catch(e){ /* fetch tak tersedia → abaikan, tetap offline-first */ }
+}
+let _syncUI=null; // di-set renderMeasure utk perbarui status sync di layar Rapor
+function syncStatusText(){
+  const url=effectiveSyncUrl();
+  if(!url) return 'URL belum diatur';
+  if(!S||!S.measure) return '';
+  if(!isOnline()) return 'offline · nyusul';
+  if(S.measure.dirty) return '● belum tersinkron';
+  if(S.measure.lastSync){
+    let mins=-1; try{mins=Math.round((Date.now()-S.measure.lastSync)/60000);}catch(e){}
+    return mins<=0 ? '✓ tersinkron barusan' : `✓ tersinkron ${mins}m lalu`;
+  }
+  return 'siap';
+}
+
+// ═══════════════════════════════════════════
+// QUESTION ENGINE
+// ═══════════════════════════════════════════
+function rand(min,max){return min+Math.floor(Math.random()*(max-min+1));}
+function ansOf(a,b,op){return op==='sub'?a-b:op==='mul'?a*b:op==='div'?a/b:a+b;}
+// soal → teks universal (pakai simbol operasi yang benar)
+function qText(q){
+  if(q.story)return q.story; // soal AKM/cerita: tampilkan teksnya
+  if(q.op==='frac')return `${FRAC_SYM[q.den]||('1/'+q.den)} dari ${q.whole} = ?`;
+  return `${q.a} ${OP_SYM[q.op]||'+'} ${q.b} = ?`;
+}
+
+// soal SERANGAN (giliran kita) — "ringan", bangun kelancaran
+function genQ(sid){
+  const d=SKILL_DEFS[sid];
+  if(d.op==='sub'){
+    let a=rand(d.minA,d.maxA);
+    let b=rand(1,a);
+    if(a===b&&a>1)b=rand(1,a-1);
+    return{a,b,op:'sub',ans:a-b,sid,tier:'ringan'};
+  }
+  if(d.op==='mul'){
+    let a=rand(1,d.maxFactor),b=rand(1,d.maxFactor);
+    return{a,b,op:'mul',ans:a*b,sid,tier:'ringan'};
+  }
+  if(d.op==='div'){
+    const b=rand(1,d.maxFactor), q=rand(1,d.maxFactor); // pembagi & hasil → selalu habis
+    return{a:b*q,b,op:'div',ans:q,sid,tier:'ringan'};
+  }
+  if(d.op==='frac'){
+    const den=rand(2,d.maxDen), k=rand(1,d.maxK); // 1/den dari (den·k) = k
+    return{den,k,whole:den*k,num:1,op:'frac',ans:k,sid,tier:'ringan'};
+  }
+  // add (default)
+  let a,b,t=0;
+  do{a=rand(0,d.maxA);b=rand(0,d.maxA);t++;}
+  while((a+b>d.maxSum||(a===0&&b===0))&&t<60);
+  if(b===0)b=1;
+  return{a,b,op:'add',ans:a+b,sid,tier:'ringan'};
+}
+// soal "serangan khusus musuh" — operasi sama, sedikit lebih sulit
+function genHardQ(sid){
+  const d=SKILL_DEFS[sid];
+  if(d.op==='sub'){
+    const hi=Math.min(Math.round(d.maxA*1.1),d.maxA+5);
+    let a=rand(Math.max(d.minA,Math.round(d.maxA*0.6)),hi);
+    let b=rand(2,a-1);
+    return{a,b,op:'sub',ans:a-b,sid,hard:true};
+  }
+  if(d.op==='mul'){
+    const hf=Math.min(12,d.maxFactor+2);
+    let a=rand(Math.max(2,Math.round(d.maxFactor/2)),hf),b=rand(2,hf);
+    return{a,b,op:'mul',ans:a*b,sid,hard:true};
+  }
+  if(d.op==='div'){
+    const hf=Math.min(12,d.maxFactor+2);
+    const b=rand(2,hf), q=rand(2,hf);
+    return{a:b*q,b,op:'div',ans:q,sid,hard:true};
+  }
+  if(d.op==='frac'){
+    const den=rand(2,d.maxDen+1), k=rand(2,d.maxK+1);
+    return{den,k,whole:den*k,num:1,op:'frac',ans:k,sid,hard:true};
+  }
+  const lim=Math.min(Math.floor(d.maxSum*1.3),d.maxSum+10);
+  let a=rand(0,Math.floor(lim/2)),b=rand(0,Math.floor(lim/2));
+  if(a+b===0)b=1;
+  if(a+b>lim){a=Math.floor(lim/3);b=Math.floor(lim/3);}
+  return{a,b,op:'add',ans:a+b,sid,hard:true};
+}
+
+// Bank soal AKM Penjumlahan — "berat": konteks nyata, anak bernalar dulu (Applying).
+// Jawaban tetap angka (a+b) → cocok dgn input angka & guide CPA yang sudah ada.
+const ADD_AKM_TEMPLATES=[
+  (a,b)=>`Dina punya ${a} permen. Kakaknya memberi ${b} permen lagi. Berapa permen Dina sekarang?`,
+  (a,b)=>`Di kandang ada ${a} ayam. Pak Tani membeli ${b} ekor lagi. Berapa ayam di kandang sekarang?`,
+  (a,b)=>`Rak berisi ${a} buku. Bu Guru menambah ${b} buku baru. Berapa buku di rak sekarang?`,
+  (a,b)=>`Pagi terjual ${a} kue, sore terjual ${b} kue. Berapa kue terjual hari ini?`,
+  (a,b)=>`Bus berisi ${a} penumpang. Di halte naik ${b} orang dan tak ada yang turun. Berapa penumpang sekarang?`,
+  (a,b)=>`Andi mengumpulkan ${a} kerang, lalu menemukan ${b} kerang lagi. Berapa kerang Andi semuanya?`,
+  (a,b)=>`Ibu memetik ${a} tomat di kebun depan dan ${b} tomat di kebun belakang. Berapa tomat semuanya?`,
+  (a,b)=>`Tim kita mengumpulkan ${a} bintang, lalu menambah ${b} bintang lagi. Berapa bintang seluruhnya?`
+];
+function genAddAkmQ(sid){
+  const d=SKILL_DEFS[sid], maxSum=d.maxSum;
+  // angka condong ke paruh atas rentang (terasa "berat") tapi tetap dalam batas skill
+  let a=rand(Math.max(1,Math.floor(maxSum*0.3)), Math.max(2,Math.floor(maxSum*0.6)));
+  let b=rand(Math.max(1,Math.floor(maxSum*0.2)), Math.max(2,maxSum-a));
+  if(a+b>maxSum) b=maxSum-a;
+  if(b<1) b=1;
+  const story=ADD_AKM_TEMPLATES[rand(0,ADD_AKM_TEMPLATES.length-1)](a,b);
+  return{a,b,op:'add',ans:a+b,sid,tier:'akm',story};
+}
+// ── Bank soal AKM untuk 4 operasi lain (ikut pola Penjumlahan; ITEM 1) ──
+// Inti: anak harus BERNALAR operasi mana yang dipakai dari konteks, bukan sekadar hitung.
+// Konteks dicampur: personal, sosial-budaya, saintifik. Jawaban tetap ANGKA (cocok input & guide).
+
+// PENGURANGAN — isyarat: sisa, diberikan/terpakai, pergi, selisih/"lebih banyak", "berapa lagi" (ans=a-b)
+const SUB_AKM_TEMPLATES=[
+  (a,b)=>`Andi punya ${a} kelereng. ${b} kelereng ia berikan ke adik. Berapa kelereng Andi sekarang?`,
+  (a,b)=>`Di toko ada ${a} roti. Terjual ${b} roti hari ini. Berapa roti yang masih tersisa?`,
+  (a,b)=>`Tangki berisi ${a} liter air, lalu ${b} liter terpakai. Berapa liter air yang tersisa?`,
+  (a,b)=>`Ada ${a} burung di pohon, lalu ${b} ekor terbang pergi. Berapa burung yang masih tinggal?`,
+  (a,b)=>`Ema punya ${a} stiker, Doni punya ${b} stiker. Berapa stiker Ema lebih banyak daripada Doni?`,
+  (a,b)=>`Sari ingin membaca ${a} halaman. Baru ${b} halaman terbaca. Berapa halaman lagi yang harus dibaca?`,
+  (a,b)=>`Sebuah kotak berisi ${a} telur, ${b} di antaranya pecah. Berapa telur yang masih utuh?`,
+  (a,b)=>`Lomba diikuti ${a} anak. ${b} anak sudah finis. Berapa anak yang belum finis?`
+];
+function genSubAkmQ(sid){
+  const d=SKILL_DEFS[sid];
+  const a=rand(Math.max(d.minA,Math.floor(d.maxA*0.5)), d.maxA);
+  const b=rand(Math.max(2,Math.floor(a*0.25)), Math.max(2,Math.floor(a*0.75))); // mid-range → tak trivial
+  const story=SUB_AKM_TEMPLATES[rand(0,SUB_AKM_TEMPLATES.length-1)](a,b);
+  return{a,b,op:'sub',ans:a-b,sid,tier:'akm',story};
+}
+
+// PERKALIAN — isyarat: kelompok sama banyak ("tiap…ada", "masing-masing", per) (ans=a*b)
+const MUL_AKM_TEMPLATES=[
+  (a,b)=>`Ada ${a} keranjang, tiap keranjang berisi ${b} apel. Berapa apel semuanya?`,
+  (a,b)=>`Satu kotak berisi ${b} pensil. Ibu membeli ${a} kotak. Berapa pensil seluruhnya?`,
+  (a,b)=>`${a} anak masing-masing membawa ${b} stiker. Berapa stiker mereka semua?`,
+  (a,b)=>`Tiap baris ada ${b} kursi, dan ada ${a} baris. Berapa kursi seluruhnya?`,
+  (a,b)=>`Satu piring berisi ${b} bakso. Ada ${a} piring. Berapa bakso semuanya?`,
+  (a,b)=>`Tiap pekan ada ${b} hari latihan. Berapa hari latihan dalam ${a} pekan?`,
+  (a,b)=>`Satu bungkus berisi ${b} kue. Ada ${a} bungkus. Berapa kue seluruhnya?`,
+  (a,b)=>`Tiap meja diberi ${b} buku. Ada ${a} meja. Berapa buku dibutuhkan?`
+];
+function genMulAkmQ(sid){
+  const d=SKILL_DEFS[sid];
+  const a=rand(2,d.maxFactor), b=rand(2,d.maxFactor);
+  const story=MUL_AKM_TEMPLATES[rand(0,MUL_AKM_TEMPLATES.length-1)](a,b);
+  return{a,b,op:'mul',ans:a*b,sid,tier:'akm',story};
+}
+
+// PEMBAGIAN — isyarat: dibagi rata (berapa tiap), dikelompokkan @b (berapa kelompok) (ans=a÷b)
+const DIV_AKM_TEMPLATES=[
+  (a,b)=>`${a} kue dibagi rata ke ${b} piring. Berapa kue di tiap piring?`,
+  (a,b)=>`${a} siswa dibagi menjadi ${b} kelompok sama besar. Berapa siswa tiap kelompok?`,
+  (a,b)=>`${a} apel dimasukkan ke kantong, tiap kantong isi ${b}. Berapa kantong yang dibutuhkan?`,
+  (a,b)=>`Tali ${a} cm dipotong menjadi bagian sepanjang ${b} cm. Berapa potongan yang didapat?`,
+  (a,b)=>`${a} buku ditata rata ke ${b} rak. Berapa buku di tiap rak?`,
+  (a,b)=>`${a} permen dibagikan ke ${b} anak sama banyak. Berapa permen tiap anak?`,
+  (a,b)=>`${a} bunga ditata ${b} tangkai per vas. Berapa vas yang terpakai?`,
+  (a,b)=>`${a} liter susu dituang ke gelas berisi ${b} liter. Berapa gelas yang terisi?`
+];
+function genDivAkmQ(sid){
+  const d=SKILL_DEFS[sid];
+  const b=rand(2,d.maxFactor), q=rand(2,d.maxFactor), a=b*q;
+  const story=DIV_AKM_TEMPLATES[rand(0,DIV_AKM_TEMPLATES.length-1)](a,b);
+  return{a,b,op:'div',ans:q,sid,tier:'akm',story};
+}
+
+// PECAHAN — isyarat: "pecahan-satuan dari sejumlah" (½/⅓/¼ bagian dari whole) (ans=whole/den)
+const FRAC_AKM_TEMPLATES=[
+  (whole,fsym)=>`Ibu punya ${whole} kue. Ia memberi ${fsym} bagiannya ke tetangga. Berapa kue yang diberikan?`,
+  (whole,fsym)=>`Dari ${whole} kelereng, ${fsym}-nya berwarna merah. Berapa kelereng merah?`,
+  (whole,fsym)=>`Pita sepanjang ${whole} cm dipotong, diambil ${fsym} bagiannya. Berapa cm yang diambil?`,
+  (whole,fsym)=>`${whole} anak ikut lomba. ${fsym} di antaranya menang. Berapa anak yang menang?`,
+  (whole,fsym)=>`Ada ${whole} apel, dan ${fsym} bagiannya sudah matang. Berapa apel yang matang?`,
+  (whole,fsym)=>`Kelas berisi ${whole} siswa. ${fsym}-nya ikut ekskul memasak. Berapa siswa itu?`
+];
+function genFracAkmQ(sid){
+  const d=SKILL_DEFS[sid];
+  const den=rand(2,d.maxDen), k=rand(2,d.maxK), whole=den*k;
+  const fsym=FRAC_SYM[den]||('1/'+den);
+  const story=FRAC_AKM_TEMPLATES[rand(0,FRAC_AKM_TEMPLATES.length-1)](whole,fsym);
+  return{den,k,whole,num:1,op:'frac',ans:k,sid,tier:'akm',story};
+}
+
+// dispatcher AKM per operasi
+function genAkmQ(sid){
+  const op=SKILL_DEFS[sid].op;
+  if(op==='sub') return genSubAkmQ(sid);
+  if(op==='mul') return genMulAkmQ(sid);
+  if(op==='div') return genDivAkmQ(sid);
+  if(op==='frac') return genFracAkmQ(sid);
+  return genAddAkmQ(sid); // add
+}
+// soal BERTAHAN (giliran musuh): KELIMA operasi kini soal cerita AKM bernalar (bukan cuma angka besar)
+function genDefendQ(sid){ return genAkmQ(sid); }
+
+// ═══════════════════════════════════════════
+// VOLATILE ENCOUNTER STATE
+// ═══════════════════════════════════════════
+let E=null;
+let timerIv=null, timerLeft=TIMER_BASE;
+let T=null; // teach context
+let DX=null; // diag context (prolog / pre-test)
+let PX=null; // post-test context (uji kemampuan)
+let selectedHero=null;
+let pendingJobUp=false;
+
+function startEncState(sid){
+  const d=SKILL_DEFS[sid];
+  const sk=S.skills[sid];
+  const timerOn=sk.status==='accurate'||sk.status==='mastered';
+  const shiny=rollShiny();
+  const hp=d.enemyHP+(shiny?3:0); // musuh langka sedikit lebih tangguh
+  E={sid,q:genAttackQ(sid),
+    enemyHP:hp,enemyMaxHP:hp,shiny,
+    turn:0,isDefend:false,subQ:null,lastQ:null,defendDone:false,recordShown:false,
+    skillActive:false,
+    timerOn,ended:false
+  };
+}
+// Kapan giliran BERTAHAN (AKM) dipicu? Tiap 4 giliran, ATAU — khusus Penjumlahan —
+// JAMINAN minimal 1× saat HP musuh turun ≤ separuh (supaya soal AKM pasti kebagian
+// sebelum musuh keburu kalah; tanpa ini, musuh HP-rendah mati dulu & AKM tak pernah muncul).
+function shouldDefendTurn(){
+  if(E.turn%ENEMY_SKILL_EVERY===0) return true;
+  const d=SKILL_DEFS[E.sid];
+  if(d.op==='add' && !E.defendDone && E.enemyHP>0 && E.enemyHP<=E.enemyMaxHP*0.5) return true;
+  return false;
+}
+
+// ═══════════════════════════════════════════
+// SCREEN
+// ═══════════════════════════════════════════
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById('s-'+id).classList.add('on');
+}
+
+// ═══════════════════════════════════════════
+// FEEDBACK & TOAST
+// ═══════════════════════════════════════════
+function flash(emoji,ms){
+  ms=ms||700;
+  const t=document.getElementById('fb-txt');
+  t.textContent=emoji;t.className='fb-text show';
+  setTimeout(()=>{t.className='fb-text hide';setTimeout(()=>t.className='fb-text',350);},ms);
+}
+function showToast(msg,ms){
+  ms=ms||2200;
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show';
+  setTimeout(()=>el.className='toast',ms);
+}
+function floatDmg(txt,color,x,y){
+  const el=document.createElement('div');
+  el.className='float-dmg';el.textContent=txt;
+  el.style.cssText=`left:${x}px;top:${y}px;color:${color}`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+// ═══════════════════════════════════════════
+// STAT SYSTEM
+// ═══════════════════════════════════════════
+function addStatXP(statKey, amount){
+  const prev=Math.floor(S.player.statXP[statKey]/10);
+  S.player.statXP[statKey]+=amount;
+  const next=Math.floor(S.player.statXP[statKey]/10);
+  if(next>prev){
+    // level up this stat
+    const names={kuat:'💪 KUAT',tegar:'🛡️ TEGAR',pintar:'✨ PINTAR',gesit:'⚡ GESIT'};
+    const effects={
+      kuat:`Damage ↑ (sekarang ${computeDamage(S.player)})`,
+      tegar:`Max HP ↑ (sekarang ${computeMaxHP(S.player)})`,
+      pintar:`Max Mana ↑, Miss% ↓`,
+      gesit:`Timer ↑ (sekarang ${computeTimer(S.player)}s)`
+    };
+    showToast(`${names[statKey]} Lv.${next}! ${effects[statKey]}`,2500);
+    // update max HP/Mana if relevant
+    if(statKey==='tegar'){S.player.hp=Math.min(S.player.hp,computeMaxHP(S.player));}
+    if(statKey==='pintar'){S.player.mana=Math.min(S.player.mana,computeMaxMana(S.player));}
+  }
+}
+
+function renderStatPills(containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  const st=S.player.statXP;
+  const lv=k=>Math.floor(st[k]/10);
+  el.innerHTML=`
+    <span class="stat-pill sp-kuat">💪${lv('kuat')}</span>
+    <span class="stat-pill sp-tegar">🛡️${lv('tegar')}</span>
+    <span class="stat-pill sp-pintar">✨${lv('pintar')}</span>
+    <span class="stat-pill sp-gesit">⚡${lv('gesit')}</span>`;
+}
+
+// ═══════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════
+function stopTimer(){clearInterval(timerIv);timerIv=null;}
+function startTimer(){
+  stopTimer();
+  timerLeft=computeTimer(S.player);
+  updateTimerBar();
+  timerIv=setInterval(()=>{timerLeft--;updateTimerBar();if(timerLeft<=0){stopTimer();G.timedOut();}},1000);
+}
+function updateTimerBar(){
+  const fill=document.getElementById('timer-fill');if(!fill)return;
+  const total=computeTimer(S.player);
+  fill.style.width=((timerLeft/total)*100)+'%';
+  fill.className='timer-fill'+(timerLeft<=4?' danger':'');
+}
+
+// ═══════════════════════════════════════════
+// ENCOUNTER RENDER
+// ═══════════════════════════════════════════
+function renderEncHUD(){
+  const p=S.player;
+  const maxHP=computeMaxHP(p), maxMP=computeMaxMana(p);
+  document.getElementById('enc-hero-name').textContent=HEROES[p.hero||'adira'].name;
+  document.getElementById('enc-hp-val').textContent=`${p.hp}/${maxHP}`;
+  document.getElementById('enc-hp-fill').style.width=`${Math.max(0,p.hp/maxHP*100)}%`;
+  document.getElementById('enc-mp-val').textContent=`${p.mana}/${maxMP}`;
+  document.getElementById('enc-mp-fill').style.width=`${Math.max(0,p.mana/maxMP*100)}%`;
+  document.getElementById('enc-streak').textContent='×'+S.skills[E.sid].streak;
+  // skill button
+  const sb=document.getElementById('skill-btn');
+  sb.className='skill-btn'+(p.mana>=maxMP?' on':'');
+}
+function renderEncEnemy(){
+  const d=SKILL_DEFS[E.sid];
+  document.getElementById('enc-ename').textContent=(E.shiny?'✨ ':'')+d.enemyName+(E.shiny?' LANGKA':'');
+  const em=document.getElementById('enc-emoji');
+  if(!setSprite(em,'enemy_'+E.sid,88)) em.textContent=d.icon;
+  em.style.filter=E.shiny?'drop-shadow(0 0 14px var(--gold))':'';
+  renderEnemyHP();
+}
+function renderEnemyHP(){
+  const pct=Math.max(0,E.enemyHP/E.enemyMaxHP*100);
+  document.getElementById('enc-enemy-hp-val').textContent=`${E.enemyHP}/${E.enemyMaxHP}`;
+  document.getElementById('enc-enemy-hp-fill').style.width=pct+'%';
+  const fill=document.getElementById('enc-enemy-hp-fill');
+  fill.style.background=pct>50?'var(--green)':pct>25?'var(--gold)':'var(--danger)';
+}
+function renderQuestion(){
+  const q=E.q;
+  const qEl=document.getElementById('enc-q');
+  qEl.textContent=qText(q);
+  qEl.classList.toggle('story',!!q.story); // soal cerita → font lebih kecil & rata kiri
+  // label tingkat (Penjumlahan): ringan = serangan kita, AKM = bertahan bernalar
+  let sub='';
+  if(q.tier==='akm') sub='🧠 Soal AKM — pikirkan ceritanya'; // semua operasi (ITEM 1)
+  else if(q.op==='add'&&q.tier==='ringan') sub='⚡ Serangan ringan';
+  if(!sub&&q.hard) sub='⚠️ Serangan Khusus Musuh!';
+  document.getElementById('enc-q-sub').textContent=sub;
+  const wb=document.getElementById('why-btn');
+  if(wb) wb.style.display=(E.lastQ&&!E.isDefend)?'':'none';
+  document.getElementById('inp-enc').value='';
+}
+function renderDefendMode(on, skillName){
+  const banner=document.getElementById('defend-banner');
+  banner.classList.toggle('on',on);
+  if(on){
+    document.getElementById('def-skill-name').textContent=skillName||'';
+    document.getElementById('enc-action-btn').textContent='Tangkis! 🛡️';
+    document.getElementById('enc-action-btn').style.background='var(--danger)';
+  }else{
+    document.getElementById('enc-action-btn').textContent='Serang! ⚔️';
+    document.getElementById('enc-action-btn').style.background='var(--green)';
+  }
+}
+
+// ═══════════════════════════════════════════
+// SPACED REPETITION
+// ═══════════════════════════════════════════
+function scheduleReview(sid){
+  const sk=S.skills[sid];
+  sk.nextReviewSession=S.session.count+sk.reviewInterval;
+  sk.reviewInterval=Math.min(7,sk.reviewInterval*2);
+}
+function dueReviews(){
+  return SKILL_ORDER.filter(id=>{
+    const sk=S.skills[id];
+    return sk.status==='mastered'&&sk.nextReviewSession!==null&&S.session.count>=sk.nextReviewSession;
+  });
+}
+
+// ═══════════════════════════════════════════
+// RECORD ANSWER & MASTERY
+// ═══════════════════════════════════════════
+function recordAnswer(correct, isDefend){
+  if(E&&E.q)E.lastQ=Object.assign({},E.q); // simpan soal terakhir untuk tombol "kenapa?"
+  const sk=S.skills[E.sid];
+  sk.attempts++;
+  if(correct){sk.correct++;sk.streak++;}else{sk.streak=0;}
+  const arr=sk.sessionAnswers;
+  arr.push(correct);if(arr.length>10)arr.shift();
+  sk.accuracyRecent=arr.filter(Boolean).length/arr.length;
+  sv();
+  document.getElementById('enc-streak').textContent='×'+sk.streak;
+  if(correct&&!isDefend){
+    // stat XP from attack
+    const d=SKILL_DEFS[E.sid];
+    addStatXP(d.xpStat,1);
+    // speed XP if fast answer
+    if(timerLeft>computeTimer(S.player)*0.5){addStatXP('gesit',1);}
+    sv();
+  }
+  if(correct&&isDefend){addStatXP('tegar',1);sv();}
+  if(correct){missionProgress('correct',1);missionProgress('streak',sk.streak,true);}
+  // M5: kesulitan adaptif — hanya dari SERANGAN RINGAN Penjumlahan (yang dibangkitkan adaptif)
+  if(!isDefend && SKILL_DEFS[E.sid].op==='add' && E.q && E.q.tier==='ringan'){ adaptAddDifficulty(correct); }
+  // M6: imbalan usaha (mencoba) + rekor diri
+  S.player.effort=(S.player.effort||0)+1;
+  if(!S.player.records) S.player.records={bestStreak:0};
+  const rw=answerRewards(correct, sk.streak, S.player.records.bestStreak, S.player.effort);
+  if(rw.effortXP){ addStatXP(SKILL_DEFS[E.sid].xpStat,rw.effortXP); showToast('💗 Semangat berlatihmu tumbuh!',1700); }
+  S.player.records.bestStreak=rw.newBest;
+  if(rw.celebrateRecord && E && !E.recordShown){ E.recordShown=true; addStatXP('gesit',rw.recordXP); showToast(`🏆 Rekor baru! Beruntun terpanjang: ${sk.streak}×`,2400); }
+  if(correct) progOnCorrect(sk.streak); // M7: kemajuan hari ini vs kemarin
+  sv();
+  checkMastery();
+}
+
+function checkMastery(){
+  if(E.ended)return;
+  const sk=S.skills[E.sid];
+  if(sk.status==='mastered')return;
+  // → accurate
+  if(sk.status==='learning'&&sk.accuracyRecent>=0.85&&sk.streak>=3){
+    sk.status='accurate';E.timerOn=true;
+    document.getElementById('timer-wrap').style.display='';
+    sv();flash('⏱️',900);return;
+  }
+  // → mastered
+  if(sk.status==='accurate'&&sk.accuracyRecent>=0.9&&sk.streak>=5&&sk.correct>=8){
+    sk.status='mastered';
+    addStatXP(SKILL_DEFS[E.sid].xpStat,MASTERY_XP); // M6: bonus milestone penguasaan
+    S.player.level++;S.player.jobLevel=(S.player.jobLevel||0)+1;
+    scheduleReview(E.sid);
+    const nxt=SKILL_DEFS[E.sid].next;
+    if(nxt&&S.skills[nxt].status==='locked')S.skills[nxt].status='learning';
+    sv();E.ended=true;stopTimer();accruePlay(); // skill dikuasai → pertarungan berakhir, catat waktu
+    setTimeout(()=>renderMastery(E.sid),600);
+  }
+}
+
+function checkJobUp(){
+  const jl=S.player.jobLevel||0;
+  if(!S.player.job&&jl>=2){pendingJobUp=true;}
+}
+
+// ═══════════════════════════════════════════
+// GUIDE
+// ═══════════════════════════════════════════
+function buildGuideVisual(q){
+  const{a,b,ans,op}=q;
+  let vis='';
+  if(op==='frac'){
+    const den=q.den, whole=q.whole, part=ans, fsym=FRAC_SYM[den]||('1/'+den);
+    const pg=Array.from({length:den},(_,i)=>`<span style="${i===0?'color:var(--gold)':'opacity:.4'}">${'●'.repeat(part)}</span>`).join('<span style="opacity:.25"> | </span>');
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Bagi <strong style="color:#fff">${whole}</strong> jadi <strong style="color:#fff">${den}</strong> bagian sama besar</p>
+      <div style="font-size:20px;letter-spacing:3px;margin-bottom:4px">${pg}</div>
+      <div class="guide-arrow">↓ ambil 1 bagian (yang berwarna)</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:4px">${fsym} dari ${whole} = ${part} ✓</div></div>`;
+  }else if(op==='sub'){
+    if(a<=15){
+      const kept='●'.repeat(ans), gone='●'.repeat(b);
+      vis=`<div class="guide-step">
+        <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Mulai dari <strong style="color:#fff">${a}</strong>, ambil <strong style="color:var(--danger)">${b}</strong></p>
+        <div style="font-size:20px;letter-spacing:3px">${kept}<span style="color:var(--danger);opacity:.5;text-decoration:line-through">${gone}</span></div>
+        <div class="guide-arrow">↓ sisa yang tidak dicoret</div>
+        <div style="font-size:20px;letter-spacing:3px;color:var(--green)">${kept||'(habis)'}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">${a} − ${b} = ${ans} ✓</div></div>`;
+    }else{
+      const r=b%10, t=b-r;
+      vis=`<div class="guide-step">
+        <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:7px">Kurangi sedikit demi sedikit:</p>
+        <div style="font-size:18px;font-weight:700">${a} − ${b}</div>
+        <div class="guide-arrow">= ${a} − ${t} − ${r}</div>
+        <div style="font-size:15px;color:rgba(255,255,255,.7)">${a} − ${t} = <strong style="color:#fff">${a-t}</strong></div>
+        <div style="font-size:15px;color:rgba(255,255,255,.7)">${a-t} − ${r} = <strong style="color:var(--green)">${ans}</strong></div></div>`;
+    }
+  }else if(op==='mul'){
+    const terms=a<=6?Array(a).fill(b).join(' + '):`${b} + … (${a}×)`;
+    const rows=Array.from({length:Math.min(a,6)},()=>'●'.repeat(Math.min(b,10))).map(r=>`<div style="letter-spacing:3px">${r}</div>`).join('');
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px"><strong style="color:#fff">${a}</strong> kelompok, isi <strong style="color:#fff">${b}</strong> tiap kelompok</p>
+      <div style="font-size:16px;line-height:1.45;margin-bottom:6px">${rows}</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.7)">${a} × ${b} = ${terms}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:5px">= ${ans} ✓</div></div>`;
+  }else if(op==='div'){
+    const rows=Array.from({length:Math.min(b,8)},()=>'●'.repeat(Math.min(ans,12))).map(r=>`<div style="letter-spacing:3px">${r}</div>`).join('');
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Bagi <strong style="color:#fff">${a}</strong> ke <strong style="color:#fff">${b}</strong> kelompok sama</p>
+      <div style="font-size:16px;line-height:1.45;margin-bottom:6px">${rows}</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.7)">${b} kelompok × ${ans} = ${a}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:5px">${a} ÷ ${b} = ${ans} ✓</div></div>`;
+  }else{
+    if(a<=12&&b<=12){
+      const dA='●'.repeat(a),dB='●'.repeat(b);
+      vis=`<div class="guide-step">
+        <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Mulai dari <strong style="color:#fff">${a}</strong></p>
+        <div style="font-size:20px;letter-spacing:3px">${dA}</div>
+        <div class="guide-arrow">↓ tambahkan ${b}</div>
+        <div style="font-size:20px;letter-spacing:3px">${dA}<span style="color:var(--gold)">${dB}</span></div>
+        <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">${a} + ${b} = ${ans} ✓</div></div>`;
+    }else{
+      const h=Math.floor(b/2);
+      vis=`<div class="guide-step">
+        <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:7px">Pecah jadi langkah kecil:</p>
+        <div style="font-size:18px;font-weight:700">${a} + ${b}</div>
+        <div class="guide-arrow">= ${a} + ${h} + ${b-h}</div>
+        <div style="font-size:15px;color:rgba(255,255,255,.7)">${a} + ${h} = <strong style="color:#fff">${a+h}</strong></div>
+        <div style="font-size:15px;color:rgba(255,255,255,.7)">${a+h} + ${b-h} = <strong style="color:var(--green)">${ans}</strong></div></div>`;
+    }
+  }
+  return vis;
+}
+
+// petunjuk SINGKAT (1 baris) untuk soal yang terlewat — sertakan jawaban benarnya
+function guideHint(q){
+  const {a,b,ans,op}=q;
+  if(op==='sub') return `Mulai dari ${a}, ambil ${b} → sisanya ${ans}.`;
+  if(op==='mul') return `${a} kelompok berisi ${b} → ${b} ditambah ${a} kali = ${ans}.`;
+  if(op==='div') return `Bagi ${a} rata ke ${b} kelompok → tiap kelompok dapat ${ans}.`;
+  if(op==='frac'){const f=FRAC_SYM[q.den]||('1/'+q.den);return `${f} dari ${q.whole}: bagi jadi ${q.den} bagian sama, ambil 1 → ${ans}.`;}
+  return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
+}
+// soal TEBUSAN serupa — tier sama dgn yang terlewat (AKM → AKM, ringan → ringan)
+function genRedeemQ(missed){
+  const sid=missed.sid;
+  if(missed.tier==='akm') return genAkmQ(sid); // tebusan AKM ikut operasi yg terlewat
+  return genQ(sid);
+}
+// atur tampilan layar guide: mode SALAH (tebusan) vs mode "kenapa?" (penasaran)
+function setGuideMode(why){
+  document.getElementById('guide-redeem').style.display=why?'none':'';
+  document.getElementById('guide-skip').style.display=why?'none':'';
+  document.getElementById('guide-back').style.display=why?'':'none';
+  document.getElementById('guide-eyebrow').textContent=why?'Penasaran? 🤔':'Hampir — yuk tebus!';
+  document.getElementById('guide-h2').textContent=why?'Kenapa jawabannya begitu?':'Petunjuk kilat';
+  document.getElementById('guide-visual').style.display='none'; // detail selalu mulai tersembunyi (bisa di-skip)
+  document.getElementById('guide-detail-toggle').textContent='Lihat caranya 👁️';
+}
+// isi petunjuk Pijar (1 baris) + detail CPA (tersembunyi)
+function renderExplain(q){
+  document.getElementById('guide-visual').innerHTML=buildGuideVisual(q);
+  const name=S.player.companion?S.player.companion.name:'Pijar';
+  const emoji=S.player.companion?compStage(S.player.companion.bond).emoji:'🔥';
+  document.getElementById('guide-comp').innerHTML=`<span style="font-size:20px;line-height:1">${emoji}</span><span><strong style="color:var(--gold)">${name}:</strong> ${guideHint(q)}</span>`;
+}
+// SALAH → petunjuk singkat + soal tebusan serupa
+function renderGuide(missed){
+  setGuideMode(false);
+  renderExplain(missed);
+  E.subQ=genRedeemQ(missed);
+  const subEl=document.getElementById('guide-subq');
+  subEl.textContent=qText(E.subQ);
+  subEl.style.fontSize=E.subQ.story?'clamp(16px,4.6vw,20px)':'clamp(20px,7vw,30px)';
+  document.getElementById('inp-guide').value='';
+}
+
+// ═══════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════
+function renderMap(){
+  const p=S.player;
+  const maxHP=computeMaxHP(p);
+  document.getElementById('map-hi').textContent=`Halo, ${p.name}!`;
+  document.getElementById('map-lvl').textContent=`Lv. ${p.level}`;
+  const jobInfo=p.job?JOBS[p.job]:{name:'Petarung Muda',icon:'🧒'};
+  document.getElementById('map-job').textContent=`${jobInfo.icon} ${jobInfo.name} · Job Lv.${p.jobLevel||0}`;
+  document.getElementById('map-hp-val').textContent=`${p.hp}/${maxHP}`;
+  document.getElementById('map-hp-fill').style.width=`${Math.max(0,p.hp/maxHP*100)}%`;
+  renderStatPills('map-stat-pills');
+  // companion card
+  if(S.player.companion){
+    const c=S.player.companion, st=compStage(c.bond), nx=compNextStage(c.bond);
+    document.getElementById('map-comp-emoji').textContent=st.emoji;
+    setSprite(document.getElementById('map-comp-emoji'),'pijar',30);
+    document.getElementById('map-comp-name').textContent=c.name;
+    document.getElementById('map-comp-title').textContent=nx?st.title:st.title+' ✦ MAKS';
+    const pct = nx ? Math.round((c.bond-st.min)/(nx.min-st.min)*100) : 100;
+    document.getElementById('map-comp-bond').style.width=Math.max(4,Math.min(100,pct))+'%';
+  }
+  // M8: bisikan adab Pijar sesekali (kerja sama / tiap anak beda kecepatan), subtil
+  const ps=document.getElementById('map-pijar-say');
+  if(ps){ const a=maybeAdab(Math.random()<0.5?'friends':'pace',0.28); if(a){ps.textContent='💬 '+a;ps.style.display='';}else{ps.style.display='none';} }
+  // quest banner (narasi)
+  const rg=restoredRegions();
+  const mq=document.getElementById('map-quest');
+  if(mq) mq.textContent=`📜 Pulihkan angka yang dicuri Kekacauan — ${rg.restored}/${rg.total} wilayah pulih`;
+  // misi harian
+  const ml=document.getElementById('mission-list'), mc=document.getElementById('map-missions');
+  if(ml&&mc){
+    if(S.meta&&S.meta.missions&&S.meta.missions.length){
+      mc.style.display='';
+      ml.innerHTML=S.meta.missions.map(m=>{
+        const pct=Math.round(m.progress/m.target*100);
+        return `<div style="margin-bottom:8px;opacity:${m.done?'.55':'1'}">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+            <span>${m.done?'✅':'⬜'} ${m.label}</span>
+            <span style="color:rgba(255,255,255,.45)">${m.progress}/${m.target}</span>
+          </div>
+          <div class="bar-track" style="height:5px"><div class="bar-fill" style="width:${pct}%;background:${m.done?'var(--green)':'var(--gold)'}"></div></div>
+        </div>`;
+      }).join('');
+      const done=S.meta.missions.filter(m=>m.done).length;
+      document.getElementById('mission-count').textContent=`${done}/${S.meta.missions.length} selesai`;
+    } else { mc.style.display='none'; }
+  }
+  // M7: kartu kemajuan diri (kemarin → hari ini), tanpa banding antar-anak
+  const pg=S.meta&&S.meta.prog, pe=document.getElementById('map-progress');
+  if(pe){
+    if(pg){
+      pe.style.display='';
+      document.getElementById('prog-rec').textContent=`🏆 Rekor beruntun: ${(S.player.records&&S.player.records.bestStreak)||0}×`;
+      const y=pg.yesterday;
+      let head = y ? `Kemarin <strong>${y.correct}</strong> → Hari ini <strong style="color:var(--gold)">${pg.todayCorrect}</strong> soal benar`
+                   : `Hari ini: <strong style="color:var(--gold)">${pg.todayCorrect}</strong> soal benar`;
+      if(y&&y.correct>0){ head += pg.todayCorrect>y.correct ? ` · 🎉 lampaui kemarin!` : ` · ${y.correct-pg.todayCorrect+1} lagi utk lampaui kemarin`; }
+      document.getElementById('prog-body').innerHTML = head +
+        `<div style="margin-top:4px;color:rgba(255,255,255,.5)">Menang hari ini: ${pg.todayWins} · 🔥 terbaik hari ini: ${pg.todayBestStreak}×</div>`;
+    } else pe.style.display='none';
+  }
+  const due=dueReviews();
+  document.getElementById('map-sub').textContent=due.length?`${due.length} skill jadwal review!`:'Pilih wilayah untuk berlatih.';
+  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰'};
+  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR'};
+  let html='',curGroup=null;
+  for(const id of SKILL_ORDER){
+    const sk=S.skills[id],d=SKILL_DEFS[id];
+    if(d.group!==curGroup){
+      curGroup=d.group;
+      html+=`<div style="display:flex;align-items:center;gap:7px;margin:14px 2px 7px"><span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);font-family:ui-monospace,monospace">${GICON[curGroup]||'•'} ${curGroup}</span><span style="font-size:9px;color:rgba(255,255,255,.28)">→ ${GSTAT[curGroup]||''}</span></div>`;
+    }
+    const locked=sk.status==='locked',isDue=due.includes(id);
+    let badge,bc;
+    if(isDue){badge='Review!';bc='badge-review';}
+    else if(locked){badge='Terkunci';bc='badge-locked';}
+    else if(sk.status==='learning'){badge='Belajar';bc='badge-learning';}
+    else if(sk.status==='accurate'){badge='Akurat ⏱';bc='badge-accurate';}
+    else{badge='Dikuasai';bc='badge-mastered';}
+    const acc=sk.attempts>0?Math.round(sk.correct/sk.attempts*100):0;
+    html+=`<div class="skill-row${locked?' locked':''}" ${!locked?`onclick="G.pickSkill('${id}')"`:''}><span class="sr-icon">${d.icon}</span>
+      <div class="sr-info"><div class="sr-name">${d.name}</div><div class="sr-desc">${d.desc}${sk.attempts>0?' · Akurasi '+acc+'%':''}</div></div>
+      <div class="badge ${bc}">${badge}</div></div>`;
+  }
+  document.getElementById('map-skills').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+// MASTERY SCREEN
+// ═══════════════════════════════════════════
+function renderMastery(sid){
+  const sk=S.skills[sid],d=SKILL_DEFS[sid];
+  const acc=Math.round(sk.accuracyRecent*100);
+  const ico=document.getElementById('mas-ico');
+  ico.classList.remove('celebrate');void ico.offsetWidth;ico.classList.add('celebrate');
+  document.getElementById('mas-title').textContent=d.name+' Dikuasai!';
+  document.getElementById('mas-desc').textContent=`Selamat, ${S.player.name}! Kamu benar-benar bisa ${d.name.toLowerCase()}.`;
+  addBond(5); // companion tumbuh pesat saat skill dikuasai
+  missionProgress('master',1);
+  // cerita: apakah satu wilayah baru saja pulih sepenuhnya?
+  const grp=d.group;
+  const regionDone=SKILL_ORDER.filter(x=>SKILL_DEFS[x].group===grp).every(x=>S.skills[x].status==='mastered');
+  if(regionDone) setTimeout(()=>showToast(`🌟 ${STORY_REGIONS[grp]||grp} pulih sepenuhnya! Cahaya kembali ke negeri.`,3200),1500);
+  checkJobUp();
+  const jlText=pendingJobUp?'<br><strong style="color:var(--gold)">✦ Kamu boleh naik job sekarang!</strong>':'';
+  document.getElementById('mas-stats').innerHTML=`
+    <div class="mv-stat"><span>Skill</span><span class="mv-val">${d.name}</span></div>
+    <div class="mv-stat"><span>Akurasi</span><span class="mv-val">${acc}%</span></div>
+    <div class="mv-stat"><span>Level baru</span><span class="mv-val">Lv. ${S.player.level} 🎉</span></div>
+    <div class="mv-stat"><span>Review berikutnya</span><span class="mv-val">Sesi ke-${sk.nextReviewSession}</span></div>
+    ${jlText}`;
+  document.getElementById('mas-cta').textContent=pendingJobUp?'Pilih Job →':'Lihat Peta →';
+  show('mas');
+}
+
+// ═══════════════════════════════════════════
+// STATS SCREEN
+// ═══════════════════════════════════════════
+function renderStats(){
+  const p=S.player;
+  document.getElementById('stats-name').textContent=`${p.name} · Lv. ${p.level}`;
+  const lv=k=>Math.floor(p.statXP[k]/10);
+  const xpPct=k=>{const x=p.statXP[k]%10;return x*10;};
+  const effects={
+    kuat:`Damage: ${computeDamage(p)}`,
+    tegar:`Max HP: ${computeMaxHP(p)}`,
+    pintar:`Max Mana: ${computeMaxMana(p)} · Miss: ${computeMissChance(p)}%`,
+    gesit:`Timer: ${computeTimer(p)}s`
+  };
+  const defs=[
+    {k:'kuat',ico:'💪',name:'KUAT',c:'var(--c-kuat)',tumbuh:'Penjumlahan benar'},
+    {k:'tegar',ico:'🛡️',name:'TEGAR',c:'var(--c-tegar)',tumbuh:'Pengurangan / tangkis'},
+    {k:'pintar',ico:'✨',name:'PINTAR',c:'var(--c-pintar)',tumbuh:'Perkalian / pembagian / pecahan'},
+    {k:'gesit',ico:'⚡',name:'GESIT',c:'var(--c-gesit)',tumbuh:'Jawab cepat < ½ waktu'}
+  ];
+  document.getElementById('stat-detail').innerHTML=defs.map(d=>`
+    <div class="sd-card">
+      <div class="sd-head"><span class="sd-ico">${d.ico}</span><div><div class="sd-name" style="color:${d.c}">${d.name}</div><div class="sd-xp">Lv.${lv(d.k)} · ${p.statXP[d.k]} XP</div></div></div>
+      <div class="sd-bar"><div class="sd-bar-fill" style="--c:${d.c};width:${xpPct(d.k)}%"></div></div>
+      <div class="sd-effect">${effects[d.k]}<br><span style="font-size:10px;color:rgba(255,255,255,.3)">Tumbuh dari: ${d.tumbuh}</span></div>
+    </div>`).join('');
+  let sh='';
+  for(const id of SKILL_ORDER){
+    const sk=S.skills[id],d=SKILL_DEFS[id];
+    if(sk.status==='locked')continue;
+    const acc=sk.attempts>0?Math.round(sk.correct/sk.attempts*100):0;
+    const sm={learning:'Belajar',accurate:'Akurat',mastered:'Dikuasai'};
+    sh+=`<div class="card"><p class="eyebrow" style="margin-bottom:5px">${d.name}</p>
+      <div class="mv-stat"><span>Status</span><span class="mv-val">${sm[sk.status]||sk.status}</span></div>
+      <div class="mv-stat"><span>Benar / Total</span><span class="mv-val">${sk.correct}/${sk.attempts}</span></div>
+      <div class="mv-stat"><span>Akurasi</span><span class="mv-val">${acc}%</span></div>
+      <div class="mv-stat"><span>Beruntun</span><span class="mv-val">${sk.streak}×</span></div></div>`;
+  }
+  document.getElementById('stats-skills').innerHTML=sh||'<p class="muted" style="text-align:center;padding:16px 0">Belum ada data skill.</p>';
+}
+
+// ═══════════════════════════════════════════
+// DIAGNOSIS DATA
+// ═══════════════════════════════════════════
+// Diagnosis ACAK tiap main — urutan band tetap (0-2 tambah, 3-4 kurang, 5-7 kali)
+// supaya skor per-domain tetap bisa dibaca. Tiap slot makin sulit.
+// Prolog "Sang Legenda": 16 soal, 4 gelombang (➕➖✖️➗), tiap gelombang makin sulit.
+// Urutan band tetap: 0-3 add, 4-7 sub, 8-11 mul, 12-15 div.
+function genPrologQs(){
+  const sA=rand(6,12), sB=rand(20,40), sC=rand(45,90);
+  return [
+    {a:rand(1,4),   b:rand(2,5),   op:'add'},
+    {a:rand(5,9),   b:rand(4,9),   op:'add'},
+    {a:rand(10,20), b:rand(6,15),  op:'add'},
+    {a:rand(23,55), b:rand(13,44), op:'add'},
+    {a:sA, b:rand(2,sA-1),   op:'sub'},
+    {a:rand(12,19), b:rand(3,11), op:'sub'},
+    {a:sB, b:rand(6,18),     op:'sub'},
+    {a:sC, b:rand(12,sC-8),  op:'sub'},
+    {a:rand(2,3), b:rand(2,4),  op:'mul'},
+    {a:rand(3,5), b:rand(3,6),  op:'mul'},
+    {a:rand(4,7), b:rand(5,8),  op:'mul'},
+    {a:rand(6,9), b:rand(7,10), op:'mul'},
+    (function(){const b=rand(2,3),q=rand(2,4);return {a:b*q,b,op:'div'};})(),
+    (function(){const b=rand(2,4),q=rand(3,5);return {a:b*q,b,op:'div'};})(),
+    (function(){const b=rand(3,6),q=rand(4,7);return {a:b*q,b,op:'div'};})(),
+    (function(){const b=rand(5,9),q=rand(6,9);return {a:b*q,b,op:'div'};})()
+  ].map(q=>({...q,ans:ansOf(q.a,q.b,q.op)}));
+}
+
+// ── INSTRUMEN DIAGNOSA SETARA (pre = prolog, post = uji akhir) ──
+// Satu generator dipakai pre & post → kesulitan dijamin SETARA (soal beda, bobot sama).
+// 16 soal "knowing" (genPrologQs) + 4 soal "nalar" cerita (1 per operasi, kesulitan TETAP).
+const DIAG_MAX=4;                                   // tiap topik & nalar dinilai dari 4 soal
+const DIAG_NALAR_SID={add:'add_0_20',sub:'sub_0_20',mul:'mul_1_5',div:'div_1_5'}; // sid tetap → non-adaptif
+function genDiagNalarQ(op){ return {...genAkmQ(DIAG_NALAR_SID[op]), phase:'nalar'}; }
+function genDiagSet(){
+  const knowing=genPrologQs().map(q=>({...q,phase:'knowing'}));
+  const nalar=['add','sub','mul','div'].map(genDiagNalarQ);
+  return knowing.concat(nalar); // 20 soal
+}
+// skor per (operasi, fase) dari array soal + array hasil boolean
+function diagScores(qs,res){
+  const by=(op,phase)=>qs.reduce((n,q,i)=>n+((q.op===op&&q.phase===phase&&res[i])?1:0),0);
+  return {
+    tambah:by('add','knowing'), kurang:by('sub','knowing'),
+    kali:by('mul','knowing'),   bagi:by('div','knowing'),
+    nalar:qs.reduce((n,q,i)=>n+((q.phase==='nalar'&&res[i])?1:0),0)
+  };
+}
+
+// ═══════════════════════════════════════════
+// UJIAN KEKUATAN PENJUMLAHAN — diagnosa adaptif + berwaktu
+// Kekuatan = benar DAN cepat. Cepat-tapi-salah TIDAK dihitung (tetap turun).
+// ═══════════════════════════════════════════
+function nowMs(){ try{return performance.now();}catch(e){try{return Date.now();}catch(_){return 0;}} }
+// rentang angka per tingkat (1=termudah … 6=tersulit), tetap Penjumlahan
+const TRIAL_LEVELS=[null,
+  {maxA:5,  maxSum:10},  {maxA:9,  maxSum:10},   // L1, L2
+  {maxA:14, maxSum:20},  {maxA:19, maxSum:20},   // L3, L4
+  {maxA:45, maxSum:100}, {maxA:80, maxSum:100}   // L5, L6
+];
+const TRIAL_N=6; // jumlah soal ujian (5–8)
+function genTrialQ(level){
+  const L=TRIAL_LEVELS[Math.max(1,Math.min(6,level))];
+  let a,b,t=0;
+  do{a=rand(1,L.maxA);b=rand(1,L.maxA);t++;}while((a+b>L.maxSum||a+b<2)&&t<80);
+  if(a+b>L.maxSum){a=Math.floor(L.maxSum/2);b=L.maxSum-a;}
+  return{a,b,op:'add',ans:a+b,level,tier:'ringan'};
+}
+function fastThreshold(level){ return 3 + level*0.8; } // detik — jendela "cepat" makin longgar utk soal sulit
+// langkah adaptif (staircase): benar-cepat naik 2, benar-lambat naik 1, salah turun 1 (kecepatan diabaikan)
+function trialAdapt(level,correct,fast){
+  let L=level;
+  if(correct) L += (fast?2:1);
+  else        L -= 1;
+  return Math.max(1,Math.min(6,L));
+}
+function trialSkill(level){ return level<=2?'add_0_10':(level<=4?'add_0_20':'add_0_100'); }
+// gabung hasil ujian dgn penempatan Prolog: kalau Prolog menaruh di Penjumlahan, ujian yang menentukan;
+// kalau Prolog menaruh lebih jauh (anak jago semua operasi), hormati itu.
+function trialFinalStart(prologStart, addLevel){
+  return SKILL_DEFS[prologStart].op==='add' ? trialSkill(addLevel) : prologStart;
+}
+
+// ═══════════════════════════════════════════
+// M5 — KESULITAN ADAPTIF saat bermain (Penjumlahan)
+// Staircase berbobot menuju ~80% benar (zona belajar). Ringan, client-side, tanpa IRT.
+// Benar → naik sedikit (+0.2), salah → turun lebih besar (−0.8) → setimbang di ~80% benar.
+// ═══════════════════════════════════════════
+const ADAPT_TARGET=0.8, ADAPT_STEP=1.0;
+function addPlayLevel(){
+  const f=(S&&S.player&&S.player.addLevelF!=null)?S.player.addLevelF:((S&&S.player&&S.player.addLevel)||3);
+  // floor (bukan round): pemain bertahan di tingkat lebih mudah lebih lama → lebih ramah anak lemah
+  return Math.max(1,Math.min(6,Math.floor(f)));
+}
+function adaptAddDifficulty(correct){
+  if(!S||!S.player) return;
+  if(S.player.addLevelF==null) S.player.addLevelF=(S.player.addLevel||3);
+  S.player.addLevelF += correct ? ADAPT_STEP*(1-ADAPT_TARGET) : -ADAPT_STEP*ADAPT_TARGET; // +0.2 / −0.8
+  S.player.addLevelF = Math.max(1,Math.min(6,S.player.addLevelF));
+}
+// soal SERANGAN (ringan): Penjumlahan ikut tingkat adaptif; operasi lain seperti biasa
+function genAttackQ(sid){
+  if(SKILL_DEFS[sid].op==='add'){
+    const tq=genTrialQ(addPlayLevel());
+    return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
+  }
+  return genQ(sid);
+}
+
+// ═══════════════════════════════════════════
+// M6 — XP berbasis USAHA & PENGUASAAN (bukan kesulitan soal)
+// Sumber XP: mencoba (tiap N percobaan), menebus setelah salah, pecahkan rekor diri,
+// dan milestone mastery. Capaian kecil tetap dirayakan. Bandingkan anak dgn DIRINYA sendiri.
+// ═══════════════════════════════════════════
+const EFFORT_EVERY=10, REDEEM_XP=1, RECORD_XP=2, MASTERY_XP=3;
+function effortReward(effort){ return effort>0 && effort%EFFORT_EVERY===0; } // hargai "mencoba"
+function answerRewards(correct, streak, bestStreak, effort){
+  const r={effortXP:0, recordXP:0, newBest:bestStreak, celebrateRecord:false};
+  if(effortReward(effort)) r.effortXP=1;
+  if(correct && streak>bestStreak){
+    r.newBest=streak;
+    if(streak>=4){ r.recordXP=RECORD_XP; r.celebrateRecord=true; } // rekor diri yg berarti
+  }
+  return r;
+}
+
+// ═══════════════════════════════════════════
+// MAIN CONTROLLER
+// ═══════════════════════════════════════════
+let TR=null; // konteks ujian kekuatan
+const G={
+
+  newGame(){
+    // cegah hapus progres tak sengaja
+    if(S&&S.player&&S.player.name&&!confirm('Mulai baru akan MENGHAPUS progres yang tersimpan. Yakin mau mulai dari awal?')) return;
+    S=blankState();sv();selectedHero=null;pendingJobUp=false;
+    show('name');setTimeout(()=>document.getElementById('inp-name').focus(),80);
+  },
+  cont(){
+    if(!S||!S.player.name){G.newGame();return;}
+    if(!S.diagDone){show('prolog-intro');return;}
+    G.goMap();
+  },
+
+  confirmName(){
+    const v=document.getElementById('inp-name').value.trim();
+    if(!v){document.getElementById('inp-name').focus();return;}
+    S.player.name=v;
+    // identitas ringan utk pengukuran: kode kelas (opsional) + id stabil per anak
+    if(!S.student) S.student={id:genStudentId(),kelas:''};
+    if(!S.student.id) S.student.id=genStudentId();
+    const kEl=document.getElementById('inp-kelas');
+    if(kEl) S.student.kelas=(kEl.value||'').trim().slice(0,16);
+    sv();
+    show('prolog-intro');
+  },
+
+  // ─── HERO SELECT ───
+  pickHero(h){
+    selectedHero=h;
+    document.querySelectorAll('.hero-card').forEach(c=>c.classList.remove('selected'));
+    document.getElementById('hc-'+h).classList.add('selected');
+    document.getElementById('btn-hero-confirm').style.display='';
+  },
+  confirmHero(){
+    if(!selectedHero)return;
+    S.player.hero=selectedHero;
+    const bonuses=HEROES[selectedHero].bonuses;
+    for(const k in bonuses)S.player.statXP[k]+=bonuses[k]*10;
+    S.player.hp=computeMaxHP(S.player);
+    S.player.mana=computeMaxMana(S.player);
+    sv();G.showBuddy();
+  },
+
+  // ─── COMPANION ONBOARDING ───
+  showBuddy(){
+    document.getElementById('inp-buddy').value=(S.player.companion&&S.player.companion.name)||'Pijar';
+    show('buddy');
+    setTimeout(()=>document.getElementById('inp-buddy').focus(),80);
+  },
+  confirmBuddy(){
+    const v=(document.getElementById('inp-buddy').value||'').trim().slice(0,12)||'Pijar';
+    S.player.companion={name:v,bond:0};
+    sv();G._beginGame();
+  },
+  _beginGame(){
+    const s=S.currentSkill;
+    if(S.skills[s]&&S.skills[s].attempts===0&&S.skills[s].status!=='mastered')G._startTeach(s);
+    else G.goMap();
+  },
+
+  // ─── PROLOG: SANG LEGENDA (diagnosis terselubung) ───
+  startPrologFight(){
+    DX={qs:genDiagSet(),cur:0,res:[]}; // 16 knowing + 4 nalar (instrumen pre, setara dgn post)
+    show('prolog');
+    G._showProlog();
+    setTimeout(()=>document.getElementById('inp-prolog').focus(),80);
+  },
+  _showProlog(){
+    const i=DX.cur, q=DX.qs[i], total=DX.qs.length;
+    const waveByOp={add:'➕ JURUS PENJUMLAHAN',sub:'➖ JURUS PENGURANGAN',mul:'✖️ JURUS PERKALIAN',div:'➗ JURUS PEMBAGIAN'};
+    document.getElementById('prolog-wave').textContent = q.phase==='nalar' ? '🧠 JURUS NALAR' : (waveByOp[q.op]||'⚡ JURUS');
+    document.getElementById('prolog-ctr').textContent=`Jurus ${i+1} / ${total}`;
+    const qEl=document.getElementById('prolog-q');
+    qEl.textContent=qText(q);
+    qEl.classList.toggle('story',!!q.story); // soal nalar (cerita) → font lebih kecil & rata kiri
+    const pct=Math.round((1-i/total)*100);
+    document.getElementById('prolog-hp-fill').style.width=pct+'%';
+    document.getElementById('prolog-hp-val').textContent=pct+'%';
+    document.getElementById('inp-prolog').value='';
+    setTimeout(()=>document.getElementById('inp-prolog').focus(),40);
+  },
+  submitProlog(){
+    if(!DX||DX.cur>=DX.qs.length)return;
+    const inp=document.getElementById('inp-prolog');
+    const v=parseInt(inp.value,10);
+    if(isNaN(v)){inp.focus();return;}
+    inp.value=''; // cegah double-submit
+    const q=DX.qs[DX.cur];
+    const correct=(v===q.ans);
+    DX.res.push(correct);
+    const boss=document.getElementById('prolog-boss');
+    const rect=boss.getBoundingClientRect();
+    if(correct){
+      flash('⚡',450);
+      boss.classList.remove('anim-hit');void boss.offsetWidth;boss.classList.add('anim-hit');
+      floatDmg('-'+rand(18,30)+'!','#f5e042',rect.left+rect.width/2,rect.top);
+    }else{
+      boss.classList.remove('anim-shake');void boss.offsetWidth;boss.classList.add('anim-shake');
+      floatDmg('meleset','#9fb0c8',rect.left+rect.width/2,rect.top);
+    }
+    DX.cur++;
+    const pct=Math.round((1-DX.cur/DX.qs.length)*100);
+    document.getElementById('prolog-hp-fill').style.width=pct+'%';
+    document.getElementById('prolog-hp-val').textContent=pct+'%';
+    if(DX.cur>=DX.qs.length){
+      boss.classList.remove('celebrate');void boss.offsetWidth;boss.classList.add('celebrate');
+      setTimeout(()=>G._finishProlog(),750);
+    }else{
+      setTimeout(()=>G._showProlog(),430);
+    }
+  },
+  _finishProlog(){
+    const r=DX.res, qs=DX.qs;
+    const sc=diagScores(qs,r);                 // {tambah,kurang,kali,bagi,nalar} dari DIAG_MAX
+    const addS=sc.tambah, subS=sc.kurang, mulS=sc.kali, divS=sc.bagi;
+    // REKAM BASELINE (pre) — diagnosa awal per topik + nalar (sebelumnya dibuang!)
+    recordDiag('pre',sc);
+    // HEAD-START stat dari kemampuan nyata — HANYA soal "knowing" (4 nalar baru tak menggandakan bonus)
+    const opStat={add:'kuat',sub:'tegar',mul:'pintar',div:'pintar'};
+    qs.forEach((q,i)=>{ if(q.phase==='knowing'&&r[i]) S.player.statXP[opStat[q.op]]+=4; });
+    // penempatan SEMENTARA dari Prolog — akan dihaluskan oleh Ujian Penjumlahan
+    let start='add_0_10';
+    if(addS<=1)                  start='add_0_10';
+    else if(addS===2)            start='add_0_20';
+    else if(divS>=2 && mulS>=2)  start='div_1_5';   // jago semua → mulai pembagian
+    else if(mulS>=2)             start='mul_1_5';
+    else if(subS>=2)             start='sub_0_20';
+    else                         start='add_0_100';
+    G._startAddTrial({addS,subS,mulS,divS,start});
+  },
+  // ── UJIAN KEKUATAN PENJUMLAHAN (adaptif + berwaktu) ──
+  _startAddTrial(prolog){
+    const seed = SKILL_DEFS[prolog.start].op==='add'
+      ? ({add_0_10:2,add_0_20:3,add_0_100:5}[prolog.start]||3) : 4;
+    TR={i:0,n:TRIAL_N,level:seed,hist:[],prolog,q:null,startedAt:0};
+    show('trial');
+    G._showTrialQ();
+    setTimeout(()=>document.getElementById('inp-trial').focus(),80);
+  },
+  _showTrialQ(){
+    TR.q=genTrialQ(TR.level);
+    document.getElementById('trial-ctr').textContent=`Jurus ${TR.i+1} / ${TR.n}`;
+    document.getElementById('trial-power-val').textContent='Lv.'+TR.level;
+    document.getElementById('trial-power-fill').style.width=Math.round(TR.level/6*100)+'%';
+    document.getElementById('trial-q').textContent=qText(TR.q);
+    document.getElementById('inp-trial').value='';
+    // jendela "cepat": bar menyusut selama fastThreshold (visual; BUKAN timeout/hukuman)
+    const ft=fastThreshold(TR.level), tf=document.getElementById('trial-timer-fill');
+    tf.style.transition='none'; tf.style.width='100%'; void tf.offsetWidth;
+    tf.style.transition=`width ${ft}s linear`; tf.style.width='0%';
+    TR.startedAt=nowMs();
+    setTimeout(()=>document.getElementById('inp-trial').focus(),40);
+  },
+  submitTrial(){
+    if(!TR||TR.i>=TR.n)return;
+    const inp=document.getElementById('inp-trial');
+    const v=parseInt(inp.value,10);
+    if(isNaN(v)){inp.focus();return;}
+    inp.value='';
+    const elapsed=nowMs()-TR.startedAt;
+    const correct=(v===TR.q.ans);
+    const fast=correct && elapsed<=fastThreshold(TR.level)*1000; // cepat HANYA bila benar
+    const orb=document.getElementById('trial-orb'), rect=orb.getBoundingClientRect();
+    if(correct){
+      flash(fast?'⚡':'✨',420);
+      orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
+      floatDmg(fast?'+2 KUAT!':'+1 kuat','#f5e042',rect.left+rect.width/2,rect.top);
+    }else{
+      orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake');
+      floatDmg('meleset','#9fb0c8',rect.left+rect.width/2,rect.top);
+    }
+    TR.hist.push({level:TR.level,correct,fast,elapsed:Math.round(elapsed)});
+    TR.level=trialAdapt(TR.level,correct,fast);
+    document.getElementById('trial-power-val').textContent='Lv.'+TR.level;
+    document.getElementById('trial-power-fill').style.width=Math.round(TR.level/6*100)+'%';
+    TR.i++;
+    if(TR.i>=TR.n) setTimeout(()=>G._finishTrial(),700);
+    else setTimeout(()=>G._showTrialQ(),520);
+  },
+  _finishTrial(){
+    const addLevel=Math.max(1,Math.min(6,TR.level));
+    const p=TR.prolog;
+    const finalStart=trialFinalStart(p.start,addLevel);
+    for(const id of SKILL_ORDER){ S.skills[id].status='learning'; if(id===finalStart)break; }
+    S.currentSkill=finalStart;
+    S.player.addLevel=addLevel;        // simpan estimasi level (M4)
+    S.player.addLevelF=addLevel;       // benih kesulitan adaptif (M5)
+    S.diagDone=true; S.session.count++; sv();
+    G._renderDiagResult(p.addS,p.subS,p.mulS,p.divS,finalStart);
+  },
+  _renderDiagResult(addS,subS,mulS,divS,start){
+    const doms=[
+      {name:'Penjumlahan',icon:'➕',stat:'💪 KUAT',score:addS,max:4},
+      {name:'Pengurangan',icon:'➖',stat:'🛡️ TEGAR',score:subS,max:4},
+      {name:'Perkalian', icon:'✖️',stat:'✨ PINTAR',score:mulS,max:4},
+      {name:'Pembagian', icon:'➗',stat:'✨ PINTAR',score:divS,max:4}
+    ];
+    const top=[...doms].sort((a,b)=>(b.score/b.max)-(a.score/a.max))[0];
+    document.getElementById('dr-title').textContent = top.score>0 ? `Bakat terbesarmu: ${top.name}!` : 'Mulai dari dasar — kamu pasti bisa!';
+    let html='';
+    for(const d of doms){
+      const pct=Math.round(d.score/d.max*100), isTop=(d===top&&top.score>0);
+      html+=`<div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>${d.icon} ${d.name} ${isTop?'⭐':''}</span>
+          <span style="color:rgba(255,255,255,.5)">${d.score}/${d.max} · ${d.stat}</span>
+        </div>
+        <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:${pct}%;background:${isTop?'var(--gold)':'var(--green)'}"></div></div>
+      </div>`;
+    }
+    document.getElementById('dr-bars').innerHTML=html;
+    renderStatPills('dr-stat-pills');
+    const al=S.player.addLevel;
+    document.getElementById('dr-start').textContent=`Petualanganmu mulai dari: ${SKILL_DEFS[start].name}`+(al?` · Kekuatan Penjumlahan Lv.${al}`:'');
+    show('diagresult');
+  },
+  _afterDiagResult(){
+    show('hero');
+  },
+
+  // ─── LAYER PENGUKURAN: RAPOR + UJI KEMAMPUAN (POST-TEST) ───
+  openMeasure(){ accruePlay(); G.renderMeasure(); show('measure'); },
+  renderMeasure(){
+    accruePlay();
+    _syncUI=()=>{ const el=document.getElementById('meas-sync-status'); if(el) el.textContent=syncStatusText(); };
+    _syncUI(); // status panel sinkron (URL/online/dirty/terakhir)
+    const pre=S.measure&&S.measure.pre, post=S.measure&&S.measure.post;
+    document.getElementById('meas-max').textContent=DIAG_MAX;
+    document.getElementById('meas-id').textContent=(S.student&&S.student.id)||'—';
+    document.getElementById('meas-minutes').textContent=Math.round(((S.measure&&S.measure.playSeconds)||0)/60)+' menit';
+    const rows=[{k:'tambah',ic:'➕',nm:'Penjumlahan'},{k:'kurang',ic:'➖',nm:'Pengurangan'},
+      {k:'kali',ic:'✖️',nm:'Perkalian'},{k:'bagi',ic:'➗',nm:'Pembagian'},{k:'nalar',ic:'🧠',nm:'Nalar (cerita)'}];
+    const runBtn=document.getElementById('meas-run');
+    if(!pre){
+      document.getElementById('meas-title').textContent='Baseline belum terekam';
+      document.getElementById('meas-sub').textContent='Skor awal direkam otomatis saat Prolog. Save ini dibuat sebelum fitur pengukuran ada — mulai petualangan baru agar baseline tercatat.';
+      document.getElementById('meas-body').innerHTML='';
+      runBtn.textContent='🎓 Jalankan Uji Kemampuan';
+      return;
+    }
+    const g=diagGain();
+    document.getElementById('meas-title').textContent = post ? 'Kemajuan Belajar' : 'Skor Awal (baseline)';
+    document.getElementById('meas-sub').textContent = post
+      ? (g>0?`Naik total ${g} poin dari awal! 🎉`:(g===0?'Stabil — terus berlatih ya.':'Belum naik — tak apa, terus berlatih, gurumu bisa bantu.'))
+      : 'Uji Kemampuan akhir belum dijalankan. Jalankan untuk melihat kemajuan (awal → akhir).';
+    let html='<div class="card" style="padding:6px 12px">';
+    html+='<div class="mv-stat" style="opacity:.5;font-size:11px"><span>Topik</span><span class="mv-val">Awal → Akhir</span></div>';
+    for(const r of rows){
+      const a=pre[r.k], b=post?post[r.k]:null;
+      const arrow = b!=null ? `${a} → ${b}` : `${a} → —`;
+      let gtxt='';
+      if(b!=null&&a!=null){ const d=b-a; gtxt = d>0?` <span style="color:var(--green)">▲${d}</span>`:(d<0?` <span style="color:var(--danger)">▼${-d}</span>`:' <span style="opacity:.45">=</span>'); }
+      html+=`<div class="mv-stat"><span>${r.ic} ${r.nm}</span><span class="mv-val">${arrow}${gtxt}</span></div>`;
+    }
+    html+='</div>';
+    document.getElementById('meas-body').innerHTML=html;
+    runBtn.textContent = post ? '🔁 Uji Ulang Kemampuan' : '🎓 Jalankan Uji Kemampuan';
+  },
+  startPostTest(){
+    if(!confirm('Untuk guru: jalankan Uji Kemampuan (±20 soal) untuk mengukur kemampuan akhir? Hasil terbaru jadi skor akhir.')) return;
+    accruePlay();
+    PX={qs:genDiagSet(),cur:0,res:[]}; // instrumen SAMA dgn prolog → setara
+    show('posttest');
+    G._showPost();
+    setTimeout(()=>document.getElementById('inp-post').focus(),80);
+  },
+  _showPost(){
+    const i=PX.cur, q=PX.qs[i], total=PX.qs.length;
+    const waveByOp={add:'➕ JURUS PENJUMLAHAN',sub:'➖ JURUS PENGURANGAN',mul:'✖️ JURUS PERKALIAN',div:'➗ JURUS PEMBAGIAN'};
+    document.getElementById('post-wave').textContent = q.phase==='nalar' ? '🧠 JURUS NALAR' : (waveByOp[q.op]||'⚡ JURUS');
+    document.getElementById('post-ctr').textContent=`Soal ${i+1} / ${total}`;
+    const qEl=document.getElementById('post-q');
+    qEl.textContent=qText(q);
+    qEl.classList.toggle('story',!!q.story);
+    const pct=Math.round(i/total*100);
+    document.getElementById('post-prog-fill').style.width=pct+'%';
+    document.getElementById('post-prog-val').textContent=pct+'%';
+    document.getElementById('inp-post').value='';
+    setTimeout(()=>document.getElementById('inp-post').focus(),40);
+  },
+  submitPost(){
+    if(!PX||PX.cur>=PX.qs.length)return;
+    const inp=document.getElementById('inp-post');
+    const v=parseInt(inp.value,10);
+    if(isNaN(v)){inp.focus();return;}
+    inp.value=''; // cegah double-submit
+    const q=PX.qs[PX.cur];
+    PX.res.push(v===q.ans);
+    const orb=document.getElementById('post-orb'), rect=orb.getBoundingClientRect();
+    if(v===q.ans){ flash('⚡',360); orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
+      floatDmg('+1','#f5e042',rect.left+rect.width/2,rect.top); }
+    else{ orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake'); }
+    PX.cur++;
+    const pct=Math.round(PX.cur/PX.qs.length*100);
+    document.getElementById('post-prog-fill').style.width=pct+'%';
+    document.getElementById('post-prog-val').textContent=pct+'%';
+    if(PX.cur>=PX.qs.length) setTimeout(()=>G._finishPost(),500);
+    else setTimeout(()=>G._showPost(),360);
+  },
+  _finishPost(){
+    const sc=diagScores(PX.qs,PX.res); // skor akhir per topik + nalar (post tak menyentuh skill/stat/timer)
+    recordDiag('post',sc);
+    syncMeasure(); // kirim before/after lengkap ke Sheets (best-effort)
+    showToast('✅ Uji Kemampuan selesai! Rapor diperbarui.',2400);
+    G.renderMeasure(); show('measure');
+  },
+  syncNow(){
+    const url=effectiveSyncUrl();
+    if(!url){ showToast('Belum ada URL Sheet. Isi lewat "Atur URL Sheet".',2600); return; }
+    if(!isOnline()){ showToast('Sedang offline — data tersimpan, sync nyusul saat online.',2800); return; }
+    syncMeasure(true);
+    showToast('☁️ Mengirim ke Sheet…',1800);
+    setTimeout(()=>G.renderMeasure(),1400);
+  },
+  setSyncUrl(){
+    let cur=''; try{cur=localStorage.getItem(SYNC_URL_KEY)||SYNC_URL||'';}catch(e){cur=SYNC_URL||'';}
+    const v=prompt('Tempel "Web app URL" dari Google Apps Script (kosongkan untuk hapus):', cur);
+    if(v===null) return; // batal
+    try{
+      const t=v.trim();
+      if(t) localStorage.setItem(SYNC_URL_KEY,t); else localStorage.removeItem(SYNC_URL_KEY);
+      showToast(t?'URL Sheet tersimpan di perangkat ini.':'URL Sheet dihapus.',2200);
+    }catch(e){ showToast('Gagal menyimpan URL.',2000); }
+    G.renderMeasure();
+  },
+
+  // ─── TEACH ───
+  _startTeach(sid){
+    T={sid,step:0};
+    const d=SKILL_DEFS[sid];
+    const op=d.op||'add';
+    const ex=TEACH_EX[op]||TEACH_EX.add;
+    let a,b,ans,sym;
+    if(op==='frac'){ a=FRAC_SYM[ex.den]||('1/'+ex.den); sym='dari'; b=ex.whole; ans=ex.whole/ex.den; }
+    else { a=ex.a; b=ex.b; ans=ansOf(ex.a,ex.b,op); sym=OP_SYM[op]; }
+    document.getElementById('teach-kicker').textContent='Jurus Baru — '+d.name;
+    document.getElementById('teach-title').textContent='Belajar: '+d.name;
+    // judul langkah 1 disesuaikan per operasi
+    const cTitle={add:['Gabungkan Dua Kelompok','Bayangkan apel di dua tangan — gabungkan semua.'],
+      sub:['Ambil Sebagian','Mulai dari satu kelompok, lalu ambil beberapa.'],
+      mul:['Kelompok Sama Banyak','Beberapa kelompok dengan isi sama banyak.'],
+      div:['Bagi Rata','Bagikan satu jumlah ke beberapa wadah sama banyak.'],
+      frac:['Bagi Jadi Bagian Sama','Potong satu jumlah jadi beberapa bagian sama besar.']}[op];
+    document.getElementById('teach-c-title').textContent=cTitle[0];
+    document.getElementById('teach-c-desc').textContent=cTitle[1];
+    let concrete='',pictorial='';
+    if(op==='frac'){
+      const den=ex.den, whole=ex.whole, part=whole/den, fsym=FRAC_SYM[den]||('1/'+den);
+      const groups=Array.from({length:den},(_,i)=>`<span style="${i===0?'background:rgba(201,136,31,.4);border-radius:6px;padding:1px 4px':''}">${'🍎'.repeat(part)}</span>`).join('  ');
+      concrete=`
+        <p style="font-size:11px;color:var(--mute);margin-bottom:7px"><strong>${whole}</strong> apel dibagi <strong>${den}</strong> bagian sama besar</p>
+        <div class="cpa-row" style="font-size:18px;line-height:1.6">${groups}</div>
+        <p style="font-size:11px;color:var(--mute);margin:5px 0">ambil <strong>1</strong> bagian (yang disorot)</p>
+        <div class="cpa-result">${fsym} dari ${whole} = ${part} apel! 🎉</div>`;
+      const pg=Array.from({length:den},(_,i)=>`<span style="${i===0?'color:var(--gold)':'opacity:.35'}">${'●'.repeat(part)}</span>`).join('<span style="opacity:.2"> | </span>');
+      pictorial=`
+        <div class="cpa-row" style="letter-spacing:3px;font-size:20px">${pg}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:6px">${den} bagian sama — 1 bagian berwarna</div>
+        <div style="font-size:18px;color:var(--green);font-weight:700;margin-top:5px">${fsym} dari ${whole} = ${part} ✓</div>`;
+    }else if(op==='sub'){
+      concrete=`
+        <p style="font-size:11px;color:var(--mute);margin-bottom:7px">Kamu punya <strong>${a}</strong> apel…</p>
+        <div class="cpa-row">${'🍎'.repeat(a)}</div>
+        <p style="font-size:11px;color:var(--mute);margin:5px 0">…lalu <strong>${b}</strong> apel diambil</p>
+        <div class="cpa-row">${'✖️'.repeat(b)}</div>
+        <div class="cpa-result">Sisa: ${ans} apel! 🎉</div>`;
+      pictorial=`
+        <div class="cpa-row" style="letter-spacing:4px">${'●'.repeat(ans)}<span style="color:var(--danger);opacity:.45;text-decoration:line-through">${'●'.repeat(b)}</span></div>
+        <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:6px">coret ${b}, hitung sisanya</div>
+        <div style="font-size:18px;color:var(--green);font-weight:700;margin-top:5px;letter-spacing:3px">${'●'.repeat(ans)} = ${ans} ✓</div>`;
+    }else if(op==='mul'){
+      const baskets=Array.from({length:a},()=>'🍎'.repeat(b)).join('<br>');
+      const arr=Array.from({length:a},()=>'●'.repeat(b)).map(r=>`<div style="letter-spacing:4px">${r}</div>`).join('');
+      concrete=`
+        <p style="font-size:11px;color:var(--mute);margin-bottom:7px"><strong>${a}</strong> keranjang, tiap keranjang isi <strong>${b}</strong> apel</p>
+        <div class="cpa-row" style="font-size:20px;line-height:1.5">${baskets}</div>
+        <div class="cpa-result">Total semua: ${ans} apel! 🎉</div>`;
+      pictorial=`
+        <div style="font-size:18px;line-height:1.4">${arr}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:6px">${a} baris × ${b} titik</div>
+        <div style="font-size:18px;color:var(--green);font-weight:700;margin-top:5px">= ${ans} ✓</div>`;
+    }else if(op==='div'){
+      const baskets=Array.from({length:b},()=>'🍎'.repeat(ans)).join('<br>');
+      const arr=Array.from({length:b},()=>'●'.repeat(ans)).map(r=>`<div style="letter-spacing:4px">${r}</div>`).join('');
+      concrete=`
+        <p style="font-size:11px;color:var(--mute);margin-bottom:7px"><strong>${a}</strong> apel dibagi rata ke <strong>${b}</strong> wadah</p>
+        <div class="cpa-row" style="font-size:20px;line-height:1.5">${baskets}</div>
+        <div class="cpa-result">Tiap wadah dapat: ${ans} apel! 🎉</div>`;
+      pictorial=`
+        <div style="font-size:18px;line-height:1.4">${arr}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.4);margin-top:6px">${a} titik → ${b} baris sama → ${ans} tiap baris</div>
+        <div style="font-size:18px;color:var(--green);font-weight:700;margin-top:5px">= ${ans} ✓</div>`;
+    }else{
+      concrete=`
+        <p style="font-size:11px;color:var(--mute);margin-bottom:7px">Kamu punya <strong>${a}</strong> apel…</p>
+        <div class="cpa-row">${'🍎'.repeat(a)}</div><div style="font-size:22px;color:var(--mute)">+</div>
+        <p style="font-size:11px;color:var(--mute);margin:5px 0">…ditambah <strong>${b}</strong> apel lagi</p>
+        <div class="cpa-row">${'🍎'.repeat(b)}</div>
+        <div class="cpa-result">Gabung semua: ${ans} apel! 🎉</div>`;
+      pictorial=`
+        <div class="cpa-row" style="letter-spacing:4px">${'●'.repeat(a)}</div>
+        <div style="font-size:22px;color:rgba(255,255,255,.3)">+</div>
+        <div class="cpa-row" style="letter-spacing:4px">${'●'.repeat(b)}</div>
+        <div style="font-size:18px;color:var(--green);font-weight:700;margin-top:5px;letter-spacing:3px">${'●'.repeat(a)}${'●'.repeat(b)} = ${ans} ✓</div>`;
+    }
+    document.getElementById('teach-concrete').innerHTML=concrete;
+    document.getElementById('teach-pictorial').innerHTML=pictorial;
+    document.getElementById('teach-abstract').textContent=`${a} ${sym} ${b} = ${ans}`;
+    G._setTeachStep(0);show('teach');
+  },
+  _setTeachStep(n){
+    T.step=n;
+    document.querySelectorAll('.teach-step').forEach((el,i)=>el.classList.toggle('on',i===n));
+    ['sd0','sd1','sd2'].forEach((id,i)=>{
+      document.getElementById(id).className='sdot'+(i<n?' done':i===n?' on':'');
+    });
+  },
+  nextTeach(){G._setTeachStep(T.step+1);},
+  finishTeach(){
+    S.skills[T.sid].status='learning';S.currentSkill=T.sid;sv();
+    G._startEnc(T.sid);
+  },
+
+  // ─── MAP ───
+  goMap(){
+    stopTimer();
+    accruePlay(); // catat waktu main bila baru keluar dari pertarungan
+    syncMeasure(); // checkpoint: kirim snapshot ke Sheets bila ada perubahan (best-effort)
+    if(S.diagDone) ensureDailyProgress(); // M7: rollover kemarin→hari ini sebelum tampil
+    if(pendingJobUp){pendingJobUp=false;show('jobup');return;}
+    if(S.diagDone && checkNewDay()){G._renderWelcome();return;}
+    if(S.diagDone) ensureMissions();
+    renderMap();show('map');
+  },
+  _renderWelcome(){
+    const c=S.player.companion, st=compStage(c.bond);
+    document.getElementById('wel-emoji').textContent=st.emoji;
+    setSprite(document.getElementById('wel-emoji'),'pijar',72);
+    document.getElementById('wel-streak').textContent=`Hari ke-${S.meta.dayStreak} bareng ${c.name}`;
+    document.getElementById('wel-title').textContent=(S.meta.totalDays<=1)?'Petualangan dimulai!':'Selamat datang kembali!';
+    document.getElementById('wel-line').textContent=pickCompLine('welcome');
+    // M7: ringkas kemarin → pancing lampaui diri sendiri (bukan anak lain)
+    const yr=S.meta.prog&&S.meta.prog.yesterday, wr=document.getElementById('wel-recap');
+    if(wr) wr.textContent=(yr&&yr.correct>0)?`Kemarin: ${yr.correct} soal benar${yr.levelGain>0?` · naik ${yr.levelGain} level`:''}. Ayo lampaui dirimu hari ini! 🌟`:'';
+    show('welcome');
+  },
+  afterWelcome(){if(S.diagDone)ensureMissions();renderMap();show('map');},
+  pickSkill(sid){
+    S.currentSkill=sid;
+    if(S.skills[sid].attempts===0&&S.skills[sid].status!=='mastered')G._startTeach(sid);
+    else G._startEnc(sid);
+  },
+  showStats(){renderStats();show('stats');},
+  showCollection(){renderCollection();show('collection');},
+  restHP(){
+    S.player.hp=computeMaxHP(S.player);sv();
+    showToast('HP pulih penuh!',1800);renderMap();
+  },
+  resetGame(){
+    if(confirm('Reset semua progress?')){localStorage.removeItem(SAVE_KEY);S=null;show('intro');}
+  },
+
+  // ─── JOB UP ───
+  pickJob(job){
+    S.player.job=job;sv();
+    showToast(`✨ Selamat! Kamu jadi ${JOBS[job].name}!`,2500);
+    G.goMap();
+  },
+
+  // ─── ENCOUNTER ───
+  _startEnc(sid){
+    S.session.count++;sv();
+    missionProgress('play',1);
+    startPlayClock(); // mulai hitung waktu main (pengukuran, tak memengaruhi gameplay)
+    startEncState(sid);
+    renderEncEnemy();renderEncHUD();renderQuestion();
+    renderDefendMode(false);
+    document.getElementById('timer-wrap').style.display=E.timerOn?'':'none';
+    show('enc');
+    if(E.shiny) setTimeout(()=>showToast('✨ Musuh LANGKA muncul! Kalahkan untuk hadiah spesial!',2600),350);
+    if(E.timerOn)startTimer();
+    setTimeout(()=>document.getElementById('inp-enc').focus(),100);
+  },
+
+  timedOut(){
+    recordAnswer(false,E.isDefend);flash('⏰',500);
+    const em=document.getElementById('enc-emoji');
+    em.classList.add('anim-shake');setTimeout(()=>em.classList.remove('anim-shake'),450);
+    if(E.isDefend)G._handleDefendWrong();else G._handleAttackWrong();
+  },
+
+  _handleAttackCorrect(){
+    flash('✅');
+    const em=document.getElementById('enc-emoji');
+    em.classList.add('anim-hit');setTimeout(()=>em.classList.remove('anim-hit'),380);
+    const dmg=computeDamage(S.player);
+    E.enemyHP=Math.max(0,E.enemyHP-dmg);
+    renderEnemyHP();renderEncHUD();
+    // companion bersorak — pada streak kelipatan 3 atau sesekali (biar nggak berisik)
+    if(S.skills[E.sid].streak%3===0||Math.random()<0.25) companionSay('correct');
+    // float damage
+    const rect=em.getBoundingClientRect();
+    floatDmg(`-${dmg}`,dmg>=3?'#f5e042':'#3dd4b0',rect.left+rect.width/2,rect.top);
+    if(E.ended)return;
+    if(E.enemyHP<=0){setTimeout(()=>G._showVictory(),600);return;}
+    // check if enemy skill turn (tiap 4 giliran, atau jaminan AKM saat HP musuh ≤ separuh)
+    E.turn++;
+    if(shouldDefendTurn()){
+      setTimeout(()=>G._startDefendTurn(),700);
+    }else{
+      setTimeout(()=>G._nextAttack(),600);
+    }
+  },
+
+  _handleAttackWrong(){
+    // miss — no HP loss, but show brief guide then continue
+    flash('💨',500);
+    setTimeout(()=>{
+      renderGuide(E.q);show('guide');
+      setTimeout(()=>document.getElementById('inp-guide').focus(),80);
+    },500);
+  },
+
+  _startDefendTurn(){
+    const d=SKILL_DEFS[E.sid];
+    E.defendDone=true; // tandai giliran AKM sudah muncul (jaminan terpenuhi)
+    const skillName=d.enemySkills[E.turn%d.enemySkills.length]||'Skill Khusus';
+    E.q=genDefendQ(E.sid);E.isDefend=true;
+    renderQuestion();
+    renderDefendMode(true,skillName);
+    if(E.timerOn)startTimer();
+    document.getElementById('inp-enc').focus();
+  },
+
+  _handleDefendCorrect(){
+    flash('🛡️',600);
+    // umpan balik jelas: serangan DIBLOKIR penuh, 0 damage
+    const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
+    floatDmg('BLOK! 🛡️','var(--c-tegar)',rect.left+rect.width/2,rect.top+30);
+    renderDefendMode(false);E.isDefend=false;
+    setTimeout(()=>G._nextAttack(),600);
+  },
+
+  _handleDefendWrong(){
+    // take damage — moderat & tidak mematikan dari kondisi sehat
+    const dmg=defendDamage();
+    S.player.hp=Math.max(0,S.player.hp-dmg);sv();
+    flash('💥',600);
+    const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
+    floatDmg(`-${dmg}HP`,'var(--hp-color)',rect.left+60,rect.top+40);
+    renderEncHUD();
+    if(S.player.hp<=0){setTimeout(()=>G._showBreak(),700);return;}
+    renderDefendMode(false);E.isDefend=false;
+    setTimeout(()=>{
+      renderGuide(E.q);show('guide');
+      setTimeout(()=>document.getElementById('inp-guide').focus(),80);
+    },700);
+  },
+
+  _nextAttack(){
+    E.q=genAttackQ(E.sid);E.isDefend=false;
+    renderQuestion();renderEncHUD();
+    // mana regen per turn
+    const maxMP=computeMaxMana(S.player);
+    S.player.mana=Math.min(maxMP,S.player.mana+1);sv();renderEncHUD();
+    if(E.timerOn)startTimer();
+    document.getElementById('inp-enc').focus();
+  },
+
+  useSkill(){
+    const maxMP=computeMaxMana(S.player);
+    if(S.player.mana<maxMP)return;
+    // hard question, big damage if correct
+    E.q=genHardQ(E.sid);E.skillActive=true;
+    S.player.mana=0;sv();renderEncHUD();
+    document.getElementById('enc-q').textContent=qText(E.q);
+    document.getElementById('enc-q-sub').textContent='💫 Jurus! Benar = 3× damage';
+    document.getElementById('inp-enc').value='';document.getElementById('inp-enc').focus();
+    // override action button
+    document.getElementById('enc-action-btn').textContent='Lepas Jurus! 💫';
+    document.getElementById('enc-action-btn').style.background='var(--indigo)';
+  },
+
+  submitEnc(){
+    stopTimer();
+    const inp=document.getElementById('inp-enc');
+    const v=parseInt(inp.value,10);
+    if(isNaN(v)||inp.value.trim()===''){inp.focus();if(E.timerOn)startTimer();return;}
+    inp.value='';
+    const correct=v===E.q.ans;
+    if(E.skillActive){
+      E.skillActive=false;
+      // restore button label
+      document.getElementById('enc-action-btn').textContent='Serang! ⚔️';
+      document.getElementById('enc-action-btn').style.background='var(--green)';
+      if(correct){
+        recordAnswer(true,false);
+        const dmg=computeDamage(S.player)*3;
+        E.enemyHP=Math.max(0,E.enemyHP-dmg);
+        renderEnemyHP();
+        flash('💫',800);
+        const rect=document.getElementById('enc-emoji').getBoundingClientRect();
+        floatDmg(`-${dmg}★`,'#f5e042',rect.left+rect.width/2,rect.top);
+        if(E.ended)return;
+        if(E.enemyHP<=0){setTimeout(()=>G._showVictory(),700);return;}
+        // miss% check based on pintar
+        const miss=Math.random()*100<computeMissChance(S.player);
+        if(miss)showToast('Jurus meleset! (PINTAR terlalu rendah)',2000);
+        setTimeout(()=>G._nextAttack(),700);
+      }else{
+        recordAnswer(false,false);
+        flash('💨',500);showToast('Jurus gagal! Mana terbuang.',1800);
+        setTimeout(()=>G._nextAttack(),600);
+      }
+      return;
+    }
+    recordAnswer(correct,E.isDefend);
+    if(E.isDefend){if(correct)G._handleDefendCorrect();else G._handleDefendWrong();}
+    else{if(correct)G._handleAttackCorrect();else G._handleAttackWrong();}
+  },
+
+  // ─── GUIDE SUBMIT ───
+  submitGuide(){
+    const v=parseInt(document.getElementById('inp-guide').value,10);
+    if(isNaN(v)){document.getElementById('inp-guide').focus();return;}
+    if(v===E.subQ.ans){
+      flash('✅');
+      // M6: hargai PERSISTENSI (bangkit & menebus setelah salah)
+      if(E&&E.sid) addStatXP(SKILL_DEFS[E.sid].xpStat,REDEEM_XP);
+      if(S.player.companion) companionSay('correct');
+      showToast('💪 Bangkit! Kamu menebusnya — usaha dihargai.',2000);
+      setTimeout(()=>G._resumeFreshAttack(),600);
+    }else{
+      flash('🔄',400);
+      document.getElementById('inp-guide').value='';document.getElementById('inp-guide').focus();
+    }
+  },
+  skipGuide(){ G._resumeFreshAttack(); },
+  _resumeFreshAttack(){
+    E.q=genAttackQ(E.sid);E.isDefend=false;
+    renderQuestion();renderEncHUD();renderEnemyHP();renderDefendMode(false);
+    show('enc');
+    setTimeout(()=>{document.getElementById('inp-enc').focus();if(E.timerOn)startTimer();},60);
+  },
+  toggleGuideDetail(){
+    const v=document.getElementById('guide-visual');
+    const open=(v.style.display==='none'||!v.style.display);
+    v.style.display=open?'':'none';
+    document.getElementById('guide-detail-toggle').textContent=open?'Sembunyikan caranya':'Lihat caranya 👁️';
+  },
+  // tombol "kenapa?" (opsional) — jelaskan soal yang BARU SAJA dijawab; soal berjalan tak terbuka
+  showWhy(){
+    if(!E||!E.lastQ)return;
+    stopTimer();
+    setGuideMode(true);
+    renderExplain(E.lastQ);
+    show('guide');
+  },
+  closeWhy(){
+    show('enc');
+    setTimeout(()=>{document.getElementById('inp-enc').focus();if(E.timerOn)startTimer();},60);
+  },
+
+  // ─── VICTORY ───
+  _showVictory(){
+    stopTimer();
+    accruePlay(); // pertarungan selesai → catat waktu main
+    const d=SKILL_DEFS[E.sid],sk=S.skills[E.sid];
+    const acc=Math.round(sk.accuracyRecent*100);
+    const ico=document.getElementById('vic-ico');
+    if(!setSprite(ico,'enemy_'+E.sid,96)) ico.textContent=d.icon;
+    ico.classList.remove('celebrate');void ico.offsetWidth;ico.classList.add('celebrate');
+    document.getElementById('vic-title').textContent=d.enemyName+' dikalahkan!';
+    document.getElementById('vic-desc').textContent=S.player.companion?`${S.player.companion.name}: ${pickCompLine('correct')}`:`Jawabanmu tepat, ${S.player.name}!`;
+    // mana regen on win
+    S.player.mana=Math.min(computeMaxMana(S.player),S.player.mana+3);
+    // pemulihan HP saat menang (bisa pulih): kesalahan bisa ditebus dgn terus maju
+    const hpBefore=S.player.hp;
+    S.player.hp=Math.min(computeMaxHP(S.player),S.player.hp+victoryHeal());
+    const healed=S.player.hp-hpBefore;
+    missionProgress('win',1);
+    if(S.meta&&S.meta.prog) S.meta.prog.todayWins++; // M7: menang hari ini
+    // bond companion + bonus kemenangan pertama hari ini
+    const today=todayStr();
+    if(S.meta&&S.meta.firstWinDay&&S.meta.firstWinDay===today){
+      S.meta.firstWinDay=null; addBond(3);
+      setTimeout(()=>showToast(`🎁 Kemenangan pertama hari ini! ${S.player.companion?S.player.companion.name:'Pijar'} ikut senang~`,2600),250);
+    } else { addBond(1); }
+    sv();
+    // koleksi: catat monster + drop harta (shiny → pasti drop & condong langka)
+    recordMonster(E.sid, E.shiny);
+    if(E.shiny) addBond(3);
+    const drop=dropTreasure(E.shiny, E.shiny);
+    const dropEl=document.getElementById('vic-drop');
+    if(dropEl) dropEl.innerHTML = drop
+      ? `<div class="card" style="background:rgba(201,136,31,.12);border-color:rgba(201,136,31,.3);margin-top:10px"><p style="margin:0;font-size:14px;color:var(--gold)">${E.shiny?'✨ ':''}${drop.emoji} Kamu menemukan <strong>${drop.name}</strong>!</p></div>`
+      : '';
+    document.getElementById('vic-stats').innerHTML=`
+      <div class="mv-stat"><span>Akurasi sesi</span><span class="mv-val">${acc}%</span></div>
+      <div class="mv-stat"><span>Beruntun</span><span class="mv-val">${sk.streak}×</span></div>
+      <div class="mv-stat"><span>Level kamu</span><span class="mv-val">Lv. ${S.player.level}</span></div>
+      ${healed>0?`<div class="mv-stat"><span>💚 HP pulih</span><span class="mv-val" style="color:var(--c-tegar)">+${healed}</span></div>`:''}
+      <div class="mv-stat"><span>HP tersisa</span><span class="mv-val">${S.player.hp}/${computeMaxHP(S.player)}</span></div>`;
+    // M8: saat menang BESAR (langka/beruntun tinggi), Pijar ingatkan rendah hati / kerja sama — sesekali
+    if(E.shiny || sk.streak>=6){ const a=maybeAdab(Math.random()<0.5?'humble':'friends',0.6); if(a) setTimeout(()=>pijarSays(a,3200),1400); }
+    show('vic');
+  },
+  afterVic(){G.goMap();},
+  afterMas(){if(pendingJobUp){pendingJobUp=false;show('jobup');}else G.goMap();},
+  _showBreak(){
+    accruePlay(); // pertarungan selesai → catat waktu main
+    // kalah = momen rawan; selalu beri penegasan "tiap anak beda kecepatan" (M8)
+    const el=document.getElementById('brk-pijar');
+    if(el){ const nm=(S.player.companion&&S.player.companion.name)||'Pijar'; el.textContent=`${nm}: ${pickAdab('pace')}`; }
+    show('break');
+  },
+  afterBreak(){S.player.hp=computeMaxHP(S.player);S.player.mana=computeMaxMana(S.player);sv();G.goMap();}
+};
+
+// ─── keyboard ───
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const id=document.querySelector('.screen.on')?.id;
+  if(id==='s-name')G.confirmName();
+});
+
+// ─── BOOT ───
+ld();
+if(S&&S.player&&S.player.name){
+  // ada progres tersimpan → "Lanjutkan" jadi tombol utama; "Mulai Baru" jadi sekunder + jelas menghapus
+  document.getElementById('btn-lanjut').style.display='';
+  const ng=document.getElementById('btn-newgame');
+  if(ng){ ng.className='btn btn-ghost'; ng.style.marginTop='9px'; ng.textContent='Mulai Baru (hapus progres)'; }
+}
+show('intro');
+updateMuteBtn(); // tampilkan ikon mute sesuai state tersimpan
+// pasang sprite hero ke kartu pilih karakter
+['adira','kira','reno'].forEach(h=>{ setSprite(document.querySelector('#hc-'+h+' .hico'),'hero_'+h,54); });
+
+// animate celebrate style
+const sty=document.createElement('style');
+sty.textContent=`@keyframes celebrate{0%{transform:scale(0) rotate(-18deg);opacity:0}60%{transform:scale(1.22) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}.celebrate{animation:celebrate .5s ease forwards}`;
+document.head.appendChild(sty);
+</script>
+</body>
+</html>
