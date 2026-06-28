@@ -304,10 +304,10 @@ input[type=number]{-moz-appearance:textfield}
   <div class="g12"></div>
   <div class="hero-cards">
     <div class="hero-card" id="hc-adira" onclick="G.pickHero('adira')">
-      <span class="hico">⚔️</span>
+      <span class="hico">🛡️</span>
       <div class="hinfo">
-        <div class="hname">ADIRA</div>
-        <div class="htitle">Ksatria Muda — Penjumlah</div>
+        <div class="hname">TEGUH</div>
+        <div class="htitle">Sang Teguh — berani &amp; pantang menyerah</div>
         <div class="hbonuses">
           <span class="stat-pill sp-kuat">💪 KUAT +3</span>
           <span class="stat-pill sp-tegar">🛡️ TEGAR +1</span>
@@ -317,8 +317,8 @@ input[type=number]{-moz-appearance:textfield}
     <div class="hero-card" id="hc-kira" onclick="G.pickHero('kira')">
       <span class="hico">✨</span>
       <div class="hinfo">
-        <div class="hname">KIRA</div>
-        <div class="htitle">Penyihir Berbakat — Perkalian</div>
+        <div class="hname">BIJAK</div>
+        <div class="htitle">Sang Bijak — cerdas, teliti, mikir dulu</div>
         <div class="hbonuses">
           <span class="stat-pill sp-pintar">✨ PINTAR +3</span>
           <span class="stat-pill sp-gesit">⚡ GESIT +1</span>
@@ -326,10 +326,10 @@ input[type=number]{-moz-appearance:textfield}
       </div>
     </div>
     <div class="hero-card" id="hc-reno" onclick="G.pickHero('reno')">
-      <span class="hico">🏹</span>
+      <span class="hico">⚡</span>
       <div class="hinfo">
-        <div class="hname">RENO</div>
-        <div class="htitle">Petualang Cepat — Pengurangan</div>
+        <div class="hname">TANGKAS</div>
+        <div class="htitle">Sang Tangkas — ramah, kuat saat bersama</div>
         <div class="hbonuses">
           <span class="stat-pill sp-gesit">⚡ GESIT +3</span>
           <span class="stat-pill sp-kuat">💪 KUAT +1</span>
@@ -623,8 +623,8 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <!-- enemy -->
   <div class="enemy-arena">
-    <div class="enemy-name" id="enc-ename">SLIMELING</div>
-    <span class="enemy-emoji" id="enc-emoji">🟢</span>
+    <div class="enemy-name" id="enc-ename">Musuh</div>
+    <span class="enemy-emoji" id="enc-emoji">😴</span>
     <div class="g6"></div>
     <div class="bar-wrap bar-hp" style="width:100%;max-width:220px">
       <div class="bar-label"><span class="bar-label-txt" id="enc-enemy-hp-label">Enemy HP</span><span class="bar-label-val" id="enc-enemy-hp-val">20/20</span></div>
@@ -827,10 +827,12 @@ const TEACH_EX = {
   frac:{den:2, whole:8} // ½ dari 8 = 4
 };
 
+// Hero = SATU avatar pilihan anak, gaya nama "SIFAT" (TEMA §6). ID internal (adira/kira/reno)
+// SENGAJA dipertahankan supaya save lama & sprite tetap kebaca — yang berubah hanya nama tampil + watak.
 const HEROES = {
-  adira:{name:'ADIRA', icon:'⚔️', title:'Ksatria Muda', bonuses:{kuat:3,tegar:1,pintar:0,gesit:0}},
-  kira: {name:'KIRA',  icon:'✨', title:'Penyihir Berbakat', bonuses:{kuat:0,tegar:0,pintar:3,gesit:1}},
-  reno: {name:'RENO',  icon:'🏹', title:'Petualang Cepat', bonuses:{kuat:1,tegar:0,pintar:0,gesit:3}}
+  adira:{name:'TEGUH',   icon:'🛡️', title:'Sang Teguh · berani & pantang menyerah', bonuses:{kuat:3,tegar:1,pintar:0,gesit:0}},
+  kira: {name:'BIJAK',   icon:'✨', title:'Sang Bijak · cerdas, mikir dulu',        bonuses:{kuat:0,tegar:0,pintar:3,gesit:1}},
+  reno: {name:'TANGKAS', icon:'⚡', title:'Sang Tangkas · ramah, kuat saat bersama',  bonuses:{kuat:1,tegar:0,pintar:0,gesit:3}}
 };
 const JOBS = {
   ksatria: {name:'Ksatria', icon:'⚔️', bonus:'kuat tegar'},
@@ -840,40 +842,40 @@ const JOBS = {
 
 const SKILL_DEFS = {
   // ── PENJUMLAHAN · tumbuh KUAT 💪 ──
-  'add_0_10':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–10', desc:'Hasilnya ≤ 10', icon:'🟢', enemyName:'SLIMELING',
+  'add_0_10':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–10', desc:'Hasilnya ≤ 10', icon:'😴', enemyName:'Si Malas',
     enemyHP:12, maxA:5, maxSum:10, xpStat:'kuat', prev:null, next:'add_0_20',
-    enemySkills:['Slam Lumpur','Ledak Busa']},
-  'add_0_20':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–20', desc:'Hasilnya ≤ 20', icon:'🪨', enemyName:'ROCK GOLEM',
+    enemySkills:['Serangan Ngantuk','Lempar Bantal']},
+  'add_0_20':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–20', desc:'Hasilnya ≤ 20', icon:'😴', enemyName:'Si Malas Besar',
     enemyHP:15, maxA:10, maxSum:20, xpStat:'kuat', prev:'add_0_10', next:'add_0_100',
-    enemySkills:['Rock Slam','Stone Crush']},
-  'add_0_100':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–100', desc:'Hasilnya ≤ 100', icon:'⚡', enemyName:'THUNDER HAWK',
+    enemySkills:['Geliat Malas','Tarik Selimut']},
+  'add_0_100':{op:'add', group:'Penjumlahan', name:'Penjumlahan 0–100', desc:'Hasilnya ≤ 100', icon:'😴', enemyName:'Raja Malas',
     enemyHP:18, maxA:50, maxSum:100, xpStat:'kuat', prev:'add_0_20', next:'sub_0_20',
-    enemySkills:['Thunder Strike','Wing Blast']},
+    enemySkills:['Ngorok Dahsyat','Gelombang Kantuk']},
   // ── PENGURANGAN · tumbuh TEGAR 🛡️ ──
-  'sub_0_20':{op:'sub', group:'Pengurangan', name:'Pengurangan 0–20', desc:'Hasil tidak minus', icon:'🦇', enemyName:'SHADOW BAT',
+  'sub_0_20':{op:'sub', group:'Pengurangan', name:'Pengurangan 0–20', desc:'Hasil tidak minus', icon:'😨', enemyName:'Si Ciut',
     enemyHP:15, maxA:20, minA:5, xpStat:'tegar', prev:'add_0_100', next:'sub_0_100',
-    enemySkills:['Sayap Gelap','Gigit Senyap']},
-  'sub_0_100':{op:'sub', group:'Pengurangan', name:'Pengurangan 0–100', desc:'Hasil tidak minus', icon:'👻', enemyName:'VOID WRAITH',
+    enemySkills:['Ciut Mendadak','Gemetar Hebat']},
+  'sub_0_100':{op:'sub', group:'Pengurangan', name:'Pengurangan 0–100', desc:'Hasil tidak minus', icon:'😨', enemyName:'Si Ciut Besar',
     enemyHP:18, maxA:100, minA:20, xpStat:'tegar', prev:'sub_0_20', next:'mul_1_5',
-    enemySkills:['Tarik Bayang','Erosi Jiwa']},
+    enemySkills:['Sembunyi Cepat','Rengek Panik']},
   // ── PERKALIAN · tumbuh PINTAR ✨ ──
-  'mul_1_5':{op:'mul', group:'Perkalian', name:'Perkalian 1–5', desc:'Tabel 1 sampai 5', icon:'🔮', enemyName:'CRYSTAL SPRITE',
+  'mul_1_5':{op:'mul', group:'Perkalian', name:'Perkalian 1–5', desc:'Tabel 1 sampai 5', icon:'😤', enemyName:'Si Sombong',
     enemyHP:18, maxFactor:5, xpStat:'pintar', prev:'sub_0_100', next:'mul_1_10',
-    enemySkills:['Pantul Prisma','Gema Kristal']},
-  'mul_1_10':{op:'mul', group:'Perkalian', name:'Perkalian 1–10', desc:'Tabel 1 sampai 10', icon:'🐉', enemyName:'ARCANE DRAGON',
+    enemySkills:['Pamer Mahkota','Tawa Sombong']},
+  'mul_1_10':{op:'mul', group:'Perkalian', name:'Perkalian 1–10', desc:'Tabel 1 sampai 10', icon:'😤', enemyName:'Si Sombong Besar',
     enemyHP:22, maxFactor:10, xpStat:'pintar', prev:'mul_1_5', next:'div_1_5',
-    enemySkills:['Napas Arcane','Lipat Ganda']},
+    enemySkills:['Sombong Berlipat','Bentak Angkuh']},
   // ── PEMBAGIAN · tumbuh PINTAR ✨ ──
-  'div_1_5':{op:'div', group:'Pembagian', name:'Pembagian 1–5', desc:'Bagi rata, hasil bulat', icon:'🧩', enemyName:'MIRROR GOLEM',
+  'div_1_5':{op:'div', group:'Pembagian', name:'Pembagian 1–5', desc:'Bagi rata, hasil bulat', icon:'🤪', enemyName:'Si Ceroboh',
     enemyHP:20, maxFactor:5, xpStat:'pintar', prev:'mul_1_10', next:'div_1_10',
-    enemySkills:['Pecah Cermin','Pantul Ganda']},
-  'div_1_10':{op:'div', group:'Pembagian', name:'Pembagian 1–10', desc:'Bagi rata, hasil bulat', icon:'🌀', enemyName:'CHAOS SPIRAL',
+    enemySkills:['Tumpah Berantakan','Lempar Asal']},
+  'div_1_10':{op:'div', group:'Pembagian', name:'Pembagian 1–10', desc:'Bagi rata, hasil bulat', icon:'🤪', enemyName:'Si Ceroboh Besar',
     enemyHP:24, maxFactor:10, xpStat:'pintar', prev:'div_1_5', next:'frac_simple',
-    enemySkills:['Pusaran Hampa','Belah Jiwa']},
+    enemySkills:['Kekacauan Total','Sebar Remah']},
   // ── PECAHAN · tumbuh PINTAR ✨ ──
-  'frac_simple':{op:'frac', group:'Pecahan', name:'Pecahan dari Bilangan', desc:'½, ⅓, ¼ dari sebuah jumlah', icon:'🍰', enemyName:'CAKE SPRITE',
+  'frac_simple':{op:'frac', group:'Pecahan', name:'Pecahan dari Bilangan', desc:'½, ⅓, ¼ dari sebuah jumlah', icon:'😾', enemyName:'Si Egois',
     enemyHP:22, maxDen:4, maxK:5, xpStat:'pintar', prev:'div_1_10', next:null,
-    enemySkills:['Iris Tipis','Bagi Adil']}
+    enemySkills:['Peluk Harta','Tolak Berbagi']}
 };
 const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple'];
 
@@ -912,22 +914,108 @@ const SPRITES = {
     '.....oyffyo.....','.....oyffyo.....','....oyffffyo....','....oyffffyo....',
     '...oyffyyffyo...','...oyffwwffyo...','...oyffwwffyo...','...oyffffffyo...',
     '....oyffffyo....','....ooyyyyoo....','.....oooooo.....','................']},
-  hero_adira:{pal:{o:'#0d1018',m:'#6f97d6',M:'#41639c',s:'#f2c79a',e:'#0d1018',c:'#e6b53f'},rows:[
-    '................','......cc........','.....occco......','....ommmmmo.....',
-    '...ommmmmmmo....','...omsssssmo....','...omeessemo....','...omsssssmo....',
-    '....ommmmmo.....','...ommmmmmmo....','..omMMMMMMMMo...','..omMMMMMMMMo...',
-    '..omMMMMMMMMo...','..oomMMMMmmoo...','...omM..Mmo.....','...oo....oo.....']},
-  hero_kira:{pal:{o:'#160f24',h:'#7a4fd0',r:'#9166e0',s:'#f2c79a',e:'#160f24',t:'#ffd24d'},rows:[
-    '........o.......','.......oho......','......ohhho.....','.....ohhhho.....',
-    '....ohhhhho.....','...ohhhhhho.....','..ooooooooooo...','....ossso..t....',
-    '....oseso..t....','....osso...t....','...orrrro..t....','..orrrrrro......',
-    '..orrrrrro......','..orrrrrro......','..orrrrrro......','...oo..oo.......']},
-  hero_reno:{pal:{o:'#0f1a12',g:'#4e9e5a',G:'#357a44',s:'#f2c79a',e:'#0f1a12',b:'#b07a36'},rows:[
+  // PIJAR — 5 tahap evolusi (COMPANION_STAGES). 'pijar' tetap jadi fallback.
+  // 1 Telur Semangat · 2 Pijar Kecil · 3 Pijar · 4 Pijar Agung · 5 Pijar Legenda
+  pijar_1:{pal:{o:'#7a3500',S:'#f0b95f',s:'#ffe6b0',f:'#ff8a1e',y:'#ffce42',w:'#fff3c4'},rows:[
+    '................','.......oo.......','......oSSo......','.....oSSSSo.....',
+    '....oSssssSo....','....oSsyysSo....','...oSsyffysSo...','...oSyfwwfySo...',
+    '...oSyfwwfySo...','...oSsyffysSo...','....oSsyysSo....','....oSssssSo....',
+    '.....oSSSSo.....','.....oSSSSo.....','......oooo......','................']},
+  pijar_2:{pal:{o:'#7a3500',f:'#ff8a1e',y:'#ffce42',w:'#fff3c4',e:'#7a3500'},rows:[
+    '................','................','.......o........','......oyo.......',
+    '......oyyo......','.....oyffyo.....','.....oyffyo.....','....oyeffeyo....',
+    '....oyfwwfyo....','....oyffffyo....','.....oyffyo.....','.....ooyyoo.....',
+    '......oooo......','................','................','................']},
+  pijar_3:{pal:{o:'#7a3500',f:'#ff8a1e',y:'#ffce42',w:'#fff3c4',e:'#7a3500'},rows:[
+    '................','.......o........','......oyo.......','......oyyo......',
+    '.....oyffyo.....','.....oyffyo.....','....oyffffyo....','....oyeffeyo....',
+    '...oyffyyffyo...','...oyffwwffyo...','...oyffwwffyo...','...oyffffffyo...',
+    '....oyffffyo....','....ooyyyyoo....','.....oooooo.....','................']},
+  pijar_4:{pal:{o:'#7a3500',f:'#ff8a1e',y:'#ffce42',w:'#fff3c4',e:'#7a3500',g:'#ffe24d'},rows:[
+    '................','....g..g..g.....','...ogggggggo....','.....oyfyo......',
+    '....oyfffyo.....','....oyfffyo.....','...oyffffffyo...','...oyeffffeyo...',
+    '..oyffwwwwffyo..','..oyfwwwwwwfyo..','..oyffwwwwffyo..','...oyffffffyo...',
+    '...oyffffffyo...','....ooyyyyoo....','.....oooooo.....','................']},
+  pijar_5:{pal:{o:'#7a3500',f:'#ff8a1e',y:'#ffce42',w:'#fff3c4',e:'#7a3500',r:'#ffd24d'},rows:[
+    '.......rr.......','..r..........r..','....r......r....','.....oyyyyo.....',
+    '....oyffffyo....','...oyfwwwwfyo...','..oyefwwwwfeyo..','.royffwwwwffyor.',
+    '.royffwwwwffyor.','..oyffwwwwffyo..','...oyfwwwwfyo...','....oyffffyo....',
+    '.....oyyyyo.....','....r......r....','..r..........r..','.......rr.......']},
+  // TEGUH (id:adira) — kesatria merah-maroon + perisai bulat (acuan: hero ChatGPT)
+  hero_adira:{pal:{o:'#2a0d0d',h:'#5a3a22',s:'#f2c79a',e:'#2a0d0d',b:'#e23b2e',r:'#d8392c',R:'#9e241b',g:'#e6b53f',w:'#ffe9a8'},rows:[
+    '................','.....oooo.......','....ohhhho......','...obbbbbbo.....',
+    '...ohssshho.....','...ohesseho.....','...ohhsssho.....','....ohhhho......',
+    '...orrrrrro.gg..','..orrRRRRRogwwg.','..orRRRRRRogwwg.','..orRRRRRRo.gg..',
+    '..ooRRRRRoo.....','...oR..Ro.......','...oR..Ro.......','...oo..oo.......']},
+  // BIJAK (id:kira) — penyihir biru, kacamata + tongkat kristal
+  hero_kira:{pal:{o:'#0d1530',h:'#2a2f4a',s:'#f2c79a',w:'#eaf2ff',m:'#3f6fd6',M:'#274a9c',t:'#7a5a36',c:'#5fd0ff'},rows:[
+    '................','.....oooo.......','....ohhhho......','...ohhhhhho.....',
+    '...ohssssho.....','...owwsswwo.....','...ohssssho.c...','....ossso...c...',
+    '...ommmmmmo.t...','..ommMMMMmo.t...','..omMMMMMMo.t...','..omMMMMMMo.t...',
+    '..oomMMMMoo.t...','...om..mo...t...','...om..mo.......','...oo..oo.......']},
+  // TANGKAS (id:reno) — scout hijau ringan + tas selempang (warna dicerahkan)
+  hero_reno:{pal:{o:'#10231a',g:'#57bd68',G:'#3a8f4c',s:'#f2c79a',e:'#10231a',b:'#a9763a'},rows:[
     '................','.....oooo.......','....oggggo......','...oggggggo.....',
     '...ogsssggo.....','...ogessego.....','...oggsssgo.....','....oggggo......',
     '...oggggggo.....','..oggGGGGGo.b...','..ogGGGGGGo.b...','..ogGGGGGGo.b...',
-    '..ooGGGGGoo.b...','...oG..Go...b...','...oG..Go.......','...oo..oo.......']}
+    '..ooGGGGGoo.b...','...oG..Go...b...','...oG..Go.......','...oo..oo.......']},
+  // PENJAGA WILAYAH (4 mentor operasi) — dipakai di header wilayah peta
+  penjaga_tambah:{pal:{o:'#0e2417',g:'#3fae5c',G:'#2c7d43',s:'#f2c79a',e:'#0e2417',w:'#eafff0',l:'#7fd99a'},rows:[
+    '................','.....llll.......','....lggggl......','...ogssssgo.....',
+    '...ogessego.....','...oggssggo.....','....oggggo......','...oggggggo.....',
+    '..ogGGwwGGgo....','..ogwwwwwwgo....','..ogGGwwGGgo....','..ogGGGGGGgo....',
+    '..ogGGGGGGgo....','..oGGGGGGGGo....','..oGG..GGo......','..oo....oo......']},
+  penjaga_kurang:{pal:{o:'#1f1206',b:'#8a6a3f',B:'#5e4528',s:'#f2c79a',e:'#1f1206',w:'#e9dcc2',h:'#c79a5a',t:'#7a5326'},rows:[
+    '................','.......o........','......ohho......','.....ohhhho.....',
+    '....ohhhhhho....','...obssssbo.....','...obessebo.....','....owwwwo......',
+    '...obbbbbbo.t...','..obBwwwwBbot...','..obBBBBBBbot...','..obBBBBBBbot...',
+    '..oobBBBBboot...','...obb..bbo.....','...obb..bbo.....','...oo....oo.....']},
+  penjaga_kali:{pal:{o:'#1a0f2a',p:'#a24fd0',P:'#6f2fa0',s:'#f2c79a',e:'#1a0f2a',w:'#fff3c4'},rows:[
+    '....w......w....','.....oppo.......','....opPPpo......','...opsssspo.....',
+    '...opessepo.....','...opsssspo.....','..oppppppppo....','w.oPPPPPPPPo.w..',
+    '...opwPPwpo.....','...opPwwPpo.....','...opwPPwpo.....','...opPPPPpo.....',
+    '...opPPPPpo.....','...oPP..PPo.....','...oPP..PPo.....','...oo....oo.....']},
+  penjaga_bagi:{pal:{o:'#0a1430',b:'#3f6fd6',B:'#27407c',s:'#f2c79a',e:'#0a1430',g:'#ffd24d',w:'#eaf2ff'},rows:[
+    '................','....g.g.g.......','...ogggggo......','...obssssbo.....',
+    '...obessebo.....','...obssssbo.....','....obbbo.......','...obbbbbbo.....',
+    '..obBBBwBBbo....','..obwwwwwwbo....','..obBBBwBBbo....','..obBBBBBBbo....',
+    '..oobBBBBboo....','...obb..bbo.....','...obb..bbo.....','...oo....oo.....']},
+  // MAKHLUK KEBIASAAN (5 musuh) — blob ramah, bukan serem (VISI #6). Dipetakan per wilayah via ENEMY_SPRITE.
+  si_malas:{pal:{o:'#13243f',b:'#5aa0e0',B:'#3f7ac0',e:'#13243f',w:'#e8f2ff',z:'#bfe0ff'},rows:[
+    '............z...','..........zz....','......oooo......','....oobbbboo....',
+    '...obbbbbbbbo...','..obbbbbbbbbbo..','..obeebbbbeebo..','..obbbbbbbbbbo..',
+    '..obbbbwwbbbbo..','..obbbbbbbbbbo..','..oBBBBBBBBBBo..','...oBBBBBBBBo...',
+    '....oBBBBBBo....','.....oBBBBo.....','......oooo......','................']},
+  si_ciut:{pal:{o:'#10302e',c:'#6fd0c6',C:'#46a89e',e:'#10302e',w:'#eafffb'},rows:[
+    '................','................','......oooo......','....ooccccoo....',
+    '...occcccccco...','..occcccccccco..','..oceecccceeco..','w.oceecccceeco.w',
+    '..occccwwcccco..','..occcccccccco..','..oCCCCCCCCCCo..','...oCCCCCCCCo...',
+    '....oCCCCCCo....','.....oCCCCo.....','......oooo......','................']},
+  si_sombong:{pal:{o:'#241038',p:'#a24fd0',P:'#6f2fa0',e:'#241038',g:'#ffd24d',w:'#f3e0ff'},rows:[
+    '...g.g.g........','..ogggggo.......','......oooo......','....ooppppoo....',
+    '...oppppppppo...','..oppppppppppo..','..oppPPppPPppo..','..oppeeppeeppo..',
+    '..oppppwwppppo..','..oppppppppppo..','..oPPPPPPPPPPo..','...oPPPPPPPPo...',
+    '....oPPPPPPo....','.....oPPPPo.....','......oooo......','................']},
+  si_ceroboh:{pal:{o:'#1f2a0a',c:'#b6d637',C:'#86a324',e:'#1f2a0a',w:'#f5ffd6',r:'#e87aa0'},rows:[
+    '..........w.....','....w...........','......oooo......','....ooccccoo....',
+    '...occcccccco...','..occcccccccco..','..oceeccccecco..','..occcccccccco..',
+    '..occwwwwwwcco..','..occccrrcccco..','..oCCCCCCCCCCo..','...oCCCCCCCCo...',
+    '....oCCCCCCo....','.....oCCCCo.....','......oooo......','................']},
+  si_egois:{pal:{o:'#3a0d0d',c:'#e0463a',C:'#a82a22',e:'#3a0d0d',g:'#ffd24d',w:'#fff3c4'},rows:[
+    '................','................','......oooo......','....ooccccoo....',
+    '...occcccccco...','..occcccccccco..','..occeecceecco..','..occcccccccco..',
+    '..occggggggcco..','..oCcggwwggcCo..','..oCcggggggcCo..','...oCCggggCCo...',
+    '....oCCCCCCo....','.....oCCCCo.....','......oooo......','................']}
 };
+// Pemetaan musuh per wilayah → sprite Makhluk Kebiasaan (fallback: enemy_<sid> lama, lalu emoji)
+const ENEMY_SPRITE={
+  add_0_10:'si_malas', add_0_20:'si_malas', add_0_100:'si_malas',
+  sub_0_20:'si_ciut', sub_0_100:'si_ciut',
+  mul_1_5:'si_sombong', mul_1_10:'si_sombong',
+  div_1_5:'si_ceroboh', div_1_10:'si_ceroboh',
+  frac_simple:'si_egois'
+};
+function enemySpriteKey(sid){ return ENEMY_SPRITE[sid]||('enemy_'+sid); }
 function spriteCanvas(key,px){
   const s=SPRITES[key]; if(!s) return null;
   const W=s.rows[0].length,H=s.rows.length;
@@ -1087,6 +1175,9 @@ function compNextStage(bond){
   for(const st of COMPANION_STAGES) if(bond<st.min) return st;
   return null; // sudah maksimal
 }
+// indeks tahap 1..5 utk memilih sprite pijar_1..pijar_5 (fallback ke 'pijar')
+function compStageIdx(bond){let i=0;for(let k=0;k<COMPANION_STAGES.length;k++){if(bond>=COMPANION_STAGES[k].min)i=k;}return i+1;}
+function setPijarSprite(el,bond,px){ if(!setSprite(el,'pijar_'+compStageIdx(bond),px)) setSprite(el,'pijar',px); }
 function addBond(n){
   if(!S.player.companion) return;
   const before=compStage(S.player.companion.bond);
@@ -1270,9 +1361,11 @@ function renderCollection(){
   document.getElementById('coll-monsters').innerHTML=SKILL_ORDER.map(id=>{
     const d=SKILL_DEFS[id], rec=mons[id];
     return (rec&&rec.defeated>0)
-      ? `<div class="coll-cell"><span style="font-size:28px">${d.icon}</span><div class="coll-name">${rec.shiny?'✨':''}${d.enemyName}</div><div class="coll-meta">×${rec.defeated}</div></div>`
+      ? `<div class="coll-cell"><span class="coll-spr" data-ek="${enemySpriteKey(id)}" style="font-size:28px;display:inline-block;min-height:34px">${d.icon}</span><div class="coll-name">${rec.shiny?'✨':''}${d.enemyName}</div><div class="coll-meta">×${rec.defeated}</div></div>`
       : `<div class="coll-cell locked"><span style="font-size:28px">❓</span><div class="coll-name">???</div><div class="coll-meta">belum</div></div>`;
   }).join('');
+  // codex pakai sprite Makhluk (fallback emoji bila sprite tak ada)
+  document.querySelectorAll('#coll-monsters .coll-spr').forEach(el=>setSprite(el,el.getAttribute('data-ek'),36));
   const tre=(S.collection&&S.collection.treasures)||{};
   document.getElementById('coll-treasures').innerHTML=TREASURES.map(t=>{
     const n=tre[t.id]||0;
@@ -1400,6 +1493,12 @@ function measureRow(){
   row.rata_dtk_awal=c(pre,'rata_dtk');   row.rata_dtk_akhir=c(post,'rata_dtk');      // ringkasan kelancaran
   row.total_gain=(diagGain()!=null?diagGain():'');
   row.menit_main=Math.round(((S.measure&&S.measure.playSeconds)||0)/60);
+  // ringkasan progres LATIHAN (dari S.skills lokal) — sinyal engagement utk dashboard guru
+  let _mastered=0,_corr=0,_att=0;
+  for(const id of SKILL_ORDER){ const sk=S.skills&&S.skills[id]; if(!sk)continue; if(sk.status==='mastered')_mastered++; _corr+=sk.correct||0; _att+=sk.attempts||0; }
+  row.skill_dikuasai=_mastered;                                  // berapa skill mastered (dari 10)
+  row.akurasi_latihan=_att>0?Math.round(_corr/_att*100):'';      // % benar keseluruhan latihan
+  row.level_pemain=(S.player&&S.player.level)||1;
   row.sesi=(S.session&&S.session.count)||0;
   row.terakhir=tgl; row.versi=SAVE_KEY;
   return row;
@@ -1760,7 +1859,7 @@ function renderEncEnemy(){
   const d=SKILL_DEFS[E.sid];
   document.getElementById('enc-ename').textContent=(E.shiny?'✨ ':'')+d.enemyName+(E.shiny?' LANGKA':'');
   const em=document.getElementById('enc-emoji');
-  if(!setSprite(em,'enemy_'+E.sid,88)) em.textContent=d.icon;
+  if(!setSprite(em,enemySpriteKey(E.sid),88)) em.textContent=d.icon;
   em.style.filter=E.shiny?'drop-shadow(0 0 14px var(--gold))':'';
   renderEnemyHP();
 }
@@ -1778,7 +1877,7 @@ function renderQuestion(){
   qEl.classList.toggle('story',!!q.story); // soal cerita → font lebih kecil & rata kiri
   // label tingkat (Penjumlahan): ringan = serangan kita, AKM = bertahan bernalar
   let sub='';
-  if(q.tier==='akm') sub='🧠 Soal AKM — pikirkan ceritanya'; // semua operasi (ITEM 1)
+  if(q.tier==='akm') sub='🧠 Saatnya bernalar — pikirkan ceritanya'; // Penalaran Kritis (TEMA Lapis 2)
   else if(q.op==='add'&&q.tier==='ringan') sub='⚡ Serangan ringan';
   if(!sub&&q.hard) sub='⚠️ Serangan Khusus Musuh!';
   document.getElementById('enc-q-sub').textContent=sub;
@@ -2008,7 +2107,7 @@ function renderMap(){
   if(S.player.companion){
     const c=S.player.companion, st=compStage(c.bond), nx=compNextStage(c.bond);
     document.getElementById('map-comp-emoji').textContent=st.emoji;
-    setSprite(document.getElementById('map-comp-emoji'),'pijar',30);
+    setPijarSprite(document.getElementById('map-comp-emoji'),c.bond,30);
     document.getElementById('map-comp-name').textContent=c.name;
     document.getElementById('map-comp-title').textContent=nx?st.title:st.title+' ✦ MAKS';
     const pct = nx ? Math.round((c.bond-st.min)/(nx.min-st.min)*100) : 100;
@@ -2058,12 +2157,20 @@ function renderMap(){
   document.getElementById('map-sub').textContent=due.length?`${due.length} skill jadwal review!`:'Pilih wilayah untuk berlatih.';
   const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰'};
   const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR'};
+  // TEMA §3: tiap wilayah (operasi) dipasangkan ke 1 Dimensi Profil Lulusan — label "Wilayah · Nilai"
+  // selalu tampil → anak HAPAL lewat asosiasi berulang (bukan ceramah). Pecahan bukan wilayah Penjaga.
+  const GDIM={Penjumlahan:'Kolaborasi',Pengurangan:'Kemandirian',Perkalian:'Kreativitas',Pembagian:'Keadilan'};
+  // Penjaga Wilayah → sprite mentor per operasi (Pecahan tetap emoji, bukan wilayah Penjaga)
+  const GPENJAGA={Penjumlahan:'tambah',Pengurangan:'kurang',Perkalian:'kali',Pembagian:'bagi'};
   let html='',curGroup=null;
   for(const id of SKILL_ORDER){
     const sk=S.skills[id],d=SKILL_DEFS[id];
     if(d.group!==curGroup){
       curGroup=d.group;
-      html+=`<div style="display:flex;align-items:center;gap:7px;margin:14px 2px 7px"><span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);font-family:ui-monospace,monospace">${GICON[curGroup]||'•'} ${curGroup}</span><span style="font-size:9px;color:rgba(255,255,255,.28)">→ ${GSTAT[curGroup]||''}</span></div>`;
+      const dim=GDIM[curGroup]?`<span style="font-size:9px;color:var(--gold);opacity:.8"> · Nilai: ${GDIM[curGroup]}</span>`:'';
+      const pjk=GPENJAGA[curGroup];
+      const ico=pjk?`<span class="pj-ico" data-pj="${pjk}" style="vertical-align:middle;margin-right:4px"></span>`:`${GICON[curGroup]||'•'} `;
+      html+=`<div style="display:flex;align-items:center;gap:7px;margin:14px 2px 7px;flex-wrap:wrap"><span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);font-family:ui-monospace,monospace">${ico}${curGroup}</span>${dim}<span style="font-size:9px;color:rgba(255,255,255,.28)">→ ${GSTAT[curGroup]||''}</span></div>`;
     }
     const locked=sk.status==='locked',isDue=due.includes(id);
     let badge,bc;
@@ -2078,6 +2185,8 @@ function renderMap(){
       <div class="badge ${bc}">${badge}</div></div>`;
   }
   document.getElementById('map-skills').innerHTML=html;
+  // pasang sprite Penjaga ke header tiap wilayah (fallback: kosong → emoji sudah tergantikan)
+  document.querySelectorAll('#map-skills .pj-ico').forEach(el=>{ setSprite(el,'penjaga_'+el.getAttribute('data-pj'),32); });
 }
 
 // ═══════════════════════════════════════════
@@ -2822,7 +2931,7 @@ const G={
   _renderWelcome(){
     const c=S.player.companion, st=compStage(c.bond);
     document.getElementById('wel-emoji').textContent=st.emoji;
-    setSprite(document.getElementById('wel-emoji'),'pijar',72);
+    setPijarSprite(document.getElementById('wel-emoji'),c.bond,72);
     document.getElementById('wel-streak').textContent=`Hari ke-${S.meta.dayStreak} bareng ${c.name}`;
     document.getElementById('wel-title').textContent=(S.meta.totalDays<=1)?'Petualangan dimulai!':'Selamat datang kembali!';
     document.getElementById('wel-line').textContent=pickCompLine('welcome');
@@ -2841,7 +2950,11 @@ const G={
   showCollection(){renderCollection();show('collection');},
   restHP(){
     S.player.hp=computeMaxHP(S.player);sv();
-    showToast('HP pulih penuh!',1800);renderMap();
+    // TEMA Lapis 2 — Kesehatan: istirahat dibingkai sbg bagian dari hebat (Pijar, singkat, tak menggurui)
+    const nm=(S.player.companion&&S.player.companion.name)||'Pijar';
+    showToast('HP pulih penuh!',1500);
+    setTimeout(()=>showToast(`${nm}: Istirahat juga bagian dari hebat 💪`,2400),700);
+    renderMap();
   },
   resetGame(){
     if(confirm('Reset semua progress?')){localStorage.removeItem(SAVE_KEY);S=null;show('intro');}
@@ -3055,7 +3168,7 @@ const G={
     const d=SKILL_DEFS[E.sid],sk=S.skills[E.sid];
     const acc=Math.round(sk.accuracyRecent*100);
     const ico=document.getElementById('vic-ico');
-    if(!setSprite(ico,'enemy_'+E.sid,96)) ico.textContent=d.icon;
+    if(!setSprite(ico,enemySpriteKey(E.sid),96)) ico.textContent=d.icon;
     ico.classList.remove('celebrate');void ico.offsetWidth;ico.classList.add('celebrate');
     document.getElementById('vic-title').textContent=d.enemyName+' dikalahkan!';
     document.getElementById('vic-desc').textContent=S.player.companion?`${S.player.companion.name}: ${pickCompLine('correct')}`:`Jawabanmu tepat, ${S.player.name}!`;
