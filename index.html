@@ -365,9 +365,9 @@ input[type=number]{-moz-appearance:textfield}
     <div style="font-size:72px;line-height:1">🌑</div>
     <p class="eyebrow" style="color:var(--gold)">Prolog</p>
     <h2>Kamu adalah Sang Legenda</h2>
-    <p>Kekacauan menelan angka-angka negeri. Lepaskan <strong>semua jurus pamungkasmu</strong> — penjumlahan, pengurangan, perkalian, pembagian, dan jurus nalar — dan hancurkan dia!</p>
+    <p>Kekacauan menelan angka-angka negeri. Lepaskan <strong>semua jurus pamungkasmu</strong> — penjumlahan, pengurangan, perkalian, pembagian, pecahan, dan jurus nalar — dan hancurkan dia!</p>
     <div class="g12"></div>
-    <p class="muted">20 jurus. Jangan ragu — yang meleset pun tetap melukai Kekacauan.</p>
+    <p class="muted">Makin benar, jurusnya makin dahsyat. Jangan ragu — yang meleset pun tetap melukai Kekacauan.</p>
   </div>
   <div class="spacer"></div>
   <button class="btn btn-gold" onclick="G.startPrologFight()">Lepaskan Jurus! ⚡</button>
@@ -472,7 +472,7 @@ input[type=number]{-moz-appearance:textfield}
     <div class="mv-stat"><span>⏱️ Waktu main</span><span class="mv-val" id="meas-minutes">0 menit</span></div>
     <div class="mv-stat"><span>🆔 Kode anak</span><span class="mv-val" id="meas-id" style="font-size:11px;font-family:ui-monospace,monospace"></span></div>
   </div>
-  <p class="muted" style="font-size:11px;margin-top:8px">Skor = jawaban benar dari <span id="meas-max">4</span> soal tiap topik (awal dari Prolog, akhir dari Uji Kemampuan). Pecahan diukur menyusul.</p>
+  <p class="muted" style="font-size:11px;margin-top:8px"><strong>Kemampuan</strong> = level tertinggi yang dikuasai tiap topik (soal naik kalau benar). <strong>Kelancaran</strong> = rata-rata detik jawab benar (makin kecil makin lancar). <strong>Nalar</strong> = soal cerita (tanpa waktu). Awal dari Prolog, akhir dari Uji Kemampuan.</p>
   <div class="g8"></div>
   <!-- panel sinkron Google Sheets (guru) -->
   <div class="card" style="padding:11px 13px">
@@ -812,7 +812,7 @@ const SAVE_KEY = 'matheroes-v2';
 // ↓↓↓ GURU: tempel "Web app URL" dari Google Apps Script di antara tanda kutip ini ↓↓↓
 // (atau isi lewat tombol "Atur URL Sheet" di layar Rapor — tersimpan per perangkat).
 // Kosong = game jalan offline penuh tanpa kirim data ke mana pun.
-const SYNC_URL = '';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwfpXV75QEef_hxSwjhbvn_Xtd5x3-IuolWb6omamHeVyM3YYqkYsTUt3J4x-8XoB8/exec';
 const SYNC_URL_KEY = 'matheroes-sync-url'; // override per-perangkat (localStorage)
 const TIMER_BASE = 15;
 const ENEMY_SKILL_EVERY = 4; // turns
@@ -1288,7 +1288,8 @@ function blankState(){
     player:{name:'',hero,level:1,jobLevel:0,job:null,
       hp:20,mana:15,
       companion:{name:'Pijar',bond:0},
-      statXP:{kuat:0,tegar:0,pintar:0,gesit:0}},
+      statXP:{kuat:0,tegar:0,pintar:0,gesit:0},
+      adaptF:{add:3,sub:3,mul:3,div:3,frac:2}},  // (ITEM 3) tingkat adaptif per operasi (diisi ulang di _finishTrial)
     skills:{
       'add_0_10':blankSkill(),'add_0_20':blankSkill(),'add_0_100':blankSkill(),
       'sub_0_20':blankSkill(),'sub_0_100':blankSkill(),
@@ -1320,6 +1321,11 @@ function ld(){
         if(!S.skills[id].reviewInterval)S.skills[id].reviewInterval=1;
       }
       if(!S.player.statXP)S.player.statXP={kuat:0,tegar:0,pintar:0,gesit:0};
+      // ITEM 3: migrasi tingkat adaptif per operasi (save lama cuma punya addLevelF utk Penjumlahan)
+      if(!S.player.adaptF){
+        const base=(S.player.addLevelF!=null)?S.player.addLevelF:(S.player.addLevel||3);
+        S.player.adaptF={add:base,sub:3,mul:3,div:3,frac:2};
+      }
       if(!S.player.mana)S.player.mana=computeMaxMana(S.player);
       if(!S.player.companion)S.player.companion={name:'Pijar',bond:0};
       if(!S.meta)S.meta={lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null};
@@ -1359,7 +1365,7 @@ function accruePlay(){
   _playStart=0; sv();
 }
 // rekam hasil diagnosa. which='pre' (baseline, sekali) | 'post' (uji akhir, run terbaru menang)
-// scores = {tambah,kurang,kali,bagi,nalar} masing-masing jumlah benar dari DIAG_MAX soal
+// scores = objek dari diagResult(): {op}_lvl (kemampuan), {op}_dtk (kelancaran), nalar, rata_lvl, rata_dtk
 function recordDiag(which, scores){
   if(!S.measure) S.measure={pre:null,post:null,playSeconds:0,dirty:false};
   let ts=0; try{ts=Date.now();}catch(e){}
@@ -1368,31 +1374,35 @@ function recordDiag(which, scores){
   else S.measure.post=rec;
   S.measure.dirty=true; sv();
 }
+// total gain = jumlah kenaikan LEVEL kemampuan tiap operasi + kenaikan nalar
 function diagGain(){
   const p=S.measure&&S.measure.pre, q=S.measure&&S.measure.post;
   if(!p||!q) return null;
-  let g=0; for(const k of ['tambah','kurang','kali','bagi','nalar']) g+=((q[k]||0)-(p[k]||0));
+  let g=0;
+  for(const op of DIAG_OPS) g+=((q[op+'_lvl']||0)-(p[op+'_lvl']||0));
+  g+=((q.nalar||0)-(p.nalar||0));
   return g;
 }
-// Bentuk SATU baris snapshot per anak — dipakai untuk tampilan rapor & (nanti) sync Sheets.
+// Bentuk SATU baris snapshot per anak (Diagnosa v2): per topik = LEVEL kemampuan + DETIK kelancaran,
+// + nalar + ringkasan rata2. Dipakai utk rapor & sync Sheets. Pecahan kini ikut (ITEM 4).
+const DIAG_NAMA={add:'tambah',sub:'kurang',mul:'kali',div:'bagi',frac:'pecahan'};
 function measureRow(){
   const pre=(S.measure&&S.measure.pre)||{}, post=(S.measure&&S.measure.post)||{};
-  const cell=(o,k)=>(o&&o[k]!=null)?o[k]:'';
+  const c=(o,k)=>(o&&o[k]!=null&&o[k]!=='')?o[k]:'';
   let tgl='';try{tgl=new Date().toISOString().slice(0,10);}catch(e){}
-  return {
-    id:(S.student&&S.student.id)||'', nama:(S.player&&S.player.name)||'', kelas:(S.student&&S.student.kelas)||'',
-    tambah_awal:cell(pre,'tambah'), tambah_akhir:cell(post,'tambah'),
-    kurang_awal:cell(pre,'kurang'), kurang_akhir:cell(post,'kurang'),
-    kali_awal:cell(pre,'kali'),     kali_akhir:cell(post,'kali'),
-    bagi_awal:cell(pre,'bagi'),     bagi_akhir:cell(post,'bagi'),
-    pecahan_awal:'', pecahan_akhir:'',           // diagnosa pecahan = ITEM 4 (belum); kolom dicadangkan
-    nalar_awal:cell(pre,'nalar'),   nalar_akhir:cell(post,'nalar'),
-    total_gain: (diagGain()!=null?diagGain():''),
-    menit_main: Math.round(((S.measure&&S.measure.playSeconds)||0)/60),
-    sesi:(S.session&&S.session.count)||0,
-    diag_max:DIAG_MAX,                            // tiap skor dari DIAG_MAX soal (konteks pembaca Sheet)
-    terakhir:tgl, versi:SAVE_KEY
-  };
+  const row={ id:(S.student&&S.student.id)||'', nama:(S.player&&S.player.name)||'', kelas:(S.student&&S.student.kelas)||'' };
+  for(const op of DIAG_OPS){ const nm=DIAG_NAMA[op];
+    row[nm+'_lvl_awal']=c(pre,op+'_lvl');  row[nm+'_lvl_akhir']=c(post,op+'_lvl');   // kemampuan (0–6)
+    row[nm+'_dtk_awal']=c(pre,op+'_dtk');  row[nm+'_dtk_akhir']=c(post,op+'_dtk');   // kelancaran (detik)
+  }
+  row.nalar_awal=c(pre,'nalar');         row.nalar_akhir=c(post,'nalar');            // reasoning (0–4)
+  row.rata_lvl_awal=c(pre,'rata_lvl');   row.rata_lvl_akhir=c(post,'rata_lvl');      // ringkasan kemampuan
+  row.rata_dtk_awal=c(pre,'rata_dtk');   row.rata_dtk_akhir=c(post,'rata_dtk');      // ringkasan kelancaran
+  row.total_gain=(diagGain()!=null?diagGain():'');
+  row.menit_main=Math.round(((S.measure&&S.measure.playSeconds)||0)/60);
+  row.sesi=(S.session&&S.session.count)||0;
+  row.terakhir=tgl; row.versi=SAVE_KEY;
+  return row;
 }
 
 // URL tujuan sync: override per-perangkat (localStorage) > konstanta SYNC_URL.
@@ -1619,8 +1629,9 @@ function genDefendQ(sid){ return genAkmQ(sid); }
 let E=null;
 let timerIv=null, timerLeft=TIMER_BASE;
 let T=null; // teach context
-let DX=null; // diag context (prolog / pre-test)
-let PX=null; // post-test context (uji kemampuan)
+let DX=null; // (lama, tak dipakai lagi)
+let PX=null; // (lama, tak dipakai lagi)
+let DG=null; // mesin diagnosa v2 (dipakai pre=Prolog & post=Uji Kemampuan)
 let selectedHero=null;
 let pendingJobUp=false;
 
@@ -1826,8 +1837,8 @@ function recordAnswer(correct, isDefend){
   }
   if(correct&&isDefend){addStatXP('tegar',1);sv();}
   if(correct){missionProgress('correct',1);missionProgress('streak',sk.streak,true);}
-  // M5: kesulitan adaptif — hanya dari SERANGAN RINGAN Penjumlahan (yang dibangkitkan adaptif)
-  if(!isDefend && SKILL_DEFS[E.sid].op==='add' && E.q && E.q.tier==='ringan'){ adaptAddDifficulty(correct); }
+  // M5/ITEM 3: kesulitan adaptif KELIMA operasi — sinyal dari SERANGAN RINGAN (yang adaptif)
+  if(!isDefend && E.q && E.q.tier==='ringan'){ adaptDifficulty(SKILL_DEFS[E.sid].op, correct); }
   // M6: imbalan usaha (mencoba) + rekor diri
   S.player.effort=(S.player.effort||0)+1;
   if(!S.player.records) S.player.records={bestStreak:0};
@@ -2167,25 +2178,77 @@ function genPrologQs(){
   ].map(q=>({...q,ans:ansOf(q.a,q.b,q.op)}));
 }
 
-// ── INSTRUMEN DIAGNOSA SETARA (pre = prolog, post = uji akhir) ──
-// Satu generator dipakai pre & post → kesulitan dijamin SETARA (soal beda, bobot sama).
-// 16 soal "knowing" (genPrologQs) + 4 soal "nalar" cerita (1 per operasi, kesulitan TETAP).
-const DIAG_MAX=4;                                   // tiap topik & nalar dinilai dari 4 soal
-const DIAG_NALAR_SID={add:'add_0_20',sub:'sub_0_20',mul:'mul_1_5',div:'div_1_5'}; // sid tetap → non-adaptif
-function genDiagNalarQ(op){ return {...genAkmQ(DIAG_NALAR_SID[op]), phase:'nalar'}; }
-function genDiagSet(){
-  const knowing=genPrologQs().map(q=>({...q,phase:'knowing'}));
-  const nalar=['add','sub','mul','div'].map(genDiagNalarQ);
-  return knowing.concat(nalar); // 20 soal
+// ══ INSTRUMEN DIAGNOSA v2 — ADAPTIF & FLUENCY-AWARE (dipakai pre=Prolog & post=Uji, ALGORITMA SAMA → setara) ══
+// Tiap operasi (termasuk PECAHAN/ITEM 4): gelombang basic ADAPTIF — benar→soal naik (no plafon),
+//   skor = LEVEL tertinggi yang dikuasai (kemampuan) + rata2 waktu jawab benar (KELANCARAN, direkam DIAM-DIAM).
+// Lalu gelombang NALAR (cerita, TANPA waktu — mikir boleh lama). Kecepatan TIDAK ditampilkan ke anak.
+const DIAG_OPS=['add','sub','mul','div','frac'];   // gelombang basic (pecahan ikut = ITEM 4)
+const DIAG_NALAR_OPS=['add','sub','mul','div'];    // gelombang nalar (untimed)
+const DIAG_BASIC_PER_OP=4;                          // soal basic adaptif tiap operasi
+const DIAG_START_LVL=2;                             // mulai lembut (soal pertama gampang)
+const DIAG_SID={add:'add_0_20',sub:'sub_0_100',mul:'mul_1_10',div:'div_1_10',frac:'frac_simple'}; // label sid
+const DIAG_TOTAL=DIAG_OPS.length*DIAG_BASIC_PER_OP + DIAG_NALAR_OPS.length; // 5*4+4 = 24 soal
+const DIAG_NALAR_SID={add:'add_0_20',sub:'sub_0_20',mul:'mul_1_5',div:'div_1_5'}; // sid tetap utk nalar
+function genDiagNalarQ(op){ return {...genAkmQ(DIAG_NALAR_SID[op]), phase:'nalar', op}; }
+
+function diagInit(mode){
+  return { mode, phase:'basic', opi:0, step:0, lvl:DIAG_START_LVL, q:null, startedAt:0,
+    per:{}, nalar:{qs:DIAG_NALAR_OPS.map(genDiagNalarQ), i:0, correct:0}, done:0, total:DIAG_TOTAL };
 }
-// skor per (operasi, fase) dari array soal + array hasil boolean
-function diagScores(qs,res){
-  const by=(op,phase)=>qs.reduce((n,q,i)=>n+((q.op===op&&q.phase===phase&&res[i])?1:0),0);
-  return {
-    tambah:by('add','knowing'), kurang:by('sub','knowing'),
-    kali:by('mul','knowing'),   bagi:by('div','knowing'),
-    nalar:qs.reduce((n,q,i)=>n+((q.phase==='nalar'&&res[i])?1:0),0)
-  };
+function diagCurOp(DG){ return DIAG_OPS[DG.opi]; }
+// hasilkan soal berjalan (basic adaptif pada DG.lvl, atau nalar berikutnya)
+function diagGenQ(DG){
+  if(DG.phase==='basic'){
+    const op=diagCurOp(DG);
+    const q=genAdaptiveQ(op, DG.lvl, DIAG_SID[op]);
+    q.phase='basic'; q._lvl=DG.lvl; DG.q=q;
+  } else { DG.q=DG.nalar.qs[DG.nalar.i]; }
+  return DG.q;
+}
+// proses jawaban → adaptasi tingkat & maju. return {correct, finished}
+function diagAnswer(DG, val){
+  const q=DG.q, correct=(val===q.ans);
+  if(DG.phase==='basic'){
+    const op=diagCurOp(DG);
+    const acc=DG.per[op]||(DG.per[op]={maxLvl:0, times:[], n:0, correct:0});
+    acc.n++;
+    if(correct){
+      acc.correct++;
+      if(DG.lvl>acc.maxLvl) acc.maxLvl=DG.lvl;                 // ceiling kemampuan
+      let el=0; try{el=(nowMs()-DG.startedAt)/1000;}catch(e){}
+      if(el>0 && el<60) acc.times.push(el);                    // kelancaran (diam-diam)
+      DG.lvl=clampLvl(DG.lvl+1);                               // benar → soal naik (upgrade)
+    } else { DG.lvl=clampLvl(DG.lvl-1); }                      // salah → turun
+    DG.step++; DG.done++;
+    if(DG.step>=DIAG_BASIC_PER_OP){                            // gelombang operasi selesai
+      DG.opi++; DG.step=0; DG.lvl=DIAG_START_LVL;
+      if(DG.opi>=DIAG_OPS.length){ DG.phase='nalar'; DG.nalar.i=0; }
+    }
+  } else {
+    if(correct) DG.nalar.correct++;
+    DG.nalar.i++; DG.done++;
+  }
+  return { correct, finished: diagFinished(DG) };
+}
+function diagFinished(DG){ return DG.phase==='nalar' && DG.nalar.i>=DG.nalar.qs.length; }
+function diagWaveLabel(DG){
+  if(DG.phase==='nalar') return '🧠 JURUS NALAR';
+  return ({add:'➕ JURUS PENJUMLAHAN',sub:'➖ JURUS PENGURANGAN',mul:'✖️ JURUS PERKALIAN',div:'➗ JURUS PEMBAGIAN',frac:'🍰 JURUS PECAHAN'})[diagCurOp(DG)]||'⚡ JURUS';
+}
+// rekap hasil → { {op}_lvl, {op}_dtk, nalar, rata_lvl, rata_dtk }
+function diagResult(DG){
+  const r={}; let lvlSum=0, dtkAll=[];
+  for(const op of DIAG_OPS){
+    const acc=DG.per[op]||{maxLvl:0,times:[]};
+    r[op+'_lvl']=acc.maxLvl;
+    const dtk=acc.times.length ? acc.times.reduce((a,b)=>a+b,0)/acc.times.length : null;
+    r[op+'_dtk']= dtk!=null ? Math.round(dtk*10)/10 : '';
+    lvlSum+=acc.maxLvl; if(dtk!=null) dtkAll.push(dtk);
+  }
+  r.nalar=DG.nalar.correct;
+  r.rata_lvl=Math.round((lvlSum/DIAG_OPS.length)*10)/10;
+  r.rata_dtk= dtkAll.length ? Math.round((dtkAll.reduce((a,b)=>a+b,0)/dtkAll.length)*10)/10 : '';
+  return r;
 }
 
 // ═══════════════════════════════════════════
@@ -2223,29 +2286,70 @@ function trialFinalStart(prologStart, addLevel){
 }
 
 // ═══════════════════════════════════════════
-// M5 — KESULITAN ADAPTIF saat bermain (Penjumlahan)
+// M5 / ITEM 3 — KESULITAN ADAPTIF saat bermain (KELIMA OPERASI)
 // Staircase berbobot menuju ~80% benar (zona belajar). Ringan, client-side, tanpa IRT.
 // Benar → naik sedikit (+0.2), salah → turun lebih besar (−0.8) → setimbang di ~80% benar.
+// floor (bukan round) → pemain bertahan di tingkat mudah lebih lama = ramah anak lemah.
+// Tingkat adaptif per OPERASI di S.player.adaptF[op] (1–6). TIDAK menyentuh timer/kecepatan.
 // ═══════════════════════════════════════════
 const ADAPT_TARGET=0.8, ADAPT_STEP=1.0;
-function addPlayLevel(){
-  const f=(S&&S.player&&S.player.addLevelF!=null)?S.player.addLevelF:((S&&S.player&&S.player.addLevel)||3);
-  // floor (bukan round): pemain bertahan di tingkat lebih mudah lebih lama → lebih ramah anak lemah
-  return Math.max(1,Math.min(6,Math.floor(f)));
+// rentang kesulitan per tingkat (1=termudah … 6=tersulit), sejajar dgn tangga skill tiap operasi
+const ADAPT_BANDS={
+  add:null, // Penjumlahan tetap pakai genTrialQ (TRIAL_LEVELS) — perilaku M5 lama dipertahankan
+  sub:[null,{maxA:10},{maxA:15},{maxA:20},{maxA:40},{maxA:70},{maxA:100}],
+  mul:[null,{mf:3},{mf:4},{mf:5},{mf:6},{mf:8},{mf:10}],
+  div:[null,{mf:3},{mf:4},{mf:5},{mf:6},{mf:8},{mf:10}],
+  frac:[null,{maxDen:2,maxK:3},{maxDen:2,maxK:4},{maxDen:3,maxK:4},{maxDen:3,maxK:5},{maxDen:4,maxK:5},{maxDen:4,maxK:6}]
+};
+function clampLvl(l){ return Math.max(1,Math.min(6,l)); }
+// tingkat adaptif terpakai (floor) untuk operasi tertentu
+function playLevel(op){
+  let f=3;
+  if(S&&S.player&&S.player.adaptF&&S.player.adaptF[op]!=null) f=S.player.adaptF[op];
+  else if(op==='add'&&S&&S.player&&S.player.addLevelF!=null) f=S.player.addLevelF; // back-compat
+  return clampLvl(Math.floor(f));
 }
-function adaptAddDifficulty(correct){
+// staircase per operasi (dipanggil hanya dari SERANGAN RINGAN, sinyal kemampuan)
+function adaptDifficulty(op, correct){
   if(!S||!S.player) return;
-  if(S.player.addLevelF==null) S.player.addLevelF=(S.player.addLevel||3);
-  S.player.addLevelF += correct ? ADAPT_STEP*(1-ADAPT_TARGET) : -ADAPT_STEP*ADAPT_TARGET; // +0.2 / −0.8
-  S.player.addLevelF = Math.max(1,Math.min(6,S.player.addLevelF));
+  if(!S.player.adaptF) S.player.adaptF={};
+  if(S.player.adaptF[op]==null) S.player.adaptF[op]=(op==='add'&&S.player.addLevelF!=null)?S.player.addLevelF:3;
+  S.player.adaptF[op] += correct ? ADAPT_STEP*(1-ADAPT_TARGET) : -ADAPT_STEP*ADAPT_TARGET; // +0.2 / −0.8
+  S.player.adaptF[op] = clampLvl(S.player.adaptF[op]);
+  if(op==='add') S.player.addLevelF=S.player.adaptF[op]; // jaga cermin legacy
 }
-// soal SERANGAN (ringan): Penjumlahan ikut tingkat adaptif; operasi lain seperti biasa
-function genAttackQ(sid){
-  if(SKILL_DEFS[sid].op==='add'){
-    const tq=genTrialQ(addPlayLevel());
-    return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
+// soal SERANGAN ADAPTIF (tier ringan) untuk satu operasi pada tingkat tertentu
+function genAdaptiveQ(op, level, sid){
+  level=clampLvl(level);
+  if(op==='sub'){
+    const maxA=ADAPT_BANDS.sub[level].maxA;
+    const a=rand(Math.max(2,Math.floor(maxA*0.4)),maxA);
+    const b=rand(1,Math.max(1,a-1));
+    return {a,b,op:'sub',ans:a-b,sid,tier:'ringan'};
   }
-  return genQ(sid);
+  if(op==='mul'){
+    const mf=ADAPT_BANDS.mul[level].mf;
+    const a=rand(1,mf), b=rand(1,mf);
+    return {a,b,op:'mul',ans:a*b,sid,tier:'ringan'};
+  }
+  if(op==='div'){
+    const mf=ADAPT_BANDS.div[level].mf;
+    const b=rand(1,mf), q=rand(1,mf);
+    return {a:b*q,b,op:'div',ans:q,sid,tier:'ringan'};
+  }
+  if(op==='frac'){
+    const L=ADAPT_BANDS.frac[level];
+    const den=rand(2,L.maxDen), k=rand(1,L.maxK);
+    return {den,k,whole:den*k,num:1,op:'frac',ans:k,sid,tier:'ringan'};
+  }
+  // add (default): pakai generator Ujian Kekuatan (rentang TRIAL_LEVELS)
+  const tq=genTrialQ(level);
+  return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
+}
+// soal SERANGAN (ringan): KELIMA operasi kini ikut tingkat adaptif anak (ZPD)
+function genAttackQ(sid){
+  const op=SKILL_DEFS[sid].op;
+  return genAdaptiveQ(op, playLevel(op), sid);
 }
 
 // ═══════════════════════════════════════════
@@ -2332,37 +2436,35 @@ const G={
 
   // ─── PROLOG: SANG LEGENDA (diagnosis terselubung) ───
   startPrologFight(){
-    DX={qs:genDiagSet(),cur:0,res:[]}; // 16 knowing + 4 nalar (instrumen pre, setara dgn post)
+    DG=diagInit('pre');           // mesin diagnosa adaptif (pre)
     show('prolog');
     G._showProlog();
     setTimeout(()=>document.getElementById('inp-prolog').focus(),80);
   },
   _showProlog(){
-    const i=DX.cur, q=DX.qs[i], total=DX.qs.length;
-    const waveByOp={add:'➕ JURUS PENJUMLAHAN',sub:'➖ JURUS PENGURANGAN',mul:'✖️ JURUS PERKALIAN',div:'➗ JURUS PEMBAGIAN'};
-    document.getElementById('prolog-wave').textContent = q.phase==='nalar' ? '🧠 JURUS NALAR' : (waveByOp[q.op]||'⚡ JURUS');
-    document.getElementById('prolog-ctr').textContent=`Jurus ${i+1} / ${total}`;
+    diagGenQ(DG);
+    document.getElementById('prolog-wave').textContent=diagWaveLabel(DG);
+    document.getElementById('prolog-ctr').textContent=`Jurus ${DG.done+1} / ${DG.total}`;
     const qEl=document.getElementById('prolog-q');
-    qEl.textContent=qText(q);
-    qEl.classList.toggle('story',!!q.story); // soal nalar (cerita) → font lebih kecil & rata kiri
-    const pct=Math.round((1-i/total)*100);
+    qEl.textContent=qText(DG.q);
+    qEl.classList.toggle('story',!!DG.q.story); // soal nalar (cerita) → font lebih kecil & rata kiri
+    const pct=Math.round((1-DG.done/DG.total)*100);
     document.getElementById('prolog-hp-fill').style.width=pct+'%';
     document.getElementById('prolog-hp-val').textContent=pct+'%';
     document.getElementById('inp-prolog').value='';
+    DG.startedAt=nowMs();         // mulai catat waktu DIAM-DIAM (kelancaran) — tak ada countdown
     setTimeout(()=>document.getElementById('inp-prolog').focus(),40);
   },
   submitProlog(){
-    if(!DX||DX.cur>=DX.qs.length)return;
+    if(!DG)return;
     const inp=document.getElementById('inp-prolog');
     const v=parseInt(inp.value,10);
     if(isNaN(v)){inp.focus();return;}
     inp.value=''; // cegah double-submit
-    const q=DX.qs[DX.cur];
-    const correct=(v===q.ans);
-    DX.res.push(correct);
+    const res=diagAnswer(DG,v);
     const boss=document.getElementById('prolog-boss');
     const rect=boss.getBoundingClientRect();
-    if(correct){
+    if(res.correct){
       flash('⚡',450);
       boss.classList.remove('anim-hit');void boss.offsetWidth;boss.classList.add('anim-hit');
       floatDmg('-'+rand(18,30)+'!','#f5e042',rect.left+rect.width/2,rect.top);
@@ -2370,11 +2472,10 @@ const G={
       boss.classList.remove('anim-shake');void boss.offsetWidth;boss.classList.add('anim-shake');
       floatDmg('meleset','#9fb0c8',rect.left+rect.width/2,rect.top);
     }
-    DX.cur++;
-    const pct=Math.round((1-DX.cur/DX.qs.length)*100);
+    const pct=Math.round((1-DG.done/DG.total)*100);
     document.getElementById('prolog-hp-fill').style.width=pct+'%';
     document.getElementById('prolog-hp-val').textContent=pct+'%';
-    if(DX.cur>=DX.qs.length){
+    if(res.finished){
       boss.classList.remove('celebrate');void boss.offsetWidth;boss.classList.add('celebrate');
       setTimeout(()=>G._finishProlog(),750);
     }else{
@@ -2382,23 +2483,21 @@ const G={
     }
   },
   _finishProlog(){
-    const r=DX.res, qs=DX.qs;
-    const sc=diagScores(qs,r);                 // {tambah,kurang,kali,bagi,nalar} dari DIAG_MAX
-    const addS=sc.tambah, subS=sc.kurang, mulS=sc.kali, divS=sc.bagi;
-    // REKAM BASELINE (pre) — diagnosa awal per topik + nalar (sebelumnya dibuang!)
-    recordDiag('pre',sc);
-    // HEAD-START stat dari kemampuan nyata — HANYA soal "knowing" (4 nalar baru tak menggandakan bonus)
-    const opStat={add:'kuat',sub:'tegar',mul:'pintar',div:'pintar'};
-    qs.forEach((q,i)=>{ if(q.phase==='knowing'&&r[i]) S.player.statXP[opStat[q.op]]+=4; });
-    // penempatan SEMENTARA dari Prolog — akan dihaluskan oleh Ujian Penjumlahan
+    const pre=diagResult(DG);
+    recordDiag('pre',pre);        // REKAM BASELINE (per topik: level + kelancaran + nalar)
+    // HEAD-START stat dari kemampuan: makin tinggi level operasi, makin besar bekal stat
+    const opStat={add:'kuat',sub:'tegar',mul:'pintar',div:'pintar',frac:'pintar'};
+    for(const op of DIAG_OPS){ const lv=pre[op+'_lvl']||0; if(lv>0) S.player.statXP[opStat[op]]+=2*lv; }
+    // penempatan SEMENTARA dari level kemampuan — dihaluskan Ujian Penjumlahan
+    const aL=pre.add_lvl||0, sL=pre.sub_lvl||0, mL=pre.mul_lvl||0, dL=pre.div_lvl||0;
     let start='add_0_10';
-    if(addS<=1)                  start='add_0_10';
-    else if(addS===2)            start='add_0_20';
-    else if(divS>=2 && mulS>=2)  start='div_1_5';   // jago semua → mulai pembagian
-    else if(mulS>=2)             start='mul_1_5';
-    else if(subS>=2)             start='sub_0_20';
-    else                         start='add_0_100';
-    G._startAddTrial({addS,subS,mulS,divS,start});
+    if(aL<=2)                 start='add_0_10';
+    else if(aL<=3)            start='add_0_20';
+    else if(dL>=3 && mL>=3)   start='div_1_5';   // jago semua → mulai pembagian
+    else if(mL>=3)            start='mul_1_5';
+    else if(sL>=3)            start='sub_0_20';
+    else                      start='add_0_100';
+    G._startAddTrial({pre, start});
   },
   // ── UJIAN KEKUATAN PENJUMLAHAN (adaptif + berwaktu) ──
   _startAddTrial(prolog){
@@ -2451,31 +2550,39 @@ const G={
   },
   _finishTrial(){
     const addLevel=Math.max(1,Math.min(6,TR.level));
-    const p=TR.prolog;
+    const p=TR.prolog;                                  // {pre, start}
     const finalStart=trialFinalStart(p.start,addLevel);
     for(const id of SKILL_ORDER){ S.skills[id].status='learning'; if(id===finalStart)break; }
     S.currentSkill=finalStart;
     S.player.addLevel=addLevel;        // simpan estimasi level (M4)
-    S.player.addLevelF=addLevel;       // benih kesulitan adaptif (M5)
+    S.player.addLevelF=addLevel;       // cermin legacy
+    // ITEM 3 + Diagnosa v2: benih kesulitan adaptif PER OPERASI dari LEVEL kemampuan diagnosa
+    // (add dari Ujian Kekuatan yg lebih presisi; sub/mul/div/PECAHAN dari level basic Prolog).
+    const pre=(S.measure&&S.measure.pre)||{};
+    const sd=v=>clampLvl(v||2);
+    S.player.adaptF={ add:addLevel, sub:sd(pre.sub_lvl), mul:sd(pre.mul_lvl), div:sd(pre.div_lvl), frac:sd(pre.frac_lvl) };
     S.diagDone=true; S.session.count++; sv();
-    G._renderDiagResult(p.addS,p.subS,p.mulS,p.divS,finalStart);
+    G._renderDiagResult(p.pre, finalStart);
   },
-  _renderDiagResult(addS,subS,mulS,divS,start){
+  _renderDiagResult(pre, start){
+    pre=pre||{};
     const doms=[
-      {name:'Penjumlahan',icon:'➕',stat:'💪 KUAT',score:addS,max:4},
-      {name:'Pengurangan',icon:'➖',stat:'🛡️ TEGAR',score:subS,max:4},
-      {name:'Perkalian', icon:'✖️',stat:'✨ PINTAR',score:mulS,max:4},
-      {name:'Pembagian', icon:'➗',stat:'✨ PINTAR',score:divS,max:4}
+      {name:'Penjumlahan',icon:'➕',lvl:pre.add_lvl||0},
+      {name:'Pengurangan',icon:'➖',lvl:pre.sub_lvl||0},
+      {name:'Perkalian', icon:'✖️',lvl:pre.mul_lvl||0},
+      {name:'Pembagian', icon:'➗',lvl:pre.div_lvl||0},
+      {name:'Pecahan',   icon:'🍰',lvl:pre.frac_lvl||0}
     ];
-    const top=[...doms].sort((a,b)=>(b.score/b.max)-(a.score/a.max))[0];
-    document.getElementById('dr-title').textContent = top.score>0 ? `Bakat terbesarmu: ${top.name}!` : 'Mulai dari dasar — kamu pasti bisa!';
+    const MAX=6;
+    const top=[...doms].sort((a,b)=>b.lvl-a.lvl)[0];
+    document.getElementById('dr-title').textContent = top.lvl>0 ? `Bakat terbesarmu: ${top.name}!` : 'Mulai dari dasar — kamu pasti bisa!';
     let html='';
     for(const d of doms){
-      const pct=Math.round(d.score/d.max*100), isTop=(d===top&&top.score>0);
+      const pct=Math.round(d.lvl/MAX*100), isTop=(d===top&&top.lvl>0);
       html+=`<div style="margin-bottom:9px">
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
           <span>${d.icon} ${d.name} ${isTop?'⭐':''}</span>
-          <span style="color:rgba(255,255,255,.5)">${d.score}/${d.max} · ${d.stat}</span>
+          <span style="color:rgba(255,255,255,.5)">Kekuatan Lv.${d.lvl}</span>
         </div>
         <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:${pct}%;background:${isTop?'var(--gold)':'var(--green)'}"></div></div>
       </div>`;
@@ -2495,17 +2602,16 @@ const G={
   renderMeasure(){
     accruePlay();
     _syncUI=()=>{ const el=document.getElementById('meas-sync-status'); if(el) el.textContent=syncStatusText(); };
-    _syncUI(); // status panel sinkron (URL/online/dirty/terakhir)
-    const pre=S.measure&&S.measure.pre, post=S.measure&&S.measure.post;
-    document.getElementById('meas-max').textContent=DIAG_MAX;
+    _syncUI(); // status panel sinkron
+    const isV2=o=>o&&(o.add_lvl!=null||o.rata_lvl!=null);
+    const preRaw=S.measure&&S.measure.pre, postRaw=S.measure&&S.measure.post;
+    const pre=isV2(preRaw)?preRaw:null, post=isV2(postRaw)?postRaw:null;
     document.getElementById('meas-id').textContent=(S.student&&S.student.id)||'—';
     document.getElementById('meas-minutes').textContent=Math.round(((S.measure&&S.measure.playSeconds)||0)/60)+' menit';
-    const rows=[{k:'tambah',ic:'➕',nm:'Penjumlahan'},{k:'kurang',ic:'➖',nm:'Pengurangan'},
-      {k:'kali',ic:'✖️',nm:'Perkalian'},{k:'bagi',ic:'➗',nm:'Pembagian'},{k:'nalar',ic:'🧠',nm:'Nalar (cerita)'}];
     const runBtn=document.getElementById('meas-run');
     if(!pre){
       document.getElementById('meas-title').textContent='Baseline belum terekam';
-      document.getElementById('meas-sub').textContent='Skor awal direkam otomatis saat Prolog. Save ini dibuat sebelum fitur pengukuran ada — mulai petualangan baru agar baseline tercatat.';
+      document.getElementById('meas-sub').textContent= preRaw ? 'Baseline tersimpan dgn format lama — mulai petualangan baru agar terukur format terbaru.' : 'Skor awal direkam otomatis saat Prolog. Mulai petualangan baru agar baseline tercatat.';
       document.getElementById('meas-body').innerHTML='';
       runBtn.textContent='🎓 Jalankan Uji Kemampuan';
       return;
@@ -2513,66 +2619,75 @@ const G={
     const g=diagGain();
     document.getElementById('meas-title').textContent = post ? 'Kemajuan Belajar' : 'Skor Awal (baseline)';
     document.getElementById('meas-sub').textContent = post
-      ? (g>0?`Naik total ${g} poin dari awal! 🎉`:(g===0?'Stabil — terus berlatih ya.':'Belum naik — tak apa, terus berlatih, gurumu bisa bantu.'))
-      : 'Uji Kemampuan akhir belum dijalankan. Jalankan untuk melihat kemajuan (awal → akhir).';
+      ? (g>0?`Naik total ${g} poin kemampuan dari awal! 🎉`:(g===0?'Stabil — terus berlatih ya.':'Belum naik — tak apa, terus berlatih.'))
+      : 'Uji Kemampuan akhir belum dijalankan. Jalankan untuk lihat kemajuan (awal → akhir).';
+    const lvlArrow=(a,b)=>{ a=a||0; if(b==null) return `Lv.${a} → —`;
+      const d=Math.round((b-a)*10)/10, tag=d>0?` <span style="color:var(--green)">▲${d}</span>`:(d<0?` <span style="color:var(--danger)">▼${-d}</span>`:' <span style="opacity:.45">=</span>');
+      return `Lv.${a} → Lv.${b}${tag}`; };
+    const dtkLine=(a,b)=>{ const A=(a===''||a==null)?null:a, B=(b===''||b==null)?null:b;
+      if(A==null&&B==null) return '';
+      if(B==null) return `<div style="font-size:10px;color:rgba(255,255,255,.4)">⏱ ${A}s</div>`;
+      return `<div style="font-size:10px;color:rgba(255,255,255,.4)">⏱ ${A??'—'}s → ${B}s ${(A!=null&&B<A)?'<span style="color:var(--c-gesit)">⚡ lebih lancar</span>':''}</div>`; };
+    const ops=[{op:'add',ic:'➕',nm:'Penjumlahan'},{op:'sub',ic:'➖',nm:'Pengurangan'},{op:'mul',ic:'✖️',nm:'Perkalian'},{op:'div',ic:'➗',nm:'Pembagian'},{op:'frac',ic:'🍰',nm:'Pecahan'}];
     let html='<div class="card" style="padding:6px 12px">';
-    html+='<div class="mv-stat" style="opacity:.5;font-size:11px"><span>Topik</span><span class="mv-val">Awal → Akhir</span></div>';
-    for(const r of rows){
-      const a=pre[r.k], b=post?post[r.k]:null;
-      const arrow = b!=null ? `${a} → ${b}` : `${a} → —`;
-      let gtxt='';
-      if(b!=null&&a!=null){ const d=b-a; gtxt = d>0?` <span style="color:var(--green)">▲${d}</span>`:(d<0?` <span style="color:var(--danger)">▼${-d}</span>`:' <span style="opacity:.45">=</span>'); }
-      html+=`<div class="mv-stat"><span>${r.ic} ${r.nm}</span><span class="mv-val">${arrow}${gtxt}</span></div>`;
+    html+='<div class="mv-stat" style="opacity:.5;font-size:11px"><span>Topik</span><span class="mv-val">Kemampuan (awal→akhir)</span></div>';
+    for(const o of ops){
+      const a=pre[o.op+'_lvl'], b=post?post[o.op+'_lvl']:null;
+      html+=`<div style="padding:4px 0;border-top:1px solid rgba(255,255,255,.05)">
+        <div class="mv-stat" style="margin:0"><span>${o.ic} ${o.nm}</span><span class="mv-val">${lvlArrow(a,b)}</span></div>
+        ${dtkLine(pre[o.op+'_dtk'], post?post[o.op+'_dtk']:null)}</div>`;
     }
-    html+='</div>';
+    const na=pre.nalar||0, nb=post?(post.nalar||0):null;
+    html+=`<div class="mv-stat" style="border-top:1px solid rgba(255,255,255,.08);padding-top:6px"><span>🧠 Nalar (cerita)</span><span class="mv-val">${nb!=null?`${na} → ${nb}`:`${na} → —`}</span></div></div>`;
+    html+=`<div class="card" style="padding:8px 12px;margin-top:8px">
+      <div class="mv-stat"><span>📊 Rata-rata kemampuan</span><span class="mv-val">${lvlArrow(pre.rata_lvl, post?post.rata_lvl:null)}</span></div>
+      <div class="mv-stat"><span>⏱ Rata-rata kelancaran</span><span class="mv-val">${(pre.rata_dtk!==''&&pre.rata_dtk!=null)?pre.rata_dtk+'s':'—'}${(post&&post.rata_dtk!==''&&post.rata_dtk!=null)?' → '+post.rata_dtk+'s':''}</span></div></div>`;
     document.getElementById('meas-body').innerHTML=html;
     runBtn.textContent = post ? '🔁 Uji Ulang Kemampuan' : '🎓 Jalankan Uji Kemampuan';
   },
   startPostTest(){
-    if(!confirm('Untuk guru: jalankan Uji Kemampuan (±20 soal) untuk mengukur kemampuan akhir? Hasil terbaru jadi skor akhir.')) return;
+    if(!confirm('Untuk guru: jalankan Uji Kemampuan (±'+DIAG_TOTAL+' soal) untuk mengukur kemampuan akhir? Hasil terbaru jadi skor akhir.')) return;
     accruePlay();
-    PX={qs:genDiagSet(),cur:0,res:[]}; // instrumen SAMA dgn prolog → setara
+    DG=diagInit('post'); // mesin diagnosa SAMA dgn Prolog → setara
     show('posttest');
     G._showPost();
     setTimeout(()=>document.getElementById('inp-post').focus(),80);
   },
   _showPost(){
-    const i=PX.cur, q=PX.qs[i], total=PX.qs.length;
-    const waveByOp={add:'➕ JURUS PENJUMLAHAN',sub:'➖ JURUS PENGURANGAN',mul:'✖️ JURUS PERKALIAN',div:'➗ JURUS PEMBAGIAN'};
-    document.getElementById('post-wave').textContent = q.phase==='nalar' ? '🧠 JURUS NALAR' : (waveByOp[q.op]||'⚡ JURUS');
-    document.getElementById('post-ctr').textContent=`Soal ${i+1} / ${total}`;
+    diagGenQ(DG);
+    document.getElementById('post-wave').textContent=diagWaveLabel(DG);
+    document.getElementById('post-ctr').textContent=`Soal ${DG.done+1} / ${DG.total}`;
     const qEl=document.getElementById('post-q');
-    qEl.textContent=qText(q);
-    qEl.classList.toggle('story',!!q.story);
-    const pct=Math.round(i/total*100);
+    qEl.textContent=qText(DG.q);
+    qEl.classList.toggle('story',!!DG.q.story);
+    const pct=Math.round(DG.done/DG.total*100);
     document.getElementById('post-prog-fill').style.width=pct+'%';
     document.getElementById('post-prog-val').textContent=pct+'%';
     document.getElementById('inp-post').value='';
+    DG.startedAt=nowMs(); // catat waktu diam-diam (kelancaran)
     setTimeout(()=>document.getElementById('inp-post').focus(),40);
   },
   submitPost(){
-    if(!PX||PX.cur>=PX.qs.length)return;
+    if(!DG)return;
     const inp=document.getElementById('inp-post');
     const v=parseInt(inp.value,10);
     if(isNaN(v)){inp.focus();return;}
     inp.value=''; // cegah double-submit
-    const q=PX.qs[PX.cur];
-    PX.res.push(v===q.ans);
+    const res=diagAnswer(DG,v);
     const orb=document.getElementById('post-orb'), rect=orb.getBoundingClientRect();
-    if(v===q.ans){ flash('⚡',360); orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
+    if(res.correct){ flash('⚡',360); orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
       floatDmg('+1','#f5e042',rect.left+rect.width/2,rect.top); }
     else{ orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake'); }
-    PX.cur++;
-    const pct=Math.round(PX.cur/PX.qs.length*100);
+    const pct=Math.round(DG.done/DG.total*100);
     document.getElementById('post-prog-fill').style.width=pct+'%';
     document.getElementById('post-prog-val').textContent=pct+'%';
-    if(PX.cur>=PX.qs.length) setTimeout(()=>G._finishPost(),500);
+    if(res.finished) setTimeout(()=>G._finishPost(),500);
     else setTimeout(()=>G._showPost(),360);
   },
   _finishPost(){
-    const sc=diagScores(PX.qs,PX.res); // skor akhir per topik + nalar (post tak menyentuh skill/stat/timer)
-    recordDiag('post',sc);
-    syncMeasure(); // kirim before/after lengkap ke Sheets (best-effort)
+    const post=diagResult(DG); // skor akhir per topik (level+kelancaran) + nalar — tak menyentuh skill/stat/timer
+    recordDiag('post',post);
+    syncMeasure(); // kirim before/after ke Sheets (best-effort)
     showToast('✅ Uji Kemampuan selesai! Rapor diperbarui.',2400);
     G.renderMeasure(); show('measure');
   },
