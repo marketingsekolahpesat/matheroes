@@ -17,13 +17,16 @@
 
 ## STATUS SEKARANG
 
-- Game **jalan**, versi save `matheroes-v2`, `matheroes.html` ~3069 baris.
-- Domain Bilangan **lengkap** (5 operasi). Pijar, adab, scaffold, reward usaha — **sudah ada**. **Adaptif kini KELIMA operasi** (ITEM 3).
+- Game **jalan**, versi save `matheroes-v2`, `matheroes.html` ~3133 baris.
+- Domain Bilangan **lengkap** (5 operasi). Pijar, adab, scaffold, reward usaha — **sudah ada**. **Adaptif KELIMA operasi** (ITEM 3).
 - **ITEM 1 SELESAI** (soal AKM bernalar kelima operasi).
-- **ITEM 2 SELESAI PENUH (lokal + sync).** Pengukuran before/after + sync Google Sheets (Apps Script Web App, offline-first). `MATHEROES_AppsScript.gs` + `MATHEROES_SETUP_ONLINE.md`. **SYNC_URL sudah dipasang Daffa** (Sheet "Matheroes" aktif, data masuk). Detail **CONTEXT §21**.
-- **ITEM 3 SELESAI** (adaptif kelima operasi). `S.player.adaptF[op]` staircase ~80% per operasi, `genAdaptiveQ`/`ADAPT_BANDS`/`playLevel`/`adaptDifficulty`. Benih dari diagnosa; migrasi save lama. Terverifikasi: `verify_item3.js` 67/67 + render Edge. Detail **CONTEXT §9**.
-- Prioritas berikutnya: **ITEM 4** (diagnosa pecahan → isi `pecahan_awal/akhir` + benih `adaptF.frac`) → **ITEM 5** (Pijar nebak miskonsepsi, refinement).
-- Ringkasan ✅/❌ ada di **CONTEXT §0**. Backup: `_mh_verify/matheroes_pre_item2.html`, `matheroes_item2_done.html`, `matheroes_item3_done.html` (Downloads bukan repo git → backup = snapshot versi).
+- **ITEM 2 + Diagnosa v2 SELESAI (lokal + sync).** Diagnosa **adaptif** (pre=Prolog, post=Uji, setara): per topik **level kemampuan** (no plafon) + **kelancaran** (detik, diam-diam) + **nalar** (untimed) + ringkasan rata2; sync Google Sheets (offline-first). **SYNC_URL sudah dipasang Daffa** (data masuk). ⚠️ **kolom Sheet berubah ke skema v2 → Daffa perlu re-paste `.gs` + redeploy + clear Sheet lama.** Detail **CONTEXT §15, §21**.
+- **ITEM 3 SELESAI** (adaptif kelima operasi). `S.player.adaptF[op]`, `genAdaptiveQ`/`ADAPT_BANDS`. Detail **CONTEXT §9**.
+- **ITEM 4 SELESAI** (diagnosa cakup pecahan) — pecahan ikut gelombang basic Diagnosa v2 → `pecahan_lvl/dtk` terisi + benih `adaptF.frac`.
+- Terverifikasi: `verify_item2.js` 69/69 + `verify_item2_sync.js` 37/37 + `verify_item3.js` 67/67 + `verify_item1.js` 26/26 + render Edge (frac wave, rapor v2).
+- **THEMING (pass terpisah, CLAUDE.md/MATHEROES_TEMA.md) — TAHAP A SELESAI.** Keputusan Daffa dikunci: **nama hero Teguh/Bijak/Tangkas** (id internal adira/kira/reno TETAP → save & sprite aman), **flavor akhlak universal + ruang Islami**. Tahap A (kosmetik): rename hero+watak, label "Wilayah · Nilai: Kolaborasi/Kemandirian/Kreativitas/Keadilan" di peta, bingkai Kesehatan (Pijar pas Istirahat), penanda Penalaran (🧠 "Saatnya bernalar"). Verifikasi `verify_tema.js` 14/14 + render Edge. **TAHAP B sisa:** kekuatan khas hero (Pantang Mundur/Pikiran Jernih/Semangat Bersama), perkenalan Penjaga Wilayah, **Bintang Karakter** (8 lencana Profil), reskin musuh → "Makhluk Kebiasaan" (disadarkan, bukan dibunuh).
+- Prioritas berikutnya (pilihan Daffa): **THEMING Tahap B** atau **ITEM 5** (Pijar nebak miskonsepsi). Lalu: domain AKM non-Bilangan & Reasoning multi-langkah (PISA) = konten lanjutan.
+- Ringkasan ✅/❌ ada di **CONTEXT §0**. Backup: `_mh_verify/matheroes_pre_item2.html`, `matheroes_item2_done.html`, `matheroes_item3_done.html`, `matheroes_diagv2_item4_done.html`.
 
 ### ⚠️ KEJANGGALAN — VERIFIKASI SEBELUM JALANIN ULANG APA PUN
 Ada dugaan file `PROMPT-LANJUT-MEKANIK.md` (M1–M9) **belum dijalankan**, TAPI mekanik M1–M9 (adaptif, soal nalar bertahan, damage bisa pulih, soal tebusan, reward usaha, anti-sombong) **sudah ADA di kode**. 
@@ -55,10 +58,9 @@ Ada dugaan file `PROMPT-LANJUT-MEKANIK.md` (M1–M9) **belum dijalankan**, TAPI 
 **Verifikasi:** `_mh_verify/verify_item3.js` 67/67 + render Edge (encounter mul adaptif). Timer/kecepatan TIDAK disentuh.
 **Catatan utk review Daffa:** seperti Penjumlahan, tingkat span seluruh operasi → mastery skill rendah (mis. `mul_1_5`) praktis perlu tahan sampai faktor lebih besar. Konsisten dgn desain add yg sudah ada; kalau mau di-cap per-skill, itu revisi terpisah.
 
-### ITEM 4 — Diagnosa cakup Pecahan
-**Masalah:** Prolog 16 soal cuma tambah/kurang/kali/bagi (CONTEXT §15) — pecahan nggak ke-diagnosa.
-**Kerjakan:** tambah band pecahan ke `genPrologQs` (atau extend), biar before/after Pecahan punya baseline.
-**Definisi selesai:** diagnosa nyentuh kelima operasi.
+### ✅ ITEM 4 — Diagnosa cakup Pecahan — **SELESAI** (bareng Diagnosa v2)
+**Hasil:** `DIAG_OPS` termasuk `frac` → pecahan dapat gelombang basic adaptif sendiri ("🍰 JURUS PECAHAN") di pre & post → `pecahan_lvl`/`pecahan_dtk` terisi, benih `adaptF.frac` dari level diagnosa. Diagnosa kini nyentuh **kelima operasi**.
+**Verifikasi:** `verify_item2.js` (frac_lvl terukur) + render Edge (wave pecahan "½ dari 4 = ?").
 
 ### ITEM 5 *(refinement, bukan mendesak)* — Pijar diagnosa kesalahan spesifik
 **Sekarang:** scaffold kuat & spesifik per operasi, TAPI petunjuk nggak nebak miskonsepsi dari **jawaban salah** anak.
@@ -107,4 +109,4 @@ Kalau diagnosa akhir kebetulan lebih gampang → `gain` palsu (keliatan naik pad
 
 ---
 
-*Update terakhir: 2026-06-28 — ITEM 2 (pengukuran + sync Sheets, URL sudah dipasang & data masuk) & ITEM 3 (adaptif kelima operasi) SELESAI & terverifikasi (48/48 + 37/37 + 67/67 + render Edge). Berikutnya ITEM 4 (diagnosa pecahan). Timer/kecepatan TIDAK disentuh.*
+*Update terakhir: 2026-06-28 — ITEM 2+Diagnosa v2, ITEM 3 (adaptif 5 op), ITEM 4 (diagnosa pecahan), + THEMING Tahap A (nama hero sifat Teguh/Bijak/Tangkas, label Wilayah·Nilai, Kesehatan/Penalaran) SELESAI & terverifikasi (69+37+67+26+14 + render Edge). Keputusan dikunci: nama hero & flavor akhlak universal+Islami. ⚠️ Daffa: re-paste `.gs`+redeploy+clear Sheet (kolom v2) & push HTML ke GitHub. Berikutnya: Theming Tahap B atau ITEM 5. Timer/kecepatan TIDAK disentuh.*

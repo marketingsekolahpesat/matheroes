@@ -22,12 +22,12 @@ Game ini **jauh lebih matang** dari yang diduga. Yang **sudah jalan**:
 Yang **BELUM ada / jadi GAP** (detail di §17 dan di HANDOFF):
 
 - ✅ ~~Soal nalar untuk 4 operasi lain~~ → **SELESAI (ITEM 1):** kurang/kali/bagi/pecahan kini punya bank soal cerita AKM sendiri (lihat §7)
-- ✅ **Layer pengukuran (ITEM 2)** → **SELESAI (lokal + sync).** Identitas ringan (nama+kode kelas+id stabil), baseline pre (prolog rekam skor per topik+nalar), post-test setara (tombol "Uji Kemampuan" di peta), snapshot before/after + `menit_main`, rapor in-game, **+ sync Google Sheets** (Apps Script Web App, `SYNC_URL`/localStorage, offline-first, 1 baris/anak per checkpoint). File Apps Script: `Downloads\MATHEROES_AppsScript.gs`. Lihat §4, §15, §21.
+- ✅ **Layer pengukuran (ITEM 2) + Diagnosa v2** → **SELESAI (lokal + sync).** Identitas ringan (nama+kode kelas+id stabil); diagnosa **ADAPTIF** (pre=Prolog, post=Uji Kemampuan, algoritma sama → setara): tiap operasi skor = **level kemampuan** (no plafon) + **kelancaran** (detik, direkam diam-diam) + **nalar** (untimed) + ringkasan rata2; `menit_main`; rapor in-game; **sync Google Sheets** (Apps Script, `SYNC_URL`/localStorage, offline-first, 1 baris/anak per checkpoint). File: `Downloads\MATHEROES_AppsScript.gs`. Lihat §4, §15, §21.
 - ✅ **Adaptif KELIMA operasi (ITEM 3)** — staircase ~80% per operasi (`S.player.adaptF[op]`, `genAdaptiveQ`, `ADAPT_BANDS`). Lihat §9.
-- ❌ Diagnosa belum nyentuh pecahan (ITEM 4) — kolom `pecahan_awal/akhir` dicadangkan tapi kosong
-- ❌ Domain AKM lain (Geometri, Aljabar, Data) — belum ada
+- ✅ **Diagnosa cakup Pecahan (ITEM 4)** — pecahan ikut gelombang basic Diagnosa v2 → `pecahan_lvl/dtk` terisi + benih `adaptF.frac` dari diagnosa.
+- ❌ Domain AKM lain (Geometri, Aljabar, Data) — belum ada. **Reasoning multi-langkah** (level PISA tinggi) — belum (konten lanjutan; adaptif menaikkan plafon kesulitan ANGKA, bukan level kognitif).
 
-> **Pola kunci:** Setelah ITEM 1 (soal nalar) & ITEM 3 (adaptif), **kelima operasi sudah SETARA** — masing-masing punya soal AKM cerita **dan** kesulitan adaptif. Sisa pembeda: diagnosa pecahan (ITEM 4).
+> **Pola kunci:** ITEM 1 (soal nalar) + ITEM 3 (adaptif) + Diagnosa v2/ITEM 4 → **kelima operasi SETARA & terukur** (kemampuan adaptif + kelancaran + nalar, pre/post). Sisa besar: domain AKM non-Bilangan & Reasoning multi-langkah.
 
 ---
 
@@ -192,7 +192,7 @@ Generator:
 - `adaptDifficulty(op, correct)`: staircase berbobot menuju **~80% benar** (zona belajar). Benar `+0.2`, salah `−0.8`. Dipanggil di `recordAnswer` **hanya dari SERANGAN RINGAN** (sinyal kemampuan), semua operasi.
 - `playLevel(op)` pakai **floor** (bukan round) → anak bertahan di tingkat mudah lebih lama = **ramah anak lemah**.
 - `genAdaptiveQ(op,level,sid)` bangun soal `tier:'ringan'` pada tingkat itu; rentang per tingkat di **`ADAPT_BANDS`** (sub=maxA, mul/div=maxFactor, frac=maxDen/maxK; add tetap pakai `genTrialQ`/`TRIAL_LEVELS`). `genAttackQ(sid)` = `genAdaptiveQ(op, playLevel(op), sid)` untuk **semua** operasi.
-- **Benih awal** (`_finishTrial`): `adaptF.add` dari Ujian Kekuatan (presisi); `sub/mul/div` dari skor Prolog (0–4 → lvl 1–5); `frac` mulai lembut (2, belum didiagnosa → ITEM 4). `ld()` migrasi save lama (bangun `adaptF`, `add` ikut `addLevelF`).
+- **Benih awal** (`_finishTrial`): `adaptF.add` dari Ujian Kekuatan (presisi); `sub/mul/div/frac` dari **level kemampuan Diagnosa v2** (`pre.{op}_lvl`) — termasuk pecahan (ITEM 4). `ld()` migrasi save lama (bangun `adaptF`, `add` ikut `addLevelF`).
 - **Catatan**: seperti Penjumlahan, tingkat span seluruh operasi (mis. mastery `mul_1_5` praktis perlu tahan sampai faktor besar) — konsisten dgn desain add. **TIDAK menyentuh timer/kecepatan.**
 
 ---
@@ -237,13 +237,19 @@ Saat salah → layar `s-guide`:
 
 ---
 
-## 15. Diagnosa (instrumen pre/post SETARA — `genDiagSet`)
+## 15. Diagnosa v2 — ADAPTIF & FLUENCY-AWARE (mesin `DG`, pre=Prolog & post=Uji, ALGORITMA SAMA → setara)
 
-> **(ITEM 2)** Pre (prolog) & post (Uji Kemampuan) tarik dari **satu generator** `genDiagSet()` → kesulitan dijamin setara (soal beda, bobot sama). 20 soal: 16 `phase:'knowing'` + 4 `phase:'nalar'`. `diagScores(qs,res)` → skor per topik + nalar.
+> Engine tunggal: `diagInit(mode)` → `diagGenQ`/`diagAnswer`/`diagFinished`/`diagResult`/`diagWaveLabel`. Konstanta: `DIAG_OPS=['add','sub','mul','div','frac']`, `DIAG_NALAR_OPS` (4), `DIAG_BASIC_PER_OP=4`, `DIAG_START_LVL=2`, `DIAG_TOTAL=24`. State global `DG` (DX/PX lama mati).
 
-1. **Prolog "Sang Legenda"** (`genDiagSet` = `genPrologQs` 16 knowing + 4 nalar cerita): **20 soal, 5 gelombang** — knowing add/sub/mul/div (4 tiap, makin sulit) + **🧠 JURUS NALAR** (1 soal cerita/operasi, sid TETAP `DIAG_NALAR_SID` → non-adaptif). `_finishProlog` → `recordDiag('pre', …)` (**baseline kini DISIMPAN**) + head-start stat dari knowing saja. ⚠️ **Belum nyentuh pecahan** (ITEM 4).
-2. **Ujian Kekuatan** (`genTrialQ`, adaptif berwaktu, `TRIAL_N=6`): khusus Penjumlahan, staircase (benar-cepat +2, benar-lambat +1, salah −1). "Kekuatan = benar DAN cepat." *(mekanik berwaktu — zona keputusan Daffa, jangan diutak-atik.)*
-3. **Uji Kemampuan / POST-TEST** (`startPostTest`→`_showPost`/`submitPost`/`_finishPost`, layar `s-posttest`): instrumen `genDiagSet` yang **sama** → `recordDiag('post', …)` (run terbaru menang). Tombol di peta "🎓 Uji Kemampuan & Rapor"; **tak menyentuh skill/stat/timer** (murni ukur). Rapor before/after di `s-measure` (`renderMeasure`).
+- **Gelombang BASIC adaptif** tiap operasi (incl. **pecahan**): mulai lvl 2, **benar → soal naik** (`genAdaptiveQ` + `ADAPT_BANDS`), salah → turun (clamp 1–6). **Skor = `maxLvl`** (level tertinggi yang dijawab benar = kemampuan, no plafon). **Kelancaran** = rata2 detik jawab BENAR, **direkam diam-diam** (`DG.startedAt=nowMs()`, tanpa countdown). 4 soal/op → ceiling teramati maks 5.
+- **Gelombang NALAR** (`genDiagNalarQ`, `DIAG_NALAR_SID` tetap): 4 soal cerita AKM, **TANPA waktu** (mikir boleh lama). Skor = jumlah benar.
+- `diagResult(DG)` → `{op}_lvl`, `{op}_dtk`, `nalar`, `rata_lvl`, `rata_dtk`.
+
+1. **Prolog "Sang Legenda"** (`startPrologFight`→`_showProlog`/`submitProlog`/`_finishProlog`): 24 soal, 6 gelombang (➕➖✖️➗🍰 + 🧠 NALAR). `_finishProlog` → `recordDiag('pre', diagResult)` + head-start stat ∝ level tiap operasi + penempatan skill awal dari level.
+2. **Ujian Kekuatan** (`genTrialQ`, adaptif **berwaktu**, `TRIAL_N=6`): khusus Penjumlahan, refine penempatan add. *(mekanik berwaktu — zona keputusan Daffa, jangan diutak-atik.)* `_finishTrial` benih `adaptF` (add dari trial; sub/mul/div/**frac** dari level diagnosa).
+3. **Uji Kemampuan / POST-TEST** (`startPostTest`→`_showPost`/`submitPost`/`_finishPost`, layar `s-posttest`): `diagInit('post')` — engine **sama** → `recordDiag('post', …)` (run terbaru menang). Tombol peta "🎓 Uji Kemampuan & Rapor"; **tak menyentuh skill/stat/timer**. Rapor before/after di `s-measure` (`renderMeasure`): per topik Lv awal→akhir + ⏱ detik + nalar + ringkasan.
+
+> **Plafon kesulitan ANGKA** dinaikkan (level 1–6) — bukan level kognitif. **Reasoning PISA multi-langkah = konten lanjutan**, belum ada.
 
 ---
 
@@ -303,26 +309,25 @@ Saat salah → layar `s-guide`:
 
 ---
 
-## 21. Layer Pengukuran (ITEM 2) — peta kode & SISA KERJA
+## 21. Layer Pengukuran (ITEM 2 + Diagnosa v2 + ITEM 4) — peta kode
 
 **Tujuan:** guru lihat kemampuan tiap anak naik/nggak, per topik (VISI Tingkat 1 — gain score).
 
 **Sudah ada (LOKAL, offline-first):**
-- **Identitas ringan:** input "Kode kelas" di layar `s-name` (`inp-kelas`); `S.student={id,kelas}`. `id` stabil (`genStudentId`, prefix `mh_`) = kunci 1 baris/anak saat sync.
-- **Baseline (pre):** `_finishProlog` → `recordDiag('pre',…)` (sekali, tak ditimpa). Skor tiap topik 0–4 + `nalar` 0–4.
-- **Post-test setara:** layar `s-posttest`, instrumen `genDiagSet` yang **sama** dgn prolog → `recordDiag('post',…)`. Tombol peta "🎓 Uji Kemampuan & Rapor" (`openMeasure`→`s-measure`; jalankan via `startPostTest`).
-- **Snapshot before/after:** `s-measure` (`renderMeasure`) tampilkan awal→akhir + gain per topik, total gain (`diagGain`), `menit_main`, kode anak.
-- **Waktu main:** `startPlayClock` (di `_startEnc`) + `accruePlay` (di `_showVictory`/`_showBreak`/mastery/`goMap`). **Murni akuntansi wall-clock — TIDAK menyentuh timer/kecepatan gameplay.**
-- **`measureRow()`** = SATU baris flat (id, nama, kelas, `{topik}_awal/akhir`, `nalar_awal/akhir`, `total_gain`, `menit_main`, `sesi`, dst) — **payload yang di-POST.** Kolom `pecahan_awal/akhir` dicadangkan kosong (nunggu ITEM 4).
-- **Migrasi:** `ld()` nambah `student`/`measure` ke save lama; `measure.dirty` nandai ada data belum ter-sync; `measure.lastSync` = timestamp sukses.
-- **Verifikasi:** `_mh_verify/verify_item2.js` (48/48: genDiagSet, kesetaraan pre/post, diagScores, recordDiag, measureRow, gain, migrasi) + `verify_item2_sync.js` (37/37: sync) + render Edge (name/prolog-nalar/measure/map/enc/sync).
+- **Identitas ringan:** input "Kode kelas" di `s-name` (`inp-kelas`); `S.student={id,kelas}`, `id` stabil (`genStudentId`, prefix `mh_`) = kunci. **Sync upsert by nama+kelas** (id disertakan).
+- **Diagnosa v2 (lihat §15):** pre=`_finishProlog`→`recordDiag('pre', diagResult)`; post=`_finishPost`. Tiap topik: `{op}_lvl` (kemampuan adaptif, no plafon) + `{op}_dtk` (kelancaran detik, diam-diam) + `nalar` (untimed) + `rata_lvl`/`rata_dtk`. **Pecahan ikut** (ITEM 4).
+- **Snapshot before/after:** `s-measure` (`renderMeasure`) — per topik Lv awal→akhir (+▲/▼) + ⏱ detik + nalar + ringkasan rata2 + `menit_main` + kode anak. `diagGain` = Σ kenaikan level + nalar.
+- **Waktu main:** `startPlayClock` (`_startEnc`) + `accruePlay` (`_showVictory`/`_showBreak`/mastery/`goMap`). **Murni wall-clock — TIDAK menyentuh timer/kecepatan gameplay.**
+- **`measureRow()`** = SATU baris flat: id,nama,kelas, `{topik}_lvl_awal/akhir`, `{topik}_dtk_awal/akhir` (5 topik incl. **pecahan**), `nalar_awal/akhir`, `rata_lvl_*`, `rata_dtk_*`, `total_gain`, `menit_main`, `sesi`, `terakhir`, `versi` — **payload POST**. `DIAG_NAMA` map op→nama Indonesia.
+- **Migrasi:** `ld()` nambah `student`/`measure`/`adaptF`; `measure.dirty`/`lastSync`. renderMeasure deteksi pre format-lama (`add_lvl==null`) → minta mulai baru.
+- **Verifikasi:** `_mh_verify/verify_item2.js` (69/69: engine adaptif, kelancaran, nalar, pecahan, measureRow v2, gain, migrasi) + `verify_item2_sync.js` (37/37) + `verify_item3.js` (67/67) + render Edge (frac wave, rapor v2).
 
 **Sync Google Sheets — SELESAI (offline-first):**
-- **`SYNC_URL`** (konstanta, dekat `SAVE_KEY`, default kosong) ATAU override per-perangkat `localStorage['matheroes-sync-url']` (`SYNC_URL_KEY`) via tombol "🔗 Atur URL Sheet" di Rapor. `effectiveSyncUrl()` = override > konstanta.
+- **`SYNC_URL`** (konstanta, dekat `SAVE_KEY` — **sudah diisi URL Web App Daffa**) ATAU override per-perangkat `localStorage['matheroes-sync-url']` (`SYNC_URL_KEY`) via tombol "🔗 Atur URL Sheet" di Rapor. `effectiveSyncUrl()` = override > konstanta.
 - **`syncMeasure(force)`**: kirim `measureRow()` cuma kalau ada URL + `dirty` (atau `force`) + `isOnline()`. `fetch` **mode `no-cors` + `text/plain` + `keepalive`** (tanpa preflight; respons opaque → resolve = terkirim → `dirty=false`,`lastSync` set; reject/offline → tetap `dirty`, retry). **Bukan per jawaban** — dipanggil di **checkpoint**: `goMap()` (bila dirty), `_finishPost()`, tombol "☁️ Sinkron sekarang" (`G.syncNow`). `accruePlay()` set `dirty` → tiap sesi snapshot terbaru terkirim saat balik ke peta.
-- **Apps Script** `Downloads\MATHEROES_AppsScript.gs`: `doPost` upsert **by nama+kelas** (LockService anti-race), header **auto-dibuat** (langkah 8 panduan jadi opsional) + auto-tambah kolom kanonik yg kurang; `doGet` = cek status; opsi `TOKEN`. Daffa deploy sebagai Web App "Anyone" → tempel URL.
-- **Single-file tetap utuh**, game **penuh offline** tanpa URL. Status sync tampil di panel Rapor (`syncStatusText`).
+- **Apps Script** `Downloads\MATHEROES_AppsScript.gs`: `HEADER` kanonik **v2** (per topik `_lvl_awal/akhir` & `_dtk_awal/akhir`, incl. pecahan, + ringkasan `rata_*`); `doPost` upsert **by nama+kelas** (LockService anti-race), header auto-dibuat + auto-tambah kolom yg kurang; `doGet` status; opsi `TOKEN`. **⚠️ Setelah ganti skema v2, Daffa WAJIB re-paste `.gs` + redeploy (New version) + clear Sheet lama** biar header bersih.
+- **Single-file tetap utuh**, game **penuh offline** tanpa URL. Status sync di panel Rapor (`syncStatusText`).
 
 ---
 
-*Diperbarui Juni 2026: ITEM 2 (pengukuran + sync Sheets) & ITEM 3 (adaptif kelima operasi) SELESAI & terverifikasi. Ditulis dari pembacaan langsung `matheroes.html`. Menggantikan CONTEXT.md basi sebelumnya.*
+*Diperbarui Juni 2026: ITEM 2 (pengukuran + sync Sheets), ITEM 3 (adaptif kelima operasi), Diagnosa v2 (adaptif/kelancaran/nalar) & ITEM 4 (diagnosa pecahan) SELESAI & terverifikasi. Ditulis dari pembacaan langsung `matheroes.html`. Menggantikan CONTEXT.md basi sebelumnya.*

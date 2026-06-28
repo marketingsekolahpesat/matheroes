@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, interactive-widget=resizes-content">
 <title>Matheroes</title>
 <style>
 :root{
@@ -3222,6 +3222,14 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Enter')return;
   const id=document.querySelector('.screen.on')?.id;
   if(id==='s-name')G.confirmName();
+});
+// ─── MOBILE: keyboard sering nutup kotak jawaban/tombol → geser input ke tengah layar saat difokus.
+// (Tombol "↵/→" di keyboard angka tetap bisa submit lewat handler Enter di tiap input.)
+document.addEventListener('focusin',e=>{
+  const el=e.target;
+  if(el&&el.tagName==='INPUT'){
+    setTimeout(()=>{ try{ el.scrollIntoView({block:'center',behavior:'smooth'}); }catch(_){ } },250);
+  }
 });
 
 // ─── BOOT ───
