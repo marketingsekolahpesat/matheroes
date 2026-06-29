@@ -56,6 +56,13 @@ p:last-child{margin-bottom:0}
 .btn-green{background:var(--green);color:#fff}
 .btn-red{background:var(--danger);color:#fff}
 .btn-ghost{background:rgba(255,255,255,.08);color:#fff}
+/* keypad angka in-app (anti-gantung keyboard HP) */
+.ans-input{caret-color:transparent}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
+.np-key{padding:12px 0;font-size:20px;font-weight:800;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:var(--bg2);color:#fff;cursor:pointer;font-family:inherit;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.np-key:active{transform:scale(.94);filter:brightness(1.35)}
+.np-del{color:var(--gold)}
+.np-ok{background:var(--green);color:#fff;border-color:transparent}
 .btn-sm{padding:10px 14px;font-size:13px;border-radius:11px}
 .btn:disabled{opacity:.35;pointer-events:none}
 /* inputs */
@@ -392,7 +399,7 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div class="q-box"><div class="q-text" id="prolog-q">3 + 4 = ?</div></div>
-  <input type="number" id="inp-prolog" placeholder="Lepas jurus…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitProlog()">
+  <input type="number" id="inp-prolog" placeholder="Lepas jurus…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitProlog()">
   <div class="g12"></div>
   <button class="btn btn-gold" id="prolog-btn" onclick="G.submitProlog()">Lepas Jurus! ⚡</button>
 </div>
@@ -415,7 +422,7 @@ input[type=number]{-moz-appearance:textfield}
   <!-- jendela "cepat": jawab sebelum habis = kekuatan ekstra (bukan timeout/hukuman) -->
   <div class="timer-wrap" style="margin-bottom:10px"><div class="timer-track"><div class="timer-fill" id="trial-timer-fill" style="width:100%;background:var(--gold)"></div></div></div>
   <div class="q-box"><div class="q-text" id="trial-q">7 + 8 = ?</div><div class="q-sub-text" id="trial-sub">Makin cepat &amp; tepat, makin kuat!</div></div>
-  <input type="number" id="inp-trial" placeholder="Lepas jurus…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="999" onkeydown="if(event.key==='Enter')G.submitTrial()">
+  <input type="number" id="inp-trial" placeholder="Lepas jurus…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="999" onkeydown="if(event.key==='Enter')G.submitTrial()">
   <div class="g12"></div>
   <button class="btn btn-gold" onclick="G.submitTrial()">Lepas Jurus! ⚡</button>
 </div>
@@ -455,7 +462,7 @@ input[type=number]{-moz-appearance:textfield}
     </div>
   </div>
   <div class="q-box"><div class="q-text" id="post-q">3 + 4 = ?</div><div class="q-sub-text" id="post-sub">Tunjukkan kemampuanmu sekarang!</div></div>
-  <input type="number" id="inp-post" placeholder="Jawaban…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitPost()">
+  <input type="number" id="inp-post" placeholder="Jawaban…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitPost()">
   <div class="g12"></div>
   <button class="btn btn-gold" onclick="G.submitPost()">Jawab →</button>
   <div class="g6"></div>
@@ -643,7 +650,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <!-- skill button -->
   <button class="skill-btn" id="skill-btn" onclick="G.useSkill()">💫 Gunakan Jurus! (Mana penuh)</button>
-  <input type="number" id="inp-enc" placeholder="Jawaban…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitEnc()">
+  <input type="number" id="inp-enc" placeholder="Jawaban…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitEnc()">
   <div class="g12"></div>
   <button class="btn btn-green" id="enc-action-btn" onclick="G.submitEnc()">Serang! ⚔️</button>
   <div class="g6"></div>
@@ -668,7 +675,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="card" id="guide-redeem" style="background:rgba(91,75,230,.12);border-color:rgba(91,75,230,.28)">
     <p class="eyebrow" style="color:var(--indigo)">Tebus — soal serupa</p>
     <div class="q-text" id="guide-subq" style="font-size:clamp(20px,7vw,30px);margin:8px 0;line-height:1.25">2 + 1 = ?</div>
-    <input type="number" id="inp-guide" placeholder="Jawaban…" inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="9999" style="margin-top:10px" onkeydown="if(event.key==='Enter')G.submitGuide()">
+    <input type="number" id="inp-guide" placeholder="Jawaban…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="9999" style="margin-top:10px" onkeydown="if(event.key==='Enter')G.submitGuide()">
     <div class="g12"></div>
     <button class="btn btn-primary" onclick="G.submitGuide()">Tebus! →</button>
   </div>
@@ -3336,19 +3343,60 @@ document.addEventListener('keydown',e=>{
 // keyboard → makanya dulu masih ketutup. Sekarang dihitung dari tinggi area yg benar2 kelihatan.
 // (Tombol "↵/→" di keyboard angka tetap bisa submit lewat handler Enter di tiap input.)
 function keepInputVisible(){
-  const el=document.activeElement;
-  if(!el||el.tagName!=='INPUT')return;
+  const visH=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
   try{
+    const sc=document.querySelector('.screen.on');
+    const np=sc&&sc.querySelector('.numpad');
+    if(np){ // layar keypad in-app: tempel keypad ke bawah area terlihat → soal + input + keypad kelihatan sekaligus
+      const r=np.getBoundingClientRect();
+      const delta=r.bottom-(visH-10);
+      if(Math.abs(delta)>10) window.scrollBy(0,delta);
+      return;
+    }
+    const el=document.activeElement; // input teks (nama/companion) pakai keyboard HP → posisikan di atas keyboard
+    if(!el||el.tagName!=='INPUT')return;
     const r=el.getBoundingClientRect();
-    const visH=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
-    const targetY=Math.max(84, visH*0.40); // taruh input di ~40% area terlihat → soal di atasnya tetap kebaca
+    const targetY=Math.max(72,visH*0.34);
     const delta=r.top-targetY;
-    if(Math.abs(delta)>24) window.scrollBy({top:delta,behavior:'smooth'});
+    if(Math.abs(delta)>24) window.scrollBy(0,delta);
   }catch(_){}
 }
 document.addEventListener('focusin',e=>{ if(e.target&&e.target.tagName==='INPUT') setTimeout(keepInputVisible,300); });
 // keyboard buka/tutup → viewport berubah → pastikan input tetap kelihatan
 if(window.visualViewport){ window.visualViewport.addEventListener('resize',()=>setTimeout(keepInputVisible,60)); }
+
+// ─── KEYPAD ANGKA IN-APP — ganti keyboard HP biar KONSISTEN di semua perangkat (input readonly+inputmode=none → keyboard HP tak muncul) ───
+const ANS_SUBMIT={'s-prolog':'submitProlog','s-trial':'submitTrial','s-post':'submitPost','s-enc':'submitEnc','s-guide':'submitGuide'};
+function buildNumpad(){
+  const np=document.createElement('div'); np.className='numpad';
+  np.innerHTML=['1','2','3','4','5','6','7','8','9','del','0','ok'].map(k=>
+     k==='del'?'<button type="button" class="np-key np-del" data-k="del" aria-label="hapus">⌫</button>'
+    :k==='ok' ?'<button type="button" class="np-key np-ok" data-k="ok" aria-label="jawab">✓</button>'
+    :`<button type="button" class="np-key" data-k="${k}">${k}</button>`).join('');
+  return np;
+}
+function attachNumpads(){
+  Object.keys(ANS_SUBMIT).forEach(id=>{
+    const sc=document.getElementById(id); if(!sc) return;
+    const inp=sc.querySelector('.ans-input'); if(!inp||sc.querySelector('.numpad')) return;
+    inp.insertAdjacentElement('afterend', buildNumpad());
+  });
+}
+function npFeed(k){
+  const sc=document.querySelector('.screen.on'); if(!sc||!ANS_SUBMIT[sc.id]) return;
+  if(k==='ok'){ if(typeof G[ANS_SUBMIT[sc.id]]==='function') G[ANS_SUBMIT[sc.id]](); return; }
+  const inp=sc.querySelector('.ans-input'); if(!inp) return;
+  const maxLen=String(parseInt(inp.getAttribute('max')||'99999',10)).length;
+  if(k==='del') inp.value=inp.value.slice(0,-1);
+  else if(inp.value.length<maxLen) inp.value+=k;
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.np-key'); if(b) npFeed(b.getAttribute('data-k')); });
+// keyboard fisik (desktop) tetap bisa: angka & hapus (input readonly → diisi manual; Enter ditangani handler input)
+document.addEventListener('keydown',e=>{
+  const sc=document.querySelector('.screen.on'); if(!sc||!ANS_SUBMIT[sc.id]) return;
+  if(e.key>='0'&&e.key<='9'){ npFeed(e.key); e.preventDefault(); }
+  else if(e.key==='Backspace'){ npFeed('del'); e.preventDefault(); }
+});
 
 // ─── BOOT ───
 ld();
@@ -3362,6 +3410,7 @@ show('intro');
 updateMuteBtn(); // tampilkan ikon mute sesuai state tersimpan
 // pasang sprite hero ke kartu pilih karakter
 ['adira','kira','reno'].forEach(h=>{ setSprite(document.querySelector('#hc-'+h+' .hico'),'hero_'+h,54); });
+attachNumpads(); // pasang keypad angka in-app di tiap layar jawaban
 
 // animate celebrate style
 const sty=document.createElement('style');
