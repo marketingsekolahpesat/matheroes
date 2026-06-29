@@ -316,6 +316,7 @@ input[type=number]{-moz-appearance:textfield}
         <div class="hname">TEGUH</div>
         <div class="htitle">Sang Teguh — bangkit tiap kali jatuh</div>
         <div style="font-size:10px;color:var(--gold);opacity:.8;margin:2px 0 4px">✦ Nilai: Kemandirian · Akhlak</div>
+        <div style="font-size:11px;color:var(--c-tegar);margin:0 0 5px">🛡️ <strong>Pantang Mundur</strong> — sekali tiap tarung, tahan di 1 HP saat nyaris tumbang</div>
         <div class="hbonuses">
           <span class="stat-pill sp-kuat">💪 KUAT +3</span>
           <span class="stat-pill sp-tegar">🛡️ TEGAR +1</span>
@@ -328,6 +329,7 @@ input[type=number]{-moz-appearance:textfield}
         <div class="hname">BIJAK</div>
         <div class="htitle">Sang Bijak — mikir dulu, cari cara</div>
         <div style="font-size:10px;color:var(--gold);opacity:.8;margin:2px 0 4px">✦ Nilai: Bernalar Kritis · Kreativitas</div>
+        <div style="font-size:11px;color:var(--c-tegar);margin:0 0 5px">💡 <strong>Pikiran Jernih</strong> — soal bernalar dapat waktu + petunjuk ekstra</div>
         <div class="hbonuses">
           <span class="stat-pill sp-pintar">✨ PINTAR +3</span>
           <span class="stat-pill sp-gesit">⚡ GESIT +1</span>
@@ -340,6 +342,7 @@ input[type=number]{-moz-appearance:textfield}
         <div class="hname">TANGKAS</div>
         <div class="htitle">Sang Tangkas — kuat saat bersama</div>
         <div style="font-size:10px;color:var(--gold);opacity:.8;margin:2px 0 4px">✦ Nilai: Gotong Royong · Kewargaan</div>
+        <div style="font-size:11px;color:var(--c-tegar);margin:0 0 5px">🤝 <strong>Semangat Bersama</strong> — makin beruntun makin kuat; Pijar tumbuh cepat</div>
         <div class="hbonuses">
           <span class="stat-pill sp-gesit">⚡ GESIT +3</span>
           <span class="stat-pill sp-kuat">💪 KUAT +1</span>
@@ -775,6 +778,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="g6"></div>
   <p class="eyebrow">Statistik</p>
   <h2 id="stats-name">Pahlawan</h2>
+  <div id="stats-power"></div>
   <div class="stat-detail" id="stat-detail"></div>
   <div id="stats-stars"></div>
   <div id="stats-skills"></div>
@@ -871,10 +875,24 @@ const TEACH_EX = {
 // Hero = SATU avatar pilihan anak, gaya nama "SIFAT" (TEMA §6). ID internal (adira/kira/reno)
 // SENGAJA dipertahankan supaya save lama & sprite tetap kebaca — yang berubah hanya nama tampil + watak.
 const HEROES = {
-  adira:{name:'TEGUH',   icon:'🛡️', title:'Sang Teguh · bangkit tiap jatuh', dim:'Kemandirian · Akhlak',          bonuses:{kuat:3,tegar:1,pintar:0,gesit:0}},
-  kira: {name:'BIJAK',   icon:'✨', title:'Sang Bijak · mikir dulu, cari cara', dim:'Bernalar Kritis · Kreativitas', bonuses:{kuat:0,tegar:0,pintar:3,gesit:1}},
-  reno: {name:'TANGKAS', icon:'⚡', title:'Sang Tangkas · kuat saat bersama', dim:'Gotong Royong · Kewargaan',     bonuses:{kuat:1,tegar:0,pintar:0,gesit:3}}
+  adira:{name:'TEGUH',   icon:'🛡️', title:'Sang Teguh · bangkit tiap jatuh', dim:'Kemandirian · Akhlak',          bonuses:{kuat:3,tegar:1,pintar:0,gesit:0},
+    power:{name:'Pantang Mundur', emoji:'🛡️', desc:'Sekali tiap pertarungan, saat nyaris tumbang kamu bertahan di 1 HP & bangkit lagi.'}},
+  kira: {name:'BIJAK',   icon:'✨', title:'Sang Bijak · mikir dulu, cari cara', dim:'Bernalar Kritis · Kreativitas', bonuses:{kuat:0,tegar:0,pintar:3,gesit:1},
+    power:{name:'Pikiran Jernih', emoji:'💡', desc:'Soal bernalar dapat waktu lebih panjang + petunjuk isyarat ekstra.'}},
+  reno: {name:'TANGKAS', icon:'⚡', title:'Sang Tangkas · kuat saat bersama', dim:'Gotong Royong · Kewargaan',     bonuses:{kuat:1,tegar:0,pintar:0,gesit:3},
+    power:{name:'Semangat Bersama', emoji:'🤝', desc:'Makin beruntun makin besar damage-mu; Pijar pun tumbuh lebih cepat.'}}
 };
+// ── KEKUATAN KHAS HERO (mekanik, Tahap B) — pasif, ringan, sejajar watak ──
+// Tangkas: bonus damage tumbuh dari beruntun (momentum bareng Pijar), cap +5
+function heroStreakBonus(){
+  if(!S||!S.player||S.player.hero!=='reno'||!E) return 0;
+  const sk=S.skills[E.sid]; const st=sk?sk.streak:0;
+  return Math.min(5, Math.floor(st/3)); // tiap 3 beruntun → +1 damage
+}
+// Bijak: waktu lebih panjang utk soal bernalar (bertahan & berserk)
+function bijakTimeMult(){ return (S&&S.player&&S.player.hero==='kira') ? 1.5 : 1; }
+// isyarat ringan per operasi (dipakai petunjuk "Pikiran Jernih" Bijak — bukan jawaban)
+const BIJAK_CUE={add:'gabungkan jumlahnya',sub:'cari sisa / selisihnya',mul:'hitung kelompok yang sama',div:'bagi rata jadi kelompok',frac:'ambil pecahan dari jumlahnya'};
 const JOBS = {
   ksatria: {name:'Ksatria', icon:'⚔️', bonus:'kuat tegar'},
   penyihir:{name:'Penyihir',icon:'✨', bonus:'pintar'},
@@ -1260,6 +1278,7 @@ function compStageIdx(bond){let i=0;for(let k=0;k<COMPANION_STAGES.length;k++){i
 function setPijarSprite(el,bond,px){ if(!setSprite(el,'pijar_'+compStageIdx(bond),px)) setSprite(el,'pijar',px); }
 function addBond(n){
   if(!S.player.companion) return;
+  if(S.player.hero==='reno') n=Math.ceil(n*1.5); // Tangkas "Semangat Bersama": Pijar tumbuh lebih cepat
   const before=compStage(S.player.companion.bond);
   S.player.companion.bond+=n;
   const after=compStage(S.player.companion.bond);
@@ -1880,6 +1899,7 @@ function startEncState(sid){
     skillActive:false,
     berserk:null,berserkDone:false, // mode berserk: dipicu sekali saat HP musuh mau habis
     lastQKey:null, // anti-kembar: kunci soal serangan sebelumnya
+    pantangUsed:false, // Teguh "Pantang Mundur": jatah tahan-tumbang sekali per tarung
     timerOn,ended:false
   };
   E.lastQKey=qKey(E.q);
@@ -2015,7 +2035,10 @@ function renderQuestion(){
   qEl.classList.toggle('story',!!q.story); // soal cerita → font lebih kecil & rata kiri
   // label tingkat (Penjumlahan): ringan = serangan kita, AKM = bertahan bernalar
   let sub='';
-  if(q.tier==='akm') sub='🧠 Saatnya bernalar — pikirkan ceritanya'; // Penalaran Kritis (TEMA Lapis 2)
+  if(q.tier==='akm'){
+    sub='🧠 Saatnya bernalar — pikirkan ceritanya'; // Penalaran Kritis (TEMA Lapis 2)
+    if(S.player&&S.player.hero==='kira'&&BIJAK_CUE[q.op]) sub+=' · 💡 '+BIJAK_CUE[q.op]; // Bijak "Pikiran Jernih"
+  }
   else if(q.op==='add'&&q.tier==='ringan') sub='⚡ Serangan ringan';
   if(!sub&&q.hard) sub='⚠️ Serangan Khusus Musuh!';
   document.getElementById('enc-q-sub').textContent=sub;
@@ -2363,6 +2386,12 @@ function renderMastery(sid){
 function renderStats(){
   const p=S.player;
   document.getElementById('stats-name').textContent=`${p.name} · Lv. ${p.level}`;
+  // kekuatan khas hero (mekanik Tahap B)
+  const pwEl=document.getElementById('stats-power');
+  const hp_=HEROES[p.hero||'adira'];
+  if(pwEl&&hp_&&hp_.power){
+    pwEl.innerHTML=`<div class="card" style="padding:10px 12px;margin-bottom:10px;border-color:rgba(110,120,255,.3)"><p style="margin:0;font-size:12px"><span style="color:var(--indigo);font-weight:800">${hp_.power.emoji} ${hp_.power.name}</span> <span style="color:rgba(255,255,255,.55)">(${hp_.name})</span></p><p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,.6)">${hp_.power.desc}</p></div>`;
+  }
   const lv=k=>Math.floor(p.statXP[k]/10);
   const xpPct=k=>{const x=p.statXP[k]%10;return x*10;};
   const effects={
@@ -2734,7 +2763,10 @@ const G={
     for(const k in bonuses)S.player.statXP[k]+=bonuses[k]*10;
     S.player.hp=computeMaxHP(S.player);
     S.player.mana=computeMaxMana(S.player);
-    sv();G.showBuddy();
+    sv();
+    const pw=HEROES[selectedHero].power; // kenalkan kekuatan khas hero
+    if(pw) setTimeout(()=>showToast(`${pw.emoji} Kekuatanmu: ${pw.name} — ${pw.desc}`,3400),300);
+    G.showBuddy();
   },
 
   // ─── COMPANION ONBOARDING ───
@@ -3293,7 +3325,9 @@ const G={
     flash('✅');
     const em=document.getElementById('enc-emoji');
     em.classList.add('anim-hit');setTimeout(()=>em.classList.remove('anim-hit'),380);
-    const dmg=computeDamage(S.player);
+    const sb=heroStreakBonus(); // Tangkas "Semangat Bersama": momentum dari beruntun
+    const dmg=computeDamage(S.player)+sb;
+    if(sb>0 && S.skills[E.sid].streak%3===0) showToast(`🤝 Semangat Bersama! Momentum +${sb} damage`,1800);
     E.enemyHP=Math.max(0,E.enemyHP-dmg);
     renderEnemyHP();renderEncHUD();
     // companion bersorak — pada streak kelipatan 3 atau sesekali (biar nggak berisik)
@@ -3328,7 +3362,7 @@ const G={
     E.q=genDefendQ(E.sid);E.isDefend=true;
     renderQuestion();
     renderDefendMode(true,skillName);
-    if(E.timerOn)startTimer();
+    if(E.timerOn)startTimer(Math.round(computeTimer(S.player)*bijakTimeMult())); // Bijak: waktu nalar lebih panjang
     document.getElementById('inp-enc').focus();
   },
 
@@ -3349,12 +3383,24 @@ const G={
     const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
     floatDmg(`-${dmg}HP`,'var(--hp-color)',rect.left+60,rect.top+40);
     renderEncHUD();
-    if(S.player.hp<=0){setTimeout(()=>G._showBreak(),700);return;}
+    if(S.player.hp<=0 && !G._pantangMundur()){setTimeout(()=>G._showBreak(),700);return;}
     renderDefendMode(false);E.isDefend=false;
     setTimeout(()=>{
       renderGuide(E.q);show('guide');
       setTimeout(()=>document.getElementById('inp-guide').focus(),80);
     },700);
+  },
+  // Teguh "PANTANG MUNDUR": sekali per tarung, saat HP mau habis → tahan di 1 HP + pulih dikit (bukan tumbang)
+  _pantangMundur(){
+    if(!S.player||S.player.hero!=='adira') return false;
+    if(!E||E.pantangUsed) return false;
+    E.pantangUsed=true;
+    S.player.hp=Math.max(3, Math.round(computeMaxHP(S.player)*0.15)); sv();
+    renderEncHUD(); flash('🛡️',900);
+    showToast('🛡️ PANTANG MUNDUR! Teguh menolak tumbang — bangkit lagi!',2800);
+    if(S.player.companion) companionSay('correct');
+    if(typeof awardStar==='function') awardStar('mandiri','pantang mundur — bangkit walau nyaris tumbang');
+    return true;
   },
 
   // ─── MODE BERSERK ───
@@ -3387,7 +3433,7 @@ const G={
     renderQuestion();renderEncHUD();
     renderDefendMode(true,`🔥 Berserk! Soal nalar ${E.berserk.i+1}/${E.berserk.n}`);
     document.getElementById('timer-wrap').style.display=''; // berserk SELALU berwaktu (longgar)
-    startTimer(BERSERK_TIME);
+    startTimer(Math.round(BERSERK_TIME*bijakTimeMult())); // Bijak: waktu nalar lebih panjang
     setTimeout(()=>document.getElementById('inp-enc').focus(),60);
   },
   _handleBerserkCorrect(){
@@ -3407,7 +3453,7 @@ const G={
     const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
     floatDmg(`-${dmg}HP`,'var(--hp-color)',rect.left+60,rect.top+40);
     renderEncHUD();
-    if(S.player.hp<=0){setTimeout(()=>G._showBreak(),700);return;}
+    if(S.player.hp<=0 && !G._pantangMundur()){setTimeout(()=>G._showBreak(),700);return;}
     renderDefendMode(false);
     // dituntun dulu (scaffold), lalu LANJUT ke soal berserk berikutnya (konsekuensi HP sudah kena)
     setTimeout(()=>{

@@ -193,6 +193,13 @@ Tiap musuh, saat HP **mau habis**, ditahan jadi 1 lalu **berserk**: lepas `BERSE
 
 ---
 
+### 8b. KEKUATAN KHAS HERO (mekanik, Tahap B SELESAI 2026-06-29)
+`HEROES[h].power={name,emoji,desc}` — pasif, tampil di kartu pilih hero, intro toast `confirmHero`, & Profil (`stats-power` di `renderStats`).
+- **Teguh (adira) "Pantang Mundur"** — `_pantangMundur()` (state `E.pantangUsed`): sekali/tarung, saat HP mau habis → tahan di `max(3, 15% maxHP)` + toast + Bintang `mandiri`, bukan tumbang. Hook: `_handleDefendWrong` & `_handleBerserkWrong` (`if(S.player.hp<=0 && !G._pantangMundur())`).
+- **Bijak (kira) "Pikiran Jernih"** — `bijakTimeMult()`=1.5: timer soal bertahan (`_startDefendTurn`) & berserk (`_nextBerserkQ`) ×1.5; + `BIJAK_CUE[op]` isyarat ekstra di `renderQuestion` (label akm).
+- **Tangkas (reno) "Semangat Bersama"** — `heroStreakBonus()`=`min(5, floor(streak/3))` ditambah ke damage di `_handleAttackCorrect`; `addBond` ×1.5 (Pijar tumbuh cepat).
+Default hero lain = 0/×1 (no-regresi). Tak ada state save baru (derive dari `S.player.hero`; `E.pantangUsed` volatil). Verif: `verify_timer_berserk.js` (§1f) + `verify_flow.js` (§H).
+
 ## 9. Kesulitan Adaptif — M5 / ITEM 3 (KELIMA OPERASI)
 
 - Tingkat adaptif **per operasi** di `S.player.adaptF={add,sub,mul,div,frac}` (float 1–6). `addLevelF` lama tetap dijaga sebagai cermin `adaptF.add` (back-compat).
