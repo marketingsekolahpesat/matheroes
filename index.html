@@ -211,7 +211,7 @@ input[type=number]{-moz-appearance:textfield}
   position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(30px);
   background:var(--bg2);border:1px solid var(--gold);border-radius:12px;
   padding:10px 16px;font-size:13px;font-weight:700;color:var(--c-kuat);
-  white-space:nowrap;opacity:0;transition:opacity .25s,transform .25s;z-index:250;
+  white-space:normal;max-width:min(90vw,400px);text-align:center;line-height:1.35;opacity:0;transition:opacity .25s,transform .25s;z-index:250;
   pointer-events:none;
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -745,6 +745,7 @@ input[type=number]{-moz-appearance:textfield}
   <p class="eyebrow">Statistik</p>
   <h2 id="stats-name">Pahlawan</h2>
   <div class="stat-detail" id="stat-detail"></div>
+  <div id="stats-stars"></div>
   <div id="stats-skills"></div>
   <div class="spacer"></div>
   <button class="btn btn-ghost" onclick="G.goMap()">← Peta</button>
@@ -1295,6 +1296,56 @@ function maybeAdab(cat, chance){
   return pickAdab(cat);
 }
 function pijarSays(line, ms){ if(!line) return; const nm=(S.player&&S.player.companion&&S.player.companion.name)||'Pijar'; showToast(`${nm}: ${line}`, ms||3000); }
+
+// ── PENJAGA WILAYAH — kenalan singkat 1 kalimat per operasi, SEKALI lalu lanjut main (TEMA §3) ──
+const PENJAGA_INTRO={
+  Penjumlahan:{nama:'Tama', sapaan:'Sang Pemersatu', kata:'Di Lembah Tambah, yang kecil-kecil disatukan jadi besar. Itu gotong royong.'},
+  Pengurangan:{nama:'Wira', sapaan:'Sang Penyabar',  kata:'Di Gua Kurang, beresin satu per satu — sendiri pun kamu bisa. Itu kemandirian.'},
+  Perkalian:  {nama:'Bara', sapaan:'Sang Pelipat',   kata:'Di Menara Kali, satu kebaikan bisa dilipatgandakan. Itu kreativitas.'},
+  Pembagian:  {nama:'Bagas',sapaan:'Sang Pemerata',  kata:'Di Danau Bagi, semua dapat bagian yang sama. Itu adil.'}
+};
+function maybePenjagaIntro(grp){
+  const pj=PENJAGA_INTRO[grp]; if(!pj||!S.meta) return;
+  if(!S.meta.metPenjaga) S.meta.metPenjaga={};
+  if(S.meta.metPenjaga[grp]) return;
+  S.meta.metPenjaga[grp]=true; sv();
+  setTimeout(()=>showToast(`🛡️ Penjaga ${pj.nama} · ${pj.sapaan}: "${pj.kata}"`, 4600), 250);
+}
+
+// ── BINTANG KARAKTER — 8 Dimensi Profil Lulusan sbg LENCANA di Profil (BUKAN stat tempur) ──
+// Dibangun di atas momen yang sudah ada (menebus, AKM, mastery wilayah, menang rendah hati, istirahat).
+// Anti-pamer: bandingkan anak dgn dirinya sendiri. Komunikasi = nyusul (fitur sosial) → jujur 7/8.
+const DIMENSI=[
+  {k:'akhlak',     ico:'🤲', name:'Keimanan & Akhlak', cara:'menang besar tapi tetap rendah hati'},
+  {k:'kewargaan',  ico:'⚖️', name:'Kewargaan',         cara:'memulihkan Danau Bagi — semua kebagian'},
+  {k:'kolaborasi', ico:'🤝', name:'Gotong Royong',     cara:'menyatukan semua di Lembah Tambah'},
+  {k:'mandiri',    ico:'🧗', name:'Kemandirian',       cara:'bangkit & menebus jawabanmu sendiri'},
+  {k:'nalar',      ico:'🧠', name:'Bernalar Kritis',   cara:'menjawab soal cerita dengan menalar'},
+  {k:'kreativitas',ico:'🎨', name:'Kreativitas',       cara:'melipatgandakan kekuatan di Menara Kali'},
+  {k:'sehat',      ico:'💚', name:'Kesehatan',         cara:'istirahat di saat yang tepat'},
+  {k:'komunikasi', ico:'💬', name:'Komunikasi',        cara:'nyusul di fitur berbagi & semangati teman', soon:true}
+];
+const DIM_BY_KEY={}; DIMENSI.forEach(d=>DIM_BY_KEY[d.k]=d);
+// dapat lencana SEKALI; barisnya nempelin NAMA dimensi ke perilaku yg BARUSAN dilakukan (asosiasi, bukan flashcard)
+function awardStar(key, perilaku){
+  if(!S.meta) return;
+  if(!S.meta.stars) S.meta.stars={};
+  if(S.meta.stars[key]) return;
+  const d=DIM_BY_KEY[key]; if(!d||d.soon) return;
+  S.meta.stars[key]=true; sv();
+  setTimeout(()=>showToast(`✨ Bintang ${d.name}! Kamu ${perilaku||d.cara}.`, 3400), 500);
+}
+// lencana wilayah: saat satu grup operasi pulih sepenuhnya (idempotent)
+function checkRegionStars(){
+  const map={Penjumlahan:['kolaborasi','menyatukan semua soal di Lembah Tambah'],
+             Pengurangan:['mandiri','membereskan Gua Kurang langkah demi langkah'],
+             Perkalian:['kreativitas','melipatgandakan kekuatan di Menara Kali'],
+             Pembagian:['kewargaan','membagi rata di Danau Bagi — semua kebagian']};
+  for(const grp in map){
+    const sk=SKILL_ORDER.filter(x=>SKILL_DEFS[x].group===grp);
+    if(sk.length && sk.every(x=>S.skills[x]&&S.skills[x].status==='mastered')) awardStar(map[grp][0], map[grp][1]);
+  }
+}
 function missionProgress(id,amount,isAbsolute){
   if(!S.meta||!S.meta.missions) return;
   for(const m of S.meta.missions){
@@ -1393,7 +1444,7 @@ function blankState(){
       'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill()
     },
     session:{count:0},
-    meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null},
+    meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{}},
     collection:{monsters:{},treasures:{}},
     student:{id:genStudentId(),kelas:''},          // identitas ringan: kunci 1 baris/anak (layer pengukuran)
     measure:{pre:null,post:null,playSeconds:0,dirty:false,lastSync:null}, // before/after per topik + waktu main
@@ -1426,6 +1477,8 @@ function ld(){
       if(!S.player.companion)S.player.companion={name:'Pijar',bond:0};
       if(!S.meta)S.meta={lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null};
       if(!S.meta.missions)S.meta.missions=[];
+      if(!S.meta.stars)S.meta.stars={};         // Bintang Karakter (theming Tahap B)
+      if(!S.meta.metPenjaga)S.meta.metPenjaga={}; // perkenalan Penjaga (sekali)
       if(S.meta.missionDay===undefined)S.meta.missionDay=null;
       if(!S.collection)S.collection={monsters:{},treasures:{}};
       // ── migrasi LAYER PENGUKURAN (save lama: belum ada identitas/snapshot) ──
@@ -1939,6 +1992,7 @@ function recordAnswer(correct, isDefend){
   }
   if(correct&&isDefend){addStatXP('tegar',1);sv();}
   if(correct){missionProgress('correct',1);missionProgress('streak',sk.streak,true);}
+  if(correct && E.q && E.q.tier==='akm') awardStar('nalar','menjawab soal cerita dengan menalar'); // Bintang Bernalar Kritis
   // M5/ITEM 3: kesulitan adaptif KELIMA operasi — sinyal dari SERANGAN RINGAN (yang adaptif)
   if(!isDefend && E.q && E.q.tier==='ringan'){ adaptDifficulty(SKILL_DEFS[E.sid].op, correct); }
   // M6: imbalan usaha (mencoba) + rekor diri
@@ -2208,6 +2262,7 @@ function renderMastery(sid){
   const grp=d.group;
   const regionDone=SKILL_ORDER.filter(x=>SKILL_DEFS[x].group===grp).every(x=>S.skills[x].status==='mastered');
   if(regionDone) setTimeout(()=>showToast(`🌟 ${STORY_REGIONS[grp]||grp} pulih sepenuhnya! Cahaya kembali ke negeri.`,3200),1500);
+  checkRegionStars(); // Bintang wilayah: kolaborasi/kemandirian/kreativitas/kewargaan
   checkJobUp();
   const jlText=pendingJobUp?'<br><strong style="color:var(--gold)">✦ Kamu boleh naik job sekarang!</strong>':'';
   document.getElementById('mas-stats').innerHTML=`
@@ -2246,6 +2301,22 @@ function renderStats(){
       <div class="sd-bar"><div class="sd-bar-fill" style="--c:${d.c};width:${xpPct(d.k)}%"></div></div>
       <div class="sd-effect">${effects[d.k]}<br><span style="font-size:10px;color:rgba(255,255,255,.3)">Tumbuh dari: ${d.tumbuh}</span></div>
     </div>`).join('');
+  // ── Bintang Karakter (8 Dimensi Profil Lulusan) — tarik, bukan dorong; anti-pamer (diri sendiri) ──
+  const stars=(S.meta&&S.meta.stars)||{};
+  const earnable=DIMENSI.filter(d=>!d.soon).length;
+  const earned=DIMENSI.filter(d=>!d.soon&&stars[d.k]).length;
+  let bh=`<div style="display:flex;align-items:center;gap:7px;margin:16px 2px 4px"><span class="eyebrow" style="margin:0">🌟 Bintang Karakter</span><span style="font-size:11px;color:var(--gold)">${earned}/${earnable}</span></div>
+    <p class="muted" style="font-size:11px;margin:0 2px 8px">8 Dimensi Profil Lulusan — tumbuh dari <em>cara kamu main</em>, bukan adu sama teman.</p>
+    <div class="coll-grid">`;
+  bh+=DIMENSI.map(d=>{
+    const got=!!stars[d.k];
+    return `<div class="coll-cell${got?'':' locked'}"${got?' style="border-color:rgba(201,136,31,.4)"':''}>
+      <span style="font-size:24px;${got?'':'filter:grayscale(1);opacity:.5'}">${d.ico}</span>
+      <div class="coll-name">${got?'':(d.soon?'🔜 ':'🔒 ')}${d.name}</div>
+      <div class="coll-meta">${got?'✓ '+d.cara:(d.soon?'nyusul (fitur sosial)':'belum')}</div>
+    </div>`;
+  }).join('')+`</div>`;
+  document.getElementById('stats-stars').innerHTML=bh;
   let sh='';
   for(const id of SKILL_ORDER){
     const sk=S.skills[id],d=SKILL_DEFS[id];
@@ -2946,6 +3017,7 @@ const G={
   afterWelcome(){if(S.diagDone)ensureMissions();renderMap();show('map');},
   pickSkill(sid){
     S.currentSkill=sid;
+    maybePenjagaIntro(SKILL_DEFS[sid].group); // kenalan Penjaga sekali per wilayah
     if(S.skills[sid].attempts===0&&S.skills[sid].status!=='mastered')G._startTeach(sid);
     else G._startEnc(sid);
   },
@@ -2956,7 +3028,8 @@ const G={
     // TEMA Lapis 2 — Kesehatan: istirahat dibingkai sbg bagian dari hebat (Pijar, singkat, tak menggurui)
     const nm=(S.player.companion&&S.player.companion.name)||'Pijar';
     showToast('HP pulih penuh!',1500);
-    setTimeout(()=>showToast(`${nm}: Istirahat juga bagian dari hebat 💪`,2400),700);
+    setTimeout(()=>showToast(`${nm}: Istirahat juga bagian dari hebat 💪 — jaga Kesehatanmu.`,2600),700);
+    awardStar('sehat','istirahat di saat yang tepat'); // Bintang Kesehatan (Lapis 2)
     renderMap();
   },
   resetGame(){
@@ -3132,6 +3205,7 @@ const G={
       if(E&&E.sid) addStatXP(SKILL_DEFS[E.sid].xpStat,REDEEM_XP);
       if(S.player.companion) companionSay('correct');
       showToast('💪 Bangkit! Kamu menebusnya — usaha dihargai.',2000);
+      awardStar('mandiri','bangkit & menebus jawabanmu sendiri'); // Bintang Kemandirian
       setTimeout(()=>G._resumeFreshAttack(),600);
     }else{
       flash('🔄',400);
@@ -3205,7 +3279,7 @@ const G={
       ${healed>0?`<div class="mv-stat"><span>💚 HP pulih</span><span class="mv-val" style="color:var(--c-tegar)">+${healed}</span></div>`:''}
       <div class="mv-stat"><span>HP tersisa</span><span class="mv-val">${S.player.hp}/${computeMaxHP(S.player)}</span></div>`;
     // M8: saat menang BESAR (langka/beruntun tinggi), Pijar ingatkan rendah hati / kerja sama — sesekali
-    if(E.shiny || sk.streak>=6){ const a=maybeAdab(Math.random()<0.5?'humble':'friends',0.6); if(a) setTimeout(()=>pijarSays(a,3200),1400); }
+    if(E.shiny || sk.streak>=6){ const a=maybeAdab(Math.random()<0.5?'humble':'friends',0.6); if(a) setTimeout(()=>pijarSays(a,3200),1400); awardStar('akhlak','menang besar tapi tetap rendah hati'); } // Bintang Akhlak
     show('vic');
   },
   afterVic(){G.goMap();},
