@@ -307,7 +307,8 @@ input[type=number]{-moz-appearance:textfield}
       <span class="hico">🛡️</span>
       <div class="hinfo">
         <div class="hname">TEGUH</div>
-        <div class="htitle">Sang Teguh — berani &amp; pantang menyerah</div>
+        <div class="htitle">Sang Teguh — bangkit tiap kali jatuh</div>
+        <div style="font-size:10px;color:var(--gold);opacity:.8;margin:2px 0 4px">✦ Nilai: Kemandirian · Akhlak</div>
         <div class="hbonuses">
           <span class="stat-pill sp-kuat">💪 KUAT +3</span>
           <span class="stat-pill sp-tegar">🛡️ TEGAR +1</span>
@@ -318,7 +319,8 @@ input[type=number]{-moz-appearance:textfield}
       <span class="hico">✨</span>
       <div class="hinfo">
         <div class="hname">BIJAK</div>
-        <div class="htitle">Sang Bijak — cerdas, teliti, mikir dulu</div>
+        <div class="htitle">Sang Bijak — mikir dulu, cari cara</div>
+        <div style="font-size:10px;color:var(--gold);opacity:.8;margin:2px 0 4px">✦ Nilai: Bernalar Kritis · Kreativitas</div>
         <div class="hbonuses">
           <span class="stat-pill sp-pintar">✨ PINTAR +3</span>
           <span class="stat-pill sp-gesit">⚡ GESIT +1</span>
@@ -329,7 +331,8 @@ input[type=number]{-moz-appearance:textfield}
       <span class="hico">⚡</span>
       <div class="hinfo">
         <div class="hname">TANGKAS</div>
-        <div class="htitle">Sang Tangkas — ramah, kuat saat bersama</div>
+        <div class="htitle">Sang Tangkas — kuat saat bersama</div>
+        <div style="font-size:10px;color:var(--gold);opacity:.8;margin:2px 0 4px">✦ Nilai: Gotong Royong · Kewargaan</div>
         <div class="hbonuses">
           <span class="stat-pill sp-gesit">⚡ GESIT +3</span>
           <span class="stat-pill sp-kuat">💪 KUAT +1</span>
@@ -830,9 +833,9 @@ const TEACH_EX = {
 // Hero = SATU avatar pilihan anak, gaya nama "SIFAT" (TEMA §6). ID internal (adira/kira/reno)
 // SENGAJA dipertahankan supaya save lama & sprite tetap kebaca — yang berubah hanya nama tampil + watak.
 const HEROES = {
-  adira:{name:'TEGUH',   icon:'🛡️', title:'Sang Teguh · berani & pantang menyerah', bonuses:{kuat:3,tegar:1,pintar:0,gesit:0}},
-  kira: {name:'BIJAK',   icon:'✨', title:'Sang Bijak · cerdas, mikir dulu',        bonuses:{kuat:0,tegar:0,pintar:3,gesit:1}},
-  reno: {name:'TANGKAS', icon:'⚡', title:'Sang Tangkas · ramah, kuat saat bersama',  bonuses:{kuat:1,tegar:0,pintar:0,gesit:3}}
+  adira:{name:'TEGUH',   icon:'🛡️', title:'Sang Teguh · bangkit tiap jatuh', dim:'Kemandirian · Akhlak',          bonuses:{kuat:3,tegar:1,pintar:0,gesit:0}},
+  kira: {name:'BIJAK',   icon:'✨', title:'Sang Bijak · mikir dulu, cari cara', dim:'Bernalar Kritis · Kreativitas', bonuses:{kuat:0,tegar:0,pintar:3,gesit:1}},
+  reno: {name:'TANGKAS', icon:'⚡', title:'Sang Tangkas · kuat saat bersama', dim:'Gotong Royong · Kewargaan',     bonuses:{kuat:1,tegar:0,pintar:0,gesit:3}}
 };
 const JOBS = {
   ksatria: {name:'Ksatria', icon:'⚔️', bonus:'kuat tegar'},
