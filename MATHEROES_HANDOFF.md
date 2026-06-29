@@ -17,15 +17,20 @@
 
 ## STATUS SEKARANG
 
-- Game **jalan**, versi save `matheroes-v2`, `matheroes.html` ~3133 baris.
+- Game **jalan**, versi save `matheroes-v2`, `matheroes.html` ~3421 baris (~762KB single-file, sudah termasuk art WebP inline).
 - Domain Bilangan **lengkap** (5 operasi). Pijar, adab, scaffold, reward usaha — **sudah ada**. **Adaptif KELIMA operasi** (ITEM 3).
 - **ITEM 1 SELESAI** (soal AKM bernalar kelima operasi).
-- **ITEM 2 + Diagnosa v2 SELESAI (lokal + sync).** Diagnosa **adaptif** (pre=Prolog, post=Uji, setara): per topik **level kemampuan** (no plafon) + **kelancaran** (detik, diam-diam) + **nalar** (untimed) + ringkasan rata2; sync Google Sheets (offline-first). **SYNC_URL sudah dipasang Daffa** (data masuk). ⚠️ **kolom Sheet berubah ke skema v2 → Daffa perlu re-paste `.gs` + redeploy + clear Sheet lama.** Detail **CONTEXT §15, §21**.
+- **ITEM 2 + Diagnosa v2 SELESAI (lokal + sync).** Diagnosa **adaptif** (pre=Prolog, post=Uji, setara): per topik **level kemampuan** (no plafon) + **kelancaran** (detik, diam-diam) + **nalar** (untimed) + ringkasan rata2; sync Google Sheets (offline-first). **SYNC_URL sudah dipasang Daffa** (data masuk). ✅ **Sheet v2 BERES** — Daffa sudah re-paste `.gs` + redeploy + clear Sheet lama; `SYNC_URL` diupdate ke deploy baru (`AKfycbxS…j5yNA/exec`). Detail **CONTEXT §15, §21**.
 - **ITEM 3 SELESAI** (adaptif kelima operasi). `S.player.adaptF[op]`, `genAdaptiveQ`/`ADAPT_BANDS`. Detail **CONTEXT §9**.
 - **ITEM 4 SELESAI** (diagnosa cakup pecahan) — pecahan ikut gelombang basic Diagnosa v2 → `pecahan_lvl/dtk` terisi + benih `adaptF.frac`.
 - Terverifikasi: `verify_item2.js` 69/69 + `verify_item2_sync.js` 37/37 + `verify_item3.js` 67/67 + `verify_item1.js` 26/26 + render Edge (frac wave, rapor v2).
-- **THEMING (pass terpisah, CLAUDE.md/MATHEROES_TEMA.md) — TAHAP A SELESAI.** Keputusan Daffa dikunci: **nama hero Teguh/Bijak/Tangkas** (id internal adira/kira/reno TETAP → save & sprite aman), **flavor akhlak universal + ruang Islami**. Tahap A (kosmetik): rename hero+watak, label "Wilayah · Nilai: Kolaborasi/Kemandirian/Kreativitas/Keadilan" di peta, bingkai Kesehatan (Pijar pas Istirahat), penanda Penalaran (🧠 "Saatnya bernalar"). Verifikasi `verify_tema.js` 14/14 + render Edge. **TAHAP B sisa:** kekuatan khas hero (Pantang Mundur/Pikiran Jernih/Semangat Bersama), perkenalan Penjaga Wilayah, **Bintang Karakter** (8 lencana Profil), reskin musuh → "Makhluk Kebiasaan" (disadarkan, bukan dibunuh).
-- Prioritas berikutnya (pilihan Daffa): **THEMING Tahap B** atau **ITEM 5** (Pijar nebak miskonsepsi). Lalu: domain AKM non-Bilangan & Reasoning multi-langkah (PISA) = konten lanjutan.
+- **THEMING (pass terpisah, CLAUDE.md/MATHEROES_TEMA.md) — TAHAP A & TAHAP B SELESAI.** Keputusan Daffa dikunci: **nama hero Teguh/Bijak/Tangkas** (id internal adira/kira/reno TETAP → save & sprite aman), **flavor akhlak universal + ruang Islami**.
+  - **Tahap A (kosmetik) SELESAI:** rename hero+watak, label "Wilayah · Nilai: Kolaborasi/Kemandirian/Kreativitas/Keadilan" di peta, bingkai Kesehatan (Pijar pas Istirahat), penanda Penalaran (🧠 "Saatnya bernalar"). Verifikasi `verify_tema.js` 14/14 + render Edge.
+  - **Tahap B (naratif/kosmetik) SELESAI 2026-06-29:** hero cluster dimensi; musuh **"disadarkan → jadi teman"** (di victory + koleksi) = "Makhluk Kebiasaan"; **Penjaga Wilayah** (Tama/Wira/Bara/Bagas) intro sekali per wilayah; **Bintang Karakter 8 Dimensi Profil Lulusan** di Profil (dari milestone + perilaku, mis. jujur 7/8, Komunikasi nyusul); Lapis 2 Kesehatan/Penalaran naming + fix toast wrap. Verify harness lama tetap pass (no regresi), deploy di-rebase di atas upload `sprite-data.js` Daffa — commit `06eb820` live.
+  - **ART FINAL WebP TERINTEGRASI 2026-06-29:** 17 sprite WebP (base64 dari `sprite-data.js`) di-embed inline ke `matheroes.html` lewat `SPRITE_IMG`; `setSprite` jadi image-first + fallback palette+rows; alias hero `hero_adira/kira/reno → teguh/bijak/tangkas`. Commit `3967964` live. `sprite-data.js` eksternal sudah **dihapus dari repo** (redundant, commit `d2080d0`) — file di Downloads cuma bahan, sudah ke-embed.
+  - **FIX KEYBOARD MOBILE v2 (`visualViewport`)** commit `f668d59` — ⏳ **nunggu Daffa tes di HP.**
+- **Sisa Tahap B (DITUNDA):** kekuatan **MEKANIK** khas hero (Pantang Mundur / Pikiran Jernih / Semangat Bersama) — baru naratifnya yang masuk, mekaniknya belum.
+- Prioritas berikutnya (pilihan Daffa): **kekuatan MEKANIK hero (sisa Tahap B)** atau **ITEM 5** (Pijar nebak miskonsepsi). Lalu: domain AKM non-Bilangan & Reasoning multi-langkah (PISA) = konten lanjutan.
 - Ringkasan ✅/❌ ada di **CONTEXT §0**. Backup: `_mh_verify/matheroes_pre_item2.html`, `matheroes_item2_done.html`, `matheroes_item3_done.html`, `matheroes_diagv2_item4_done.html`.
 
 ### ⚠️ KEJANGGALAN — VERIFIKASI SEBELUM JALANIN ULANG APA PUN
@@ -68,13 +73,15 @@ Ada dugaan file `PROMPT-LANJUT-MEKANIK.md` (M1–M9) **belum dijalankan**, TAPI 
 
 ---
 
-## ⏳ BUTUH KEPUTUSAN DAFFA (jangan diubah sebelum dia putuskan)
+## ✅ TIMER — KEPUTUSAN DAFFA SUDAH DIAMBIL (2026-06-29): "timer LEMBUT"
 
-**Timer & reward kecepatan vs VISI #5/#7.**
-- Sekarang: timer cuma nyala pas skill sudah `accurate`/`mastered` (✅ off pas anak masih belajar — bagus). TAPI "Ujian Kekuatan" + speed-XP GESIT **menghargai kecepatan** ("benar DAN cepat").
-- VISI #5 ("paham dulu baru cepat") & #7 ("timer nggak menghukum") → ini **zona abu-abu**, bukan pelanggaran.
-- **Pilihan Daffa:** (a) pertahankan apa adanya (timer ter-gate sudah cukup aman), atau (b) lembutin framing kecepatan (mis. kecepatan jadi bonus opsional, bukan jalur utama XP).
-- **Claude Code: JANGAN ubah mekanik timer/kecepatan sampai Daffa pilih.**
+Daffa minta **2 fitur timer** (dulu zona parkir) — dieksekusi dengan arah **"timer LEMBUT"** (hormati VISI #5):
+1. **Ujian Kekuatan berwaktu KELIMA operasi** (dulu cuma Penjumlahan). "Timer"-nya = **bar jendela-cepat** (bonus kalau cepat, **BUKAN** timeout/hukuman) → sejalan VISI #5. Tiap babak: add 6 soal, sub/mul/div/frac **3 soal** (ringkas). Benih `adaptF[op]` kini dari hasil Ujian Kekuatan tiap operasi (fallback level diagnosa). Detail CONTEXT §15.
+2. **MODE BERSERK** — tiap musuh, saat HP mau habis (ditahan jadi 1), "berserk" & lepas **`BERSERK_N`=2 soal nalar** yang harus ditangkis → **jaminan tiap pertarungan ada soal bernalar**. Timer **LONGGAR** (`BERSERK_TIME`=28s, nalar butuh mikir). **Salah/telat = damage yang BISA pulih + dituntun (Guide), lalu lanjut** (keputusan Daffa: "kena damage bisa-pulih + dituntun"). Detail CONTEXT §7b.
+3. **DEDUP SOAL (anti-kembar)** — soal tak boleh sama beruntun: `qKey`+set `seen` di Ujian Kekuatan (`genTrialQOpFresh`) & diagnosa Prolog (`DG.seen`), `freshAttackQ` (hindari kembar beruntun) di combat. Terbukti 0 kembar dlm 3.500 simulasi.
+4. **SKIP CERDAS + Penjaga** — operasi (non-add) yang anak LEMAH di diagnosa (`pre.{op}_lvl ≤ TRIAL_SKIP_LVL`=1) → layar `s-guardian`: pilihan **"Minta tolong Penjaga [Tama/Wira/Bara/Bagas; Pecahan=Pijar]"** (skip ujian → baseline `{op}_lvl`=0, benih `adaptF`=1, narasi "Penjaga hancurin Monster") **atau "Aku mau coba sendiri"** (ujian jalan, level keukur). Onboarding jadi cepat utk anak lemah, tetap ada pilihan. Diagnosa AKHIR tetap via tombol peta "Uji Kemampuan & Rapor" (soal mirip).
+
+> **Sisa yang MASIH parkir (jangan diubah tanpa Daffa):** speed-XP GESIT (timer in-combat reguler ter-gate `accurate`/`mastered`) — itu belum disentuh, tetap apa adanya.
 
 ---
 
@@ -109,4 +116,8 @@ Kalau diagnosa akhir kebetulan lebih gampang → `gain` palsu (keliatan naik pad
 
 ---
 
-*Update terakhir: 2026-06-28 — ITEM 2+Diagnosa v2, ITEM 3 (adaptif 5 op), ITEM 4 (diagnosa pecahan), + THEMING Tahap A (nama hero sifat Teguh/Bijak/Tangkas, label Wilayah·Nilai, Kesehatan/Penalaran) SELESAI & terverifikasi (69+37+67+26+14 + render Edge). Keputusan dikunci: nama hero & flavor akhlak universal+Islami. ⚠️ Daffa: re-paste `.gs`+redeploy+clear Sheet (kolom v2) & push HTML ke GitHub. Berikutnya: Theming Tahap B atau ITEM 5. Timer/kecepatan TIDAK disentuh.*
+*Update terakhir: 2026-06-29 (sesi 2) — **TIMER LEMBUT** (keputusan Daffa): (1) **Ujian Kekuatan berwaktu KELIMA operasi** (bar jendela-cepat lembut; sub/mul/div/frac 3 soal; benih `adaptF` dari hasil ujian tiap op) + (2) **MODE BERSERK** (musuh mau mati → tahan HP 1 → `BERSERK_N`=2 soal nalar berwaktu longgar `BERSERK_TIME`=28s; salah=damage bisa-pulih+dituntun → jaminan tiap fight ada nalar). Verifikasi: harness lama no-regresi (item1 26, item2 73, item2_sync 37, item3 67, tema 14; m1/m5 fail = stale lama, identik di backup) + harness baru `verify_timer_berserk.js` 73/73 + `verify_flow.js` (runtime kontroler) 17/17 + render Edge (boot + layar Ujian Kekuatan Perkalian). Backup: `_mh_verify/matheroes_pre_timer_berserk.html` & `matheroes_timer_berserk_done.html`. Catatan UI backlog: tombol angka statik (nanti dinamis utk akar √ dll). Berikutnya: kekuatan MEKANIK hero (sisa Tahap B) atau ITEM 5.*
+
+*(2026-06-29 sesi 1 — THEMING **Tahap B** (hero cluster dimensi, musuh "disadarkan→jadi teman", Penjaga Wilayah Tama/Wira/Bara/Bagas, Bintang Karakter 8 Dimensi, Lapis 2 Kesehatan/Penalaran + fix toast wrap) SELESAI; **ART FINAL WebP** (17 sprite di-embed inline via `SPRITE_IMG`, `setSprite` image-first, alias hero) TERINTEGRASI; **fix keyboard HP v2** (`visualViewport`). Commit live: `06eb820` (Tahap B) → `3967964` (art) → `d2080d0` (hapus `sprite-data.js` redundan) → `f668d59` (fix keyboard). Verify harness lama tetap pass, no regresi. ⏳ Nunggu Daffa tes keyboard di HP. Sheet v2 BERES (Daffa sudah redeploy `.gs` + clear Sheet, `SYNC_URL` diupdate, data masuk). Berikutnya: kekuatan MEKANIK hero (sisa Tahap B) atau ITEM 5. Timer/kecepatan TIDAK disentuh.*
+
+*(Riwayat sebelumnya — 2026-06-28: ITEM 2+Diagnosa v2, ITEM 3 adaptif 5 op, ITEM 4 diagnosa pecahan, + THEMING Tahap A SELESAI & terverifikasi 69+37+67+26+14 + render Edge.)*

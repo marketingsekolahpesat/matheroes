@@ -1,6 +1,6 @@
 # MATHEROES — Konteks Proyek & Status Kode
 
-> **Dokumen ini ditulis ulang dari `matheroes.html` yang BENERAN jalan (2706 baris, SAVE_KEY `matheroes-v2`).**
+> **Dokumen ini ditulis ulang dari `matheroes.html` yang BENERAN jalan (~3421 baris, ~762KB, SAVE_KEY `matheroes-v2`).**
 > Versi CONTEXT sebelumnya sudah BASI (nulis "penjumlahan doang, Pijar tidak ada") — **buang yang lama, pakai ini.**
 > Baca ini + `MATHEROES_VISI.md` + `MATHEROES_HANDOFF.md` sebelum menyentuh kode apa pun.
 
@@ -28,6 +28,10 @@ Yang **BELUM ada / jadi GAP** (detail di §17 dan di HANDOFF):
 - ❌ Domain AKM lain (Geometri, Aljabar, Data) — belum ada. **Reasoning multi-langkah** (level PISA tinggi) — belum (konten lanjutan; adaptif menaikkan plafon kesulitan ANGKA, bukan level kognitif).
 
 > **Pola kunci:** ITEM 1 (soal nalar) + ITEM 3 (adaptif) + Diagnosa v2/ITEM 4 → **kelima operasi SETARA & terukur** (kemampuan adaptif + kelancaran + nalar, pre/post). Sisa besar: domain AKM non-Bilangan & Reasoning multi-langkah.
+
+- ✅ **THEMING Tahap A & B SELESAI (2026-06-29)** *(pass terpisah — detail di `MATHEROES_TEMA.md` + HANDOFF, bukan mekanik inti)*: nama hero sifat (Teguh/Bijak/Tangkas, id internal adira/kira/reno TETAP), label Wilayah·Nilai 8 Dimensi Profil Lulusan, musuh "disadarkan→jadi teman" (Makhluk Kebiasaan), Penjaga Wilayah (Tama/Wira/Bara/Bagas), **Bintang Karakter 8 Dimensi** (`S.meta.stars`), Lapis 2 Kesehatan/Penalaran naming. **ART FINAL WebP** (17 sprite base64 di-embed inline via `SPRITE_IMG`; `setSprite` image-first + fallback palette+rows). **Tidak menyentuh mekanik timer/adaptif/measurement.**
+
+> **Backlog UI (catatan Daffa, BELUM dikerjakan):** tombol angka input sekarang **statik** (0–9) — gpp untuk sekarang. **Nanti** dibikin **dinamis** mengikuti tipe soal (mis. soal yang butuh simbol akar √ dll) supaya bisa nampung soal non-numerik murni. Bukan prioritas saat ini.
 
 ---
 
@@ -169,6 +173,9 @@ Generator:
 
 > ✅ **Gap #2 (VISI) TERATASI — ITEM 1:** kelima operasi punya soal AKM kontekstual saat bertahan (konteks: personal, sosial-budaya, saintifik). Isyarat per operasi: kurang=ambil/sisa/selisih, kali=kelompok sama, bagi=dibagi rata/dikelompokkan, pecahan=pecahan-satuan dari jumlah. Anak menalar OPERASI mana, bukan sekadar hitung. **Sisa:** level `Reasoning` multi-langkah & domain non-Bilangan.
 
+### 7b. MODE BERSERK (keputusan Daffa "timer LEMBUT" 2026-06-29)
+Tiap musuh, saat HP **mau habis**, ditahan jadi 1 lalu **berserk**: lepas `BERSERK_N`=2 **soal nalar** (`genDefendQ`=AKM, ditandai `q.berserk`) yang harus ditangkis → **jaminan TIAP pertarungan ada soal bernalar**. Timer **LONGGAR** (`BERSERK_TIME`=28s; nalar butuh mikir; selalu nyala saat berserk meski skill belum mastered — pengecualian sadar yg disetujui Daffa, dibingkai bonus/drama bukan hukuman). **Salah/telat = `defendDamage` (bisa pulih, tak mematikan dari sehat) + Guide (dituntun), lalu lanjut** soal berikutnya. Semua nalar tuntas → `_showVictory` (musuh "disadarkan"). Kode di `G`: `_maybeBerserk` (intercept di `_handleAttackCorrect` & jalur jurus), `_startBerserk`, `_nextBerserkQ`, `_handleBerserkCorrect`/`_handleBerserkWrong`; state `E.berserk`/`E.berserkDone`; `startTimer(dur)` terima durasi (`timerTotal`). Jurus dinonaktifkan saat berserk. Verifikasi: `verify_timer_berserk.js` + `verify_flow.js`.
+
 ---
 
 ## 8. Sistem Stat (RPG)
@@ -246,7 +253,7 @@ Saat salah → layar `s-guide`:
 - `diagResult(DG)` → `{op}_lvl`, `{op}_dtk`, `nalar`, `rata_lvl`, `rata_dtk`.
 
 1. **Prolog "Sang Legenda"** (`startPrologFight`→`_showProlog`/`submitProlog`/`_finishProlog`): 24 soal, 6 gelombang (➕➖✖️➗🍰 + 🧠 NALAR). `_finishProlog` → `recordDiag('pre', diagResult)` + head-start stat ∝ level tiap operasi + penempatan skill awal dari level.
-2. **Ujian Kekuatan** (`genTrialQ`, adaptif **berwaktu**, `TRIAL_N=6`): khusus Penjumlahan, refine penempatan add. *(mekanik berwaktu — zona keputusan Daffa, jangan diutak-atik.)* `_finishTrial` benih `adaptF` (add dari trial; sub/mul/div/**frac** dari level diagnosa).
+2. **Ujian Kekuatan — KELIMA OPERASI** (keputusan Daffa "timer LEMBUT" 2026-06-29): `_startTrials`→`_showTrialQ`/`submitTrial`/`_nextTrialOp`/`_finishTrials`; `genTrialQOp(op,level)` (add=`genTrialQ`/`TRIAL_LEVELS`, lain=`genAdaptiveQ`/`ADAPT_BANDS`). Babak per operasi (`TRIAL_OPS`): add `TRIAL_N`=6, sub/mul/div/frac `TRIAL_N_OTHER`=3. "Timer" = **bar jendela-cepat** (`fastThreshold`, bonus kalau cepat — **BUKAN** timeout/hukuman → hormati VISI #5). Benih level tiap babak (`_trialSeed`): add dari penempatan Prolog, lain dari `pre.{op}_lvl`. `_finishTrials` benih `adaptF` dari **hasil Ujian Kekuatan tiap operasi** (`TR.results`, fallback level diagnosa). Label operasi via `trial-eyebrow`/`trial-ename`/`TRIAL_OP_META`. **Anti-kembar:** `genTrialQOpFresh`+`qKey`+set `TR.seen` (reset tiap babak) → soal tak berulang; diagnosa Prolog (`DG.seen`) & combat (`freshAttackQ`) juga dedup. **SKIP CERDAS:** operasi non-add yg anak LEMAH (`pre.{op}_lvl`≤`TRIAL_SKIP_LVL`=1) → layar `s-guardian` (`_offerGuardian`/`_guardianHelp`/`_tryAnyway`/`_trialWeak`, `trialGuardian` map op→Penjaga, frac=Pijar): pilih **minta Penjaga** (skip → `pre.{op}_lvl`=0 + benih `adaptF`=1 + narasi) ATAU **coba sendiri** (ujian jalan). Verifikasi: `verify_timer_berserk.js` 91/91 + `verify_flow.js` 26/26.
 3. **Uji Kemampuan / POST-TEST** (`startPostTest`→`_showPost`/`submitPost`/`_finishPost`, layar `s-posttest`): `diagInit('post')` — engine **sama** → `recordDiag('post', …)` (run terbaru menang). Tombol peta "🎓 Uji Kemampuan & Rapor"; **tak menyentuh skill/stat/timer**. Rapor before/after di `s-measure` (`renderMeasure`): per topik Lv awal→akhir + ⏱ detik + nalar + ringkasan.
 
 > **Plafon kesulitan ANGKA** dinaikkan (level 1–6) — bukan level kognitif. **Reasoning PISA multi-langkah = konten lanjutan**, belum ada.
@@ -330,4 +337,4 @@ Saat salah → layar `s-guide`:
 
 ---
 
-*Diperbarui Juni 2026: ITEM 2 (pengukuran + sync Sheets), ITEM 3 (adaptif kelima operasi), Diagnosa v2 (adaptif/kelancaran/nalar) & ITEM 4 (diagnosa pecahan) SELESAI & terverifikasi. Ditulis dari pembacaan langsung `matheroes.html`. Menggantikan CONTEXT.md basi sebelumnya.*
+*Diperbarui 2026-06-29: ITEM 2 (pengukuran + sync Sheets), ITEM 3 (adaptif kelima operasi), Diagnosa v2 (adaptif/kelancaran/nalar) & ITEM 4 (diagnosa pecahan) SELESAI & terverifikasi; + THEMING Tahap A & B + ART FINAL WebP terintegrasi (kosmetik/naratif, tak menyentuh mekanik); + (sesi 2) **TIMER LEMBUT** keputusan Daffa: Ujian Kekuatan berwaktu KELIMA operasi (§15) + MODE BERSERK soal nalar (§7b) — verifikasi `verify_timer_berserk.js` 73/73 + `verify_flow.js` 17/17 + render Edge, harness lama no-regresi. Ditulis dari pembacaan langsung `matheroes.html`. Menggantikan CONTEXT.md basi sebelumnya.*

@@ -407,11 +407,11 @@ input[type=number]{-moz-appearance:textfield}
 <!-- UJIAN KEKUATAN PENJUMLAHAN (adaptif + berwaktu) -->
 <div id="s-trial" class="screen">
   <div class="g6"></div>
-  <p class="eyebrow" style="color:var(--gold)">Ujian Kekuatan · Penjumlahan</p>
+  <p class="eyebrow" id="trial-eyebrow" style="color:var(--gold)">Ujian Kekuatan · Penjumlahan</p>
   <h2 id="trial-title" style="font-size:19px">Rasakan kekuatanmu terbangun ⚡</h2>
-  <p class="diag-ctr" id="trial-ctr">Jurus 1 / 6</p>
+  <p class="diag-ctr" id="trial-ctr">Soal 1 / 6</p>
   <div class="enemy-arena">
-    <div class="enemy-name">Kekuatan Penjumlahan</div>
+    <div class="enemy-name" id="trial-ename">Kekuatan Penjumlahan</div>
     <span class="enemy-emoji" id="trial-orb">🔆</span>
     <div class="g6"></div>
     <div class="bar-wrap" style="width:100%;max-width:260px">
@@ -425,6 +425,22 @@ input[type=number]{-moz-appearance:textfield}
   <input type="number" id="inp-trial" placeholder="Lepas jurus…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="999" onkeydown="if(event.key==='Enter')G.submitTrial()">
   <div class="g12"></div>
   <button class="btn btn-gold" onclick="G.submitTrial()">Lepas Jurus! ⚡</button>
+</div>
+
+<!-- SKIP CERDAS: pilihan minta tolong Penjaga vs coba sendiri (operasi yang anak lemah) -->
+<div id="s-guardian" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" id="grd-eyebrow" style="color:var(--gold)">Wilayah</p>
+  <h2 style="font-size:19px">Monster ini terasa kuat… 🛡️</h2>
+  <div class="enemy-arena">
+    <div class="enemy-name" id="grd-mon">Monster</div>
+    <span class="enemy-emoji" id="grd-mon-ico">👾</span>
+  </div>
+  <div class="q-box"><div class="q-text" id="grd-text" style="font-size:15px;text-align:left;line-height:1.5">…</div></div>
+  <div class="g12"></div>
+  <button class="btn btn-green" id="grd-help" onclick="G._guardianHelp()">🛡️ Minta tolong Penjaga</button>
+  <div class="g6"></div>
+  <button class="btn" id="grd-try" style="background:var(--indigo)" onclick="G._tryAnyway()">⚔️ Aku mau coba sendiri!</button>
 </div>
 
 <!-- DIAGNOSIS RESULT -->
@@ -827,6 +843,12 @@ const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxSENbn_8LGNHs6TB7E6CQ
 const SYNC_URL_KEY = 'matheroes-sync-url'; // override per-perangkat (localStorage)
 const TIMER_BASE = 15;
 const ENEMY_SKILL_EVERY = 4; // turns
+// MODE BERSERK (keputusan Daffa 2026-06-29): tiap musuh, saat HP-nya MAU habis (ditahan jadi 1),
+// dia "berserk" & melepas beberapa soal NALAR yang harus ditangkis → jaminan TIAP pertarungan
+// pasti ada soal bernalar. Timer-nya sengaja LONGGAR (lembut, hormati VISI #5: bukan hukuman,
+// nalar butuh waktu mikir). Salah/telat = damage yang BISA pulih + dituntun (Guide), lalu lanjut.
+const BERSERK_N = 2;       // jumlah soal nalar saat berserk ("beberapa")
+const BERSERK_TIME = 28;   // detik — LONGGAR; tekanan tipis + dramatis, bukan drill kecepatan
 const OP_SYM = {add:'+', sub:'−', mul:'×', div:'÷'};
 const FRAC_SYM = {2:'½', 3:'⅓', 4:'¼', 5:'⅕'};
 // Contoh CPA per operasi (angka sengaja kecil & ramah)
@@ -1474,7 +1496,7 @@ function blankState(){
       hp:20,mana:15,
       companion:{name:'Pijar',bond:0},
       statXP:{kuat:0,tegar:0,pintar:0,gesit:0},
-      adaptF:{add:3,sub:3,mul:3,div:3,frac:2}},  // (ITEM 3) tingkat adaptif per operasi (diisi ulang di _finishTrial)
+      adaptF:{add:3,sub:3,mul:3,div:3,frac:2}},  // (ITEM 3) tingkat adaptif per operasi (diisi ulang di _finishTrials)
     skills:{
       'add_0_10':blankSkill(),'add_0_20':blankSkill(),'add_0_100':blankSkill(),
       'sub_0_20':blankSkill(),'sub_0_100':blankSkill(),
@@ -1820,7 +1842,7 @@ function genDefendQ(sid){ return genAkmQ(sid); }
 // VOLATILE ENCOUNTER STATE
 // ═══════════════════════════════════════════
 let E=null;
-let timerIv=null, timerLeft=TIMER_BASE;
+let timerIv=null, timerLeft=TIMER_BASE, timerTotal=TIMER_BASE;
 let T=null; // teach context
 let DX=null; // (lama, tak dipakai lagi)
 let PX=null; // (lama, tak dipakai lagi)
@@ -1838,8 +1860,11 @@ function startEncState(sid){
     enemyHP:hp,enemyMaxHP:hp,shiny,
     turn:0,isDefend:false,subQ:null,lastQ:null,defendDone:false,recordShown:false,
     skillActive:false,
+    berserk:null,berserkDone:false, // mode berserk: dipicu sekali saat HP musuh mau habis
+    lastQKey:null, // anti-kembar: kunci soal serangan sebelumnya
     timerOn,ended:false
   };
+  E.lastQKey=qKey(E.q);
 }
 // Kapan giliran BERTAHAN (AKM) dipicu? Tiap 4 giliran, ATAU — khusus Penjumlahan —
 // JAMINAN minimal 1× saat HP musuh turun ≤ separuh (supaya soal AKM pasti kebagian
@@ -1920,15 +1945,16 @@ function renderStatPills(containerId){
 // TIMER
 // ═══════════════════════════════════════════
 function stopTimer(){clearInterval(timerIv);timerIv=null;}
-function startTimer(){
+function startTimer(dur){
   stopTimer();
-  timerLeft=computeTimer(S.player);
+  timerTotal=dur||computeTimer(S.player); // dur opsional → timer LONGGAR khusus berserk
+  timerLeft=timerTotal;
   updateTimerBar();
   timerIv=setInterval(()=>{timerLeft--;updateTimerBar();if(timerLeft<=0){stopTimer();G.timedOut();}},1000);
 }
 function updateTimerBar(){
   const fill=document.getElementById('timer-fill');if(!fill)return;
-  const total=computeTimer(S.player);
+  const total=timerTotal||computeTimer(S.player);
   fill.style.width=((timerLeft/total)*100)+'%';
   fill.className='timer-fill'+(timerLeft<=4?' danger':'');
 }
@@ -2413,7 +2439,7 @@ const DIAG_NALAR_SID={add:'add_0_20',sub:'sub_0_20',mul:'mul_1_5',div:'div_1_5'}
 function genDiagNalarQ(op){ return {...genAkmQ(DIAG_NALAR_SID[op]), phase:'nalar', op}; }
 
 function diagInit(mode){
-  return { mode, phase:'basic', opi:0, step:0, lvl:DIAG_START_LVL, q:null, startedAt:0,
+  return { mode, phase:'basic', opi:0, step:0, lvl:DIAG_START_LVL, q:null, startedAt:0, seen:new Set(),
     per:{}, nalar:{qs:DIAG_NALAR_OPS.map(genDiagNalarQ), i:0, correct:0}, done:0, total:DIAG_TOTAL };
 }
 function diagCurOp(DG){ return DIAG_OPS[DG.opi]; }
@@ -2421,7 +2447,9 @@ function diagCurOp(DG){ return DIAG_OPS[DG.opi]; }
 function diagGenQ(DG){
   if(DG.phase==='basic'){
     const op=diagCurOp(DG);
-    const q=genAdaptiveQ(op, DG.lvl, DIAG_SID[op]);
+    let q=genAdaptiveQ(op, DG.lvl, DIAG_SID[op]);
+    for(let t=0; t<24 && DG.seen && DG.seen.has(qKey(q)); t++) q=genAdaptiveQ(op, DG.lvl, DIAG_SID[op]); // anti-kembar
+    if(DG.seen) DG.seen.add(qKey(q));
     q.phase='basic'; q._lvl=DG.lvl; DG.q=q;
   } else { DG.q=DG.nalar.qs[DG.nalar.i]; }
   return DG.q;
@@ -2443,6 +2471,7 @@ function diagAnswer(DG, val){
     DG.step++; DG.done++;
     if(DG.step>=DIAG_BASIC_PER_OP){                            // gelombang operasi selesai
       DG.opi++; DG.step=0; DG.lvl=DIAG_START_LVL;
+      if(DG.seen) DG.seen.clear();                             // reset anti-kembar tiap operasi
       if(DG.opi>=DIAG_OPS.length){ DG.phase='nalar'; DG.nalar.i=0; }
     }
   } else {
@@ -2483,13 +2512,50 @@ const TRIAL_LEVELS=[null,
   {maxA:14, maxSum:20},  {maxA:19, maxSum:20},   // L3, L4
   {maxA:45, maxSum:100}, {maxA:80, maxSum:100}   // L5, L6
 ];
-const TRIAL_N=6; // jumlah soal ujian (5–8)
+const TRIAL_N=6; // jumlah soal ujian Penjumlahan (5–8) — perilaku lama dipertahankan
+// (timer asesmen semua operasi, keputusan Daffa 2026-06-29): Ujian Kekuatan kini dijalankan utk
+// KELIMA operasi, tiap operasi punya "jendela cepat" (bar timer LEMBUT — bonus, BUKAN hukuman → VISI #5).
+const TRIAL_OPS=['add','sub','mul','div','frac']; // urutan babak Ujian Kekuatan
+const TRIAL_N_OTHER=3;  // soal per operasi selain Penjumlahan (ringkas — jaga onboarding tetap pendek)
+const TRIAL_SID={add:'add_0_20',sub:'sub_0_20',mul:'mul_1_5',div:'div_1_5',frac:'frac_simple'};
+const TRIAL_OP_META={
+  add: {name:'Penjumlahan',icon:'➕',ename:'Kekuatan Penjumlahan',stat:'KUAT'},
+  sub: {name:'Pengurangan',icon:'➖',ename:'Ketangguhan Pengurangan',stat:'TEGAR'},
+  mul: {name:'Perkalian', icon:'✖️',ename:'Ketajaman Perkalian',stat:'PINTAR'},
+  div: {name:'Pembagian', icon:'➗',ename:'Ketajaman Pembagian',stat:'PINTAR'},
+  frac:{name:'Pecahan',   icon:'🍰',ename:'Ketajaman Pecahan',stat:'PINTAR'}
+};
+const TRIAL_GROUP={add:'Penjumlahan',sub:'Pengurangan',mul:'Perkalian',div:'Pembagian',frac:'Pecahan'};
+// SKIP CERDAS (keputusan Daffa): operasi non-add yg anak LEMAH di diagnosa (level ≤ ini) → tawarkan
+// bantuan Penjaga (skip ujian biar cepat, baseline=0), TAPI anak tetap boleh pilih coba sendiri.
+const TRIAL_SKIP_LVL=1;
+// Penjaga per operasi (Pecahan tak punya Penjaga → Pijar yang bantu)
+function trialGuardian(op){
+  const grp=TRIAL_GROUP[op], pj=PENJAGA_INTRO[grp];
+  if(pj) return {nama:pj.nama, region:grp};
+  const comp=(S.player&&S.player.companion&&S.player.companion.name)||'Pijar';
+  return {nama:comp, region:grp}; // frac: Pijar yang bantu
+}
 function genTrialQ(level){
   const L=TRIAL_LEVELS[Math.max(1,Math.min(6,level))];
   let a,b,t=0;
   do{a=rand(1,L.maxA);b=rand(1,L.maxA);t++;}while((a+b>L.maxSum||a+b<2)&&t<80);
   if(a+b>L.maxSum){a=Math.floor(L.maxSum/2);b=L.maxSum-a;}
   return{a,b,op:'add',ans:a+b,level,tier:'ringan'};
+}
+// soal Ujian Kekuatan per operasi: add pakai TRIAL_LEVELS, operasi lain pakai genAdaptiveQ + ADAPT_BANDS
+function genTrialQOp(op, level){
+  if(op==='add') return genTrialQ(level);
+  return genAdaptiveQ(op, clampLvl(level), TRIAL_SID[op]);
+}
+// kunci unik soal → buat hindari soal kembar (random tapi tak boleh sama dalam satu babak)
+function qKey(q){ return q.op==='frac' ? `frac-${q.den}-${q.k}-${q.whole}` : `${q.op}-${q.a}-${q.b}`; }
+// generate soal yang BEDA dari yang sudah keluar (set seen); fallback terima kembar bila ruang soal habis
+function genTrialQOpFresh(op, level, seen){
+  let q=genTrialQOp(op,level);
+  for(let t=0; t<24 && seen && seen.has(qKey(q)); t++) q=genTrialQOp(op,level);
+  if(seen) seen.add(qKey(q));
+  return q;
 }
 function fastThreshold(level){ return 3 + level*0.8; } // detik — jendela "cepat" makin longgar utk soal sulit
 // langkah adaptif (staircase): benar-cepat naik 2, benar-lambat naik 1, salah turun 1 (kecepatan diabaikan)
@@ -2571,6 +2637,13 @@ function genAdaptiveQ(op, level, sid){
 function genAttackQ(sid){
   const op=SKILL_DEFS[sid].op;
   return genAdaptiveQ(op, playLevel(op), sid);
+}
+// serangan yang tak mengulang soal SEBELUMNYA (hindari kembar beruntun saat bertarung)
+function freshAttackQ(sid){
+  let q=genAttackQ(sid);
+  for(let t=0; t<24 && E && E.lastQKey && E.lastQKey===qKey(q); t++) q=genAttackQ(sid);
+  if(E) E.lastQKey=qKey(q);
+  return q;
 }
 
 // ═══════════════════════════════════════════
@@ -2718,20 +2791,29 @@ const G={
     else if(mL>=3)            start='mul_1_5';
     else if(sL>=3)            start='sub_0_20';
     else                      start='add_0_100';
-    G._startAddTrial({pre, start});
+    G._startTrials({pre, start});
   },
-  // ── UJIAN KEKUATAN PENJUMLAHAN (adaptif + berwaktu) ──
-  _startAddTrial(prolog){
-    const seed = SKILL_DEFS[prolog.start].op==='add'
+  // ── UJIAN KEKUATAN (adaptif + jendela-cepat) — KELIMA OPERASI ──
+  // benih level tiap babak: add dari penempatan Prolog; operasi lain dari LEVEL kemampuan diagnosa.
+  _trialSeed(op, prolog){
+    if(op==='add') return SKILL_DEFS[prolog.start].op==='add'
       ? ({add_0_10:2,add_0_20:3,add_0_100:5}[prolog.start]||3) : 4;
-    TR={i:0,n:TRIAL_N,level:seed,hist:[],prolog,q:null,startedAt:0};
+    const pre=(S.measure&&S.measure.pre)||{};
+    return clampLvl(pre[op+'_lvl']||2);
+  },
+  _startTrials(prolog){
+    TR={prolog, opIdx:0, op:TRIAL_OPS[0], i:0, n:TRIAL_N,
+        level:G._trialSeed(TRIAL_OPS[0],prolog), hist:[], results:{}, seen:new Set(), q:null, startedAt:0};
     show('trial');
     G._showTrialQ();
     setTimeout(()=>document.getElementById('inp-trial').focus(),80);
   },
   _showTrialQ(){
-    TR.q=genTrialQ(TR.level);
-    document.getElementById('trial-ctr').textContent=`Jurus ${TR.i+1} / ${TR.n}`;
+    const meta=TRIAL_OP_META[TR.op];
+    TR.q=genTrialQOpFresh(TR.op,TR.level,TR.seen); // random, tak boleh sama dalam satu babak
+    const eb=document.getElementById('trial-eyebrow'); if(eb) eb.textContent='Ujian Kekuatan · '+meta.name;
+    const en=document.getElementById('trial-ename');   if(en) en.textContent=meta.ename;
+    document.getElementById('trial-ctr').textContent=`${meta.icon} ${meta.name} · Soal ${TR.i+1} / ${TR.n}`;
     document.getElementById('trial-power-val').textContent='Lv.'+TR.level;
     document.getElementById('trial-power-fill').style.width=Math.round(TR.level/6*100)+'%';
     document.getElementById('trial-q').textContent=qText(TR.q);
@@ -2744,7 +2826,7 @@ const G={
     setTimeout(()=>document.getElementById('inp-trial').focus(),40);
   },
   submitTrial(){
-    if(!TR||TR.i>=TR.n)return;
+    if(!TR||TR.i>=TR.n||TR.awaitGuardian)return;
     const inp=document.getElementById('inp-trial');
     const v=parseInt(inp.value,10);
     if(isNaN(v)){inp.focus();return;}
@@ -2752,36 +2834,79 @@ const G={
     const elapsed=nowMs()-TR.startedAt;
     const correct=(v===TR.q.ans);
     const fast=correct && elapsed<=fastThreshold(TR.level)*1000; // cepat HANYA bila benar
+    const meta=TRIAL_OP_META[TR.op];
     const orb=document.getElementById('trial-orb'), rect=orb.getBoundingClientRect();
     if(correct){
       flash(fast?'⚡':'✨',420);
       orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
-      floatDmg(fast?'+2 KUAT!':'+1 kuat','#f5e042',rect.left+rect.width/2,rect.top);
+      floatDmg(fast?`+2 ${meta.stat}!`:`+1 ${meta.stat.toLowerCase()}`,'#f5e042',rect.left+rect.width/2,rect.top);
     }else{
       orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake');
       floatDmg('meleset','#9fb0c8',rect.left+rect.width/2,rect.top);
     }
-    TR.hist.push({level:TR.level,correct,fast,elapsed:Math.round(elapsed)});
+    TR.hist.push({op:TR.op,level:TR.level,correct,fast,elapsed:Math.round(elapsed)});
     TR.level=trialAdapt(TR.level,correct,fast);
     document.getElementById('trial-power-val').textContent='Lv.'+TR.level;
     document.getElementById('trial-power-fill').style.width=Math.round(TR.level/6*100)+'%';
     TR.i++;
-    if(TR.i>=TR.n) setTimeout(()=>G._finishTrial(),700);
+    if(TR.i>=TR.n){ TR.results[TR.op]=clampLvl(TR.level); setTimeout(()=>G._nextTrialOp(),700); }
     else setTimeout(()=>G._showTrialQ(),520);
   },
-  _finishTrial(){
-    const addLevel=Math.max(1,Math.min(6,TR.level));
+  _nextTrialOp(){
+    TR.opIdx++;
+    if(TR.opIdx>=TRIAL_OPS.length){ G._finishTrials(); return; }
+    TR.op=TRIAL_OPS[TR.opIdx];
+    TR.i=0; TR.n=(TR.op==='add')?TRIAL_N:TRIAL_N_OTHER;
+    TR.level=G._trialSeed(TR.op,TR.prolog);
+    TR.seen=new Set(); // reset anti-kembar tiap babak operasi
+    // SKIP CERDAS: operasi (non-add) yang anak masih LEMAH → tawarkan bantuan Penjaga (biar cepat)
+    if(TR.op!=='add' && G._trialWeak(TR.op)){ G._offerGuardian(TR.op); return; }
+    G._showTrialQ();
+    setTimeout(()=>document.getElementById('inp-trial').focus(),60);
+  },
+  _trialWeak(op){ const pre=(S.measure&&S.measure.pre)||{}; return (pre[op+'_lvl']||0) <= TRIAL_SKIP_LVL; },
+  // tawarkan: minta tolong Penjaga (skip) atau coba sendiri
+  _offerGuardian(op){
+    const meta=TRIAL_OP_META[op], g=trialGuardian(op);
+    document.getElementById('grd-eyebrow').textContent='Wilayah '+meta.name;
+    document.getElementById('grd-mon').textContent='Monster '+meta.name;
+    const ico=document.getElementById('grd-mon-ico');
+    if(!setSprite(ico, enemySpriteKey(TRIAL_SID[op]), 88)) ico.textContent='👾';
+    document.getElementById('grd-text').innerHTML=`Monster ${meta.name} ini masih terlalu kuat buatmu sekarang — nggak apa-apa! <strong>${g.nama}</strong> (Penjaga ${g.region}) siap bantu menghancurkannya. Atau, kamu mau coba sendiri dulu?`;
+    document.getElementById('grd-help').textContent=`🛡️ Minta tolong ${g.nama}`;
+    TR.awaitGuardian=true;
+    show('guardian');
+  },
+  _guardianHelp(){
+    if(!TR||!TR.awaitGuardian)return; TR.awaitGuardian=false;
+    const op=TR.op, meta=TRIAL_OP_META[op], g=trialGuardian(op);
+    // skip → baseline operasi ini = 0 (mulai dari nol), benih adaptF = 1
+    if(S.measure&&S.measure.pre){ S.measure.pre[op+'_lvl']=0; S.measure.pre[op+'_dtk']=''; }
+    if(TR.prolog&&TR.prolog.pre){ TR.prolog.pre[op+'_lvl']=0; } // selaras di layar hasil
+    TR.results[op]=1; sv();
+    showToast(`🛡️ ${g.nama} menghancurkan Monster ${meta.name}! Nanti kamu pasti bisa sendiri. 💪`,2800);
+    setTimeout(()=>G._nextTrialOp(),900);
+  },
+  _tryAnyway(){
+    if(TR) TR.awaitGuardian=false;
+    show('trial');
+    G._showTrialQ();
+    setTimeout(()=>document.getElementById('inp-trial').focus(),60);
+  },
+  _finishTrials(){
+    const r=TR.results;
+    const addLevel=clampLvl(r.add||TR.level);
     const p=TR.prolog;                                  // {pre, start}
     const finalStart=trialFinalStart(p.start,addLevel);
     for(const id of SKILL_ORDER){ S.skills[id].status='learning'; if(id===finalStart)break; }
     S.currentSkill=finalStart;
     S.player.addLevel=addLevel;        // simpan estimasi level (M4)
     S.player.addLevelF=addLevel;       // cermin legacy
-    // ITEM 3 + Diagnosa v2: benih kesulitan adaptif PER OPERASI dari LEVEL kemampuan diagnosa
-    // (add dari Ujian Kekuatan yg lebih presisi; sub/mul/div/PECAHAN dari level basic Prolog).
+    // ITEM 3 + Diagnosa v2 + (Ujian Kekuatan SEMUA operasi): benih kesulitan adaptif PER OPERASI dari
+    // LEVEL hasil Ujian Kekuatan tiap operasi (lebih presisi krn berwaktu); fallback ke level diagnosa.
     const pre=(S.measure&&S.measure.pre)||{};
     const sd=v=>clampLvl(v||2);
-    S.player.adaptF={ add:addLevel, sub:sd(pre.sub_lvl), mul:sd(pre.mul_lvl), div:sd(pre.div_lvl), frac:sd(pre.frac_lvl) };
+    S.player.adaptF={ add:addLevel, sub:sd(r.sub!=null?r.sub:pre.sub_lvl), mul:sd(r.mul!=null?r.mul:pre.mul_lvl), div:sd(r.div!=null?r.div:pre.div_lvl), frac:sd(r.frac!=null?r.frac:pre.frac_lvl) };
     S.diagDone=true; S.session.count++; sv();
     G._renderDiagResult(p.pre, finalStart);
   },
@@ -3100,6 +3225,7 @@ const G={
     recordAnswer(false,E.isDefend);flash('⏰',500);
     const em=document.getElementById('enc-emoji');
     em.classList.add('anim-shake');setTimeout(()=>em.classList.remove('anim-shake'),450);
+    if(E.berserk){G._handleBerserkWrong();return;}
     if(E.isDefend)G._handleDefendWrong();else G._handleAttackWrong();
   },
 
@@ -3116,7 +3242,7 @@ const G={
     const rect=em.getBoundingClientRect();
     floatDmg(`-${dmg}`,dmg>=3?'#f5e042':'#3dd4b0',rect.left+rect.width/2,rect.top);
     if(E.ended)return;
-    if(E.enemyHP<=0){setTimeout(()=>G._showVictory(),600);return;}
+    if(E.enemyHP<=0){ if(G._maybeBerserk())return; setTimeout(()=>G._showVictory(),600);return; }
     // check if enemy skill turn (tiap 4 giliran, atau jaminan AKM saat HP musuh ≤ separuh)
     E.turn++;
     if(shouldDefendTurn()){
@@ -3171,8 +3297,67 @@ const G={
     },700);
   },
 
+  // ─── MODE BERSERK ───
+  // dipicu sekali saat HP musuh MAU habis: ditahan jadi 1, lalu lepas BERSERK_N soal nalar.
+  _maybeBerserk(){
+    if(E.berserkDone) return false;
+    E.berserkDone=true;
+    E.enemyHP=1; renderEnemyHP();
+    setTimeout(()=>G._startBerserk(),650);
+    return true;
+  },
+  _startBerserk(){
+    const d=SKILL_DEFS[E.sid];
+    E.berserk={i:0,n:BERSERK_N};
+    E.isDefend=true; E.skillActive=false;
+    flash('🔥',700);
+    const em=document.getElementById('enc-emoji');
+    em.classList.remove('anim-shake');void em.offsetWidth;em.classList.add('anim-shake');
+    showToast(`🔥 ${d.enemyName} BERSERK! Tangkis ${BERSERK_N} soal nalar untuk menyadarkannya!`,2800);
+    setTimeout(()=>G._nextBerserkQ(),950);
+  },
+  _nextBerserkQ(){
+    if(!E.berserk)return;
+    if(E.berserk.i>=E.berserk.n){ // semua soal nalar dijawab → musuh disadarkan
+      E.berserk=null;E.isDefend=false;
+      setTimeout(()=>G._showVictory(),450);return;
+    }
+    E.q=genDefendQ(E.sid); E.q.berserk=true; E.isDefend=true;
+    show('enc');
+    renderQuestion();renderEncHUD();
+    renderDefendMode(true,`🔥 Berserk! Soal nalar ${E.berserk.i+1}/${E.berserk.n}`);
+    document.getElementById('timer-wrap').style.display=''; // berserk SELALU berwaktu (longgar)
+    startTimer(BERSERK_TIME);
+    setTimeout(()=>document.getElementById('inp-enc').focus(),60);
+  },
+  _handleBerserkCorrect(){
+    flash('🛡️',600);
+    const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
+    floatDmg('NALAR TEPAT! 🧠','var(--c-tegar)',rect.left+rect.width/2,rect.top+30);
+    if(S.player.companion && (E.berserk.i%2===0||Math.random()<0.4)) companionSay('correct');
+    E.berserk.i++;
+    renderDefendMode(false);
+    setTimeout(()=>G._nextBerserkQ(),650);
+  },
+  _handleBerserkWrong(){
+    // salah/telat saat berserk: damage MODERAT yang bisa pulih + dituntun (VISI: salah ≠ hukuman)
+    const dmg=defendDamage();
+    S.player.hp=Math.max(0,S.player.hp-dmg);sv();
+    flash('💥',600);
+    const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
+    floatDmg(`-${dmg}HP`,'var(--hp-color)',rect.left+60,rect.top+40);
+    renderEncHUD();
+    if(S.player.hp<=0){setTimeout(()=>G._showBreak(),700);return;}
+    renderDefendMode(false);
+    // dituntun dulu (scaffold), lalu LANJUT ke soal berserk berikutnya (konsekuensi HP sudah kena)
+    setTimeout(()=>{
+      renderGuide(E.q);show('guide');
+      setTimeout(()=>document.getElementById('inp-guide').focus(),80);
+    },700);
+  },
+
   _nextAttack(){
-    E.q=genAttackQ(E.sid);E.isDefend=false;
+    E.q=freshAttackQ(E.sid);E.isDefend=false;
     renderQuestion();renderEncHUD();
     // mana regen per turn
     const maxMP=computeMaxMana(S.player);
@@ -3182,6 +3367,7 @@ const G={
   },
 
   useSkill(){
+    if(E.berserk)return; // saat berserk, fokus ke soal nalar — jurus dinonaktifkan
     const maxMP=computeMaxMana(S.player);
     if(S.player.mana<maxMP)return;
     // hard question, big damage if correct
@@ -3216,7 +3402,7 @@ const G={
         const rect=document.getElementById('enc-emoji').getBoundingClientRect();
         floatDmg(`-${dmg}★`,'#f5e042',rect.left+rect.width/2,rect.top);
         if(E.ended)return;
-        if(E.enemyHP<=0){setTimeout(()=>G._showVictory(),700);return;}
+        if(E.enemyHP<=0){ if(G._maybeBerserk())return; setTimeout(()=>G._showVictory(),700);return; }
         // miss% check based on pintar
         const miss=Math.random()*100<computeMissChance(S.player);
         if(miss)showToast('Jurus meleset! (PINTAR terlalu rendah)',2000);
@@ -3229,6 +3415,7 @@ const G={
       return;
     }
     recordAnswer(correct,E.isDefend);
+    if(E.berserk){ if(correct)G._handleBerserkCorrect();else G._handleBerserkWrong(); return; }
     if(E.isDefend){if(correct)G._handleDefendCorrect();else G._handleDefendWrong();}
     else{if(correct)G._handleAttackCorrect();else G._handleAttackWrong();}
   },
@@ -3244,15 +3431,16 @@ const G={
       if(S.player.companion) companionSay('correct');
       showToast('💪 Bangkit! Kamu menebusnya — usaha dihargai.',2000);
       awardStar('mandiri','bangkit & menebus jawabanmu sendiri'); // Bintang Kemandirian
-      setTimeout(()=>G._resumeFreshAttack(),600);
+      if(E.berserk){ E.berserk.i++; setTimeout(()=>G._nextBerserkQ(),600); } // lanjut soal berserk berikutnya
+      else setTimeout(()=>G._resumeFreshAttack(),600);
     }else{
       flash('🔄',400);
       document.getElementById('inp-guide').value='';document.getElementById('inp-guide').focus();
     }
   },
-  skipGuide(){ G._resumeFreshAttack(); },
+  skipGuide(){ if(E.berserk){ E.berserk.i++; G._nextBerserkQ(); } else G._resumeFreshAttack(); },
   _resumeFreshAttack(){
-    E.q=genAttackQ(E.sid);E.isDefend=false;
+    E.q=freshAttackQ(E.sid);E.isDefend=false;
     renderQuestion();renderEncHUD();renderEnemyHP();renderDefendMode(false);
     show('enc');
     setTimeout(()=>{document.getElementById('inp-enc').focus();if(E.timerOn)startTimer();},60);
