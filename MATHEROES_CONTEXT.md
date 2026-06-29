@@ -258,6 +258,9 @@ Saat salah → layar `s-guide`:
 
 > **Plafon kesulitan ANGKA** dinaikkan (level 1–6) — bukan level kognitif. **Reasoning PISA multi-langkah = konten lanjutan**, belum ada.
 
+### 15b. SKIP DIAGNOSA + HADIAH GEAR (keputusan Daffa 2026-06-29)
+Tiap soal Prolog ada tombol **"🤔 Belum bisa, lewati"** (`skipProlog`): skip = `diagAnswer(DG, NaN)` → **dihitung 0** (jujur, level tak naik, `DG.skipped++`) TAPI **serangan tetap kena musuh** (anim-hit + floatDmg kecil → progress jalan, nggak nge-stuck; toast hangat "nanti kita pelajari bareng"). **Baseline TETAP utuh** (diagnosa nggak optional, cuma per-soal skip). **HADIAH GEAR** (`S.player.gear`: `none|biasa|legendaris`, `GEAR_TIERS`): hargai **USAHA bukan benar/salah** → di `_finishProlog`: **0 skip → `legendaris`** (+3 dmg, +15 HP), ada skip → `biasa` (+1 dmg, +5 HP). Bonus diterapkan via `gearObj(st)` di `computeMaxHP`/`computeDamage` (default none = 0). Tampil di Profil (`renderStats`) + reveal di layar hasil diagnosa (`dr-gear` di `_renderDiagResult`). Diinfoin di awal (`s-prolog-intro`). Migrasi `ld()`: save lama → `gear='none'`. Verifikasi: `verify_timer_berserk.js` + `verify_flow.js` (§F/§G).
+
 ---
 
 ## 16. Lain-lain

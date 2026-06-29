@@ -378,6 +378,11 @@ input[type=number]{-moz-appearance:textfield}
     <p>Kekacauan menelan angka-angka negeri. Lepaskan <strong>semua jurus pamungkasmu</strong> — penjumlahan, pengurangan, perkalian, pembagian, pecahan, dan jurus nalar — dan hancurkan dia!</p>
     <div class="g12"></div>
     <p class="muted">Makin benar, jurusnya makin dahsyat. Jangan ragu — yang meleset pun tetap melukai Kekacauan.</p>
+    <div class="g12"></div>
+    <div class="card" style="text-align:left;background:rgba(201,136,31,.1);border-color:rgba(201,136,31,.3)">
+      <p style="margin:0 0 8px">🤔 <strong>Ada soal yang belum bisa?</strong> Tekan <strong>"Belum bisa, lewati"</strong> — nggak apa-apa, nanti ada Penjaga yang bantu. Yang penting kamu maju terus!</p>
+      <p style="margin:0">🏆 Tapi kalau kamu <strong>berani coba SEMUA soal</strong> (salah pun nggak masalah!), kamu dapat <strong>Perlengkapan Legendaris</strong> — senjata &amp; armor yang bikin lebih kuat! 💪</p>
+    </div>
   </div>
   <div class="spacer"></div>
   <button class="btn btn-gold" onclick="G.startPrologFight()">Lepaskan Jurus! ⚡</button>
@@ -402,6 +407,7 @@ input[type=number]{-moz-appearance:textfield}
   <input type="number" id="inp-prolog" placeholder="Lepas jurus…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitProlog()">
   <div class="g12"></div>
   <button class="btn btn-gold" id="prolog-btn" onclick="G.submitProlog()">Lepas Jurus! ⚡</button>
+  <button class="btn" id="prolog-skip-btn" style="background:transparent;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.65);margin-top:8px;font-size:13px" onclick="G.skipProlog()">🤔 Belum bisa, lewati</button>
 </div>
 
 <!-- UJIAN KEKUATAN PENJUMLAHAN (adaptif + berwaktu) -->
@@ -456,6 +462,8 @@ input[type=number]{-moz-appearance:textfield}
     <p class="eyebrow" style="margin-bottom:8px">Bekal stat awalmu</p>
     <div class="stat-row" style="margin-bottom:0" id="dr-stat-pills"></div>
   </div>
+  <div class="g8"></div>
+  <div id="dr-gear"></div>
   <div class="g8"></div>
   <p class="muted" id="dr-start" style="font-size:12px;text-align:center"></p>
   <div class="spacer"></div>
@@ -1197,14 +1205,22 @@ function computeStats(st){
     pintarLv: lv('pintar'), gesitLv: lv('gesit')
   };
 }
+// GEAR (senjata+armor) — HADIAH Diagnosa: didapat dgn TIDAK skip (hargai USAHA, bukan benar/salah).
+// Bonus stat awal. Bukan sistem equipment penuh (anti-loot per VISI) — cuma 1 set, tampil di profil.
+const GEAR_TIERS={
+  none:      {nama:'—',                       wpn:'',              arm:'',                dmg:0, hp:0},
+  biasa:     {nama:'Perlengkapan Petualang',  wpn:'🗡️ Pedang Kayu', arm:'🛡️ Perisai Kayu',  dmg:1, hp:5},
+  legendaris:{nama:'Perlengkapan Legendaris', wpn:'⚔️ Pedang Cahaya',arm:'🛡️ Zirah Sang Juara',dmg:3, hp:15}
+};
+function gearObj(st){ const t=(st&&st.gear)||'none'; return GEAR_TIERS[t]||GEAR_TIERS.none; }
 function computeMaxHP(st){
-  return 20 + computeStats(st).tegarLv * 5;
+  return 20 + computeStats(st).tegarLv * 5 + gearObj(st).hp;
 }
 function computeMaxMana(st){
   return 15 + computeStats(st).pintarLv * 5;
 }
 function computeDamage(st){
-  return 3 + Math.floor(computeStats(st).kuatLv / 2);
+  return 3 + Math.floor(computeStats(st).kuatLv / 2) + gearObj(st).dmg;
 }
 function computeTimer(st){
   return TIMER_BASE + Math.floor(computeStats(st).gesitLv / 2);
@@ -1496,6 +1512,7 @@ function blankState(){
       hp:20,mana:15,
       companion:{name:'Pijar',bond:0},
       statXP:{kuat:0,tegar:0,pintar:0,gesit:0},
+      gear:'none', // senjata+armor (hadiah diagnosa tanpa skip): none|biasa|legendaris
       adaptF:{add:3,sub:3,mul:3,div:3,frac:2}},  // (ITEM 3) tingkat adaptif per operasi (diisi ulang di _finishTrials)
     skills:{
       'add_0_10':blankSkill(),'add_0_20':blankSkill(),'add_0_100':blankSkill(),
@@ -1533,6 +1550,7 @@ function ld(){
         const base=(S.player.addLevelF!=null)?S.player.addLevelF:(S.player.addLevel||3);
         S.player.adaptF={add:base,sub:3,mul:3,div:3,frac:2};
       }
+      if(!S.player.gear)S.player.gear='none'; // migrasi: save lama belum punya gear
       if(!S.player.mana)S.player.mana=computeMaxMana(S.player);
       if(!S.player.companion)S.player.companion={name:'Pijar',bond:0};
       if(!S.meta)S.meta={lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null};
@@ -2359,7 +2377,15 @@ function renderStats(){
     {k:'pintar',ico:'✨',name:'PINTAR',c:'var(--c-pintar)',tumbuh:'Perkalian / pembagian / pecahan'},
     {k:'gesit',ico:'⚡',name:'GESIT',c:'var(--c-gesit)',tumbuh:'Jawab cepat < ½ waktu'}
   ];
-  document.getElementById('stat-detail').innerHTML=defs.map(d=>`
+  // GEAR (senjata+armor) — hadiah diagnosa, kalau ada
+  const g=GEAR_TIERS[p.gear]||GEAR_TIERS.none;
+  const gearCard=(p.gear&&p.gear!=='none')
+    ? `<div class="sd-card" style="grid-column:1/-1;${p.gear==='legendaris'?'border-color:rgba(201,136,31,.4)':''}">
+        <div class="sd-head"><span class="sd-ico">${p.gear==='legendaris'?'🏆':'🎒'}</span><div><div class="sd-name" style="color:var(--gold)">${g.nama}</div><div class="sd-xp">${g.wpn} · ${g.arm}</div></div></div>
+        <div class="sd-effect">+${g.dmg} Damage · +${g.hp} Max HP<br><span style="font-size:10px;color:rgba(255,255,255,.3)">Hadiah: coba semua soal diagnosa (tanpa lewati)</span></div>
+      </div>`
+    : '';
+  document.getElementById('stat-detail').innerHTML=gearCard+defs.map(d=>`
     <div class="sd-card">
       <div class="sd-head"><span class="sd-ico">${d.ico}</span><div><div class="sd-name" style="color:${d.c}">${d.name}</div><div class="sd-xp">Lv.${lv(d.k)} · ${p.statXP[d.k]} XP</div></div></div>
       <div class="sd-bar"><div class="sd-bar-fill" style="--c:${d.c};width:${xpPct(d.k)}%"></div></div>
@@ -2439,7 +2465,7 @@ const DIAG_NALAR_SID={add:'add_0_20',sub:'sub_0_20',mul:'mul_1_5',div:'div_1_5'}
 function genDiagNalarQ(op){ return {...genAkmQ(DIAG_NALAR_SID[op]), phase:'nalar', op}; }
 
 function diagInit(mode){
-  return { mode, phase:'basic', opi:0, step:0, lvl:DIAG_START_LVL, q:null, startedAt:0, seen:new Set(),
+  return { mode, phase:'basic', opi:0, step:0, lvl:DIAG_START_LVL, q:null, startedAt:0, seen:new Set(), skipped:0,
     per:{}, nalar:{qs:DIAG_NALAR_OPS.map(genDiagNalarQ), i:0, correct:0}, done:0, total:DIAG_TOTAL };
 }
 function diagCurOp(DG){ return DIAG_OPS[DG.opi]; }
@@ -2776,9 +2802,35 @@ const G={
       setTimeout(()=>G._showProlog(),430);
     }
   },
+  // SKIP: anak belum bisa → jawaban dianggap 0 (jujur utk pengukuran), TAPI serangan tetap kena
+  // musuh (progress jalan, nggak nge-stuck, nggak bikin minder). Hadiah hanya utk yg TAK skip.
+  skipProlog(){
+    if(!DG)return;
+    document.getElementById('inp-prolog').value='';
+    DG.skipped=(DG.skipped||0)+1;
+    const res=diagAnswer(DG, NaN);   // NaN !== ans → dihitung salah/0 (level tak naik)
+    const boss=document.getElementById('prolog-boss');
+    const rect=boss.getBoundingClientRect();
+    boss.classList.remove('anim-hit');void boss.offsetWidth;boss.classList.add('anim-hit'); // tetap "kena"
+    floatDmg('-'+rand(8,14),'#9fb0c8',rect.left+rect.width/2,rect.top);                     // damage netral, kecil
+    flash('⏭️',360);
+    showToast('Nggak apa-apa, nanti kita pelajari bareng! 💪',1500); // reaksi skip = selalu hangat (VISI)
+    const pct=Math.round((1-DG.done/DG.total)*100);
+    document.getElementById('prolog-hp-fill').style.width=pct+'%';
+    document.getElementById('prolog-hp-val').textContent=pct+'%';
+    if(res.finished){
+      boss.classList.remove('celebrate');void boss.offsetWidth;boss.classList.add('celebrate');
+      setTimeout(()=>G._finishProlog(),700);
+    }else{
+      setTimeout(()=>G._showProlog(),400);
+    }
+  },
   _finishProlog(){
     const pre=diagResult(DG);
     recordDiag('pre',pre);        // REKAM BASELINE (per topik: level + kelancaran + nalar)
+    // HADIAH GEAR — hargai USAHA (bukan benar/salah): coba SEMUA soal (0 skip) → Legendaris;
+    // ada yang dilewati → Petualang (tetap dapat, tapi yang berani coba semua dapat yang terbaik).
+    S.player.gear = (DG.skipped||0)===0 ? 'legendaris' : 'biasa';
     // HEAD-START stat dari kemampuan: makin tinggi level operasi, makin besar bekal stat
     const opStat={add:'kuat',sub:'tegar',mul:'pintar',div:'pintar',frac:'pintar'};
     for(const op of DIAG_OPS){ const lv=pre[op+'_lvl']||0; if(lv>0) S.player.statXP[opStat[op]]+=2*lv; }
@@ -2935,6 +2987,14 @@ const G={
     }
     document.getElementById('dr-bars').innerHTML=html;
     renderStatPills('dr-stat-pills');
+    // REVEAL HADIAH GEAR (dari usaha di diagnosa: 0 skip → Legendaris)
+    const gEl=document.getElementById('dr-gear');
+    if(gEl){
+      const g=GEAR_TIERS[S.player.gear]||GEAR_TIERS.none;
+      gEl.innerHTML = S.player.gear==='legendaris'
+        ? `<div class="card" style="background:rgba(201,136,31,.14);border-color:rgba(201,136,31,.45)"><p class="eyebrow" style="margin-bottom:6px;color:var(--gold)">🏆 Hadiah Pejuang Sejati!</p><p style="margin:0;font-size:13px">Kamu berani coba <strong>semua soal</strong> — dapat <strong>${g.nama}</strong>:</p><p style="margin:6px 0 0;font-size:14px">${g.wpn} &nbsp; ${g.arm}</p><p style="margin:6px 0 0;font-size:13px;color:var(--c-tegar)">+${g.dmg} Damage &nbsp;·&nbsp; +${g.hp} Max HP</p></div>`
+        : `<div class="card"><p class="eyebrow" style="margin-bottom:6px">🎒 Perlengkapanmu</p><p style="margin:0;font-size:13px">Kamu dapat <strong>${g.nama}</strong>: ${g.wpn} ${g.arm} <span style="color:rgba(255,255,255,.6)">(+${g.dmg} dmg · +${g.hp} HP)</span></p><p style="margin:6px 0 0;font-size:11px;color:rgba(255,255,255,.5)">Lain kali, coba semua soal tanpa lewati untuk <strong>Perlengkapan Legendaris</strong>! 💪</p></div>`;
+    }
     const al=S.player.addLevel;
     document.getElementById('dr-start').textContent=`Petualanganmu mulai dari: ${SKILL_DEFS[start].name}`+(al?` · Kekuatan Penjumlahan Lv.${al}`:'');
     show('diagresult');
