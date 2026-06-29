@@ -3331,14 +3331,24 @@ document.addEventListener('keydown',e=>{
   const id=document.querySelector('.screen.on')?.id;
   if(id==='s-name')G.confirmName();
 });
-// ─── MOBILE: keyboard sering nutup kotak jawaban/tombol → geser input ke tengah layar saat difokus.
+// ─── MOBILE: keyboard sering nutup kotak jawaban → geser input ke AREA TERLIHAT (di atas keyboard).
+// Pakai visualViewport: di HP yg keyboard-nya MENUMPUK (bukan resize), 'tengah layar' itu di BELAKANG
+// keyboard → makanya dulu masih ketutup. Sekarang dihitung dari tinggi area yg benar2 kelihatan.
 // (Tombol "↵/→" di keyboard angka tetap bisa submit lewat handler Enter di tiap input.)
-document.addEventListener('focusin',e=>{
-  const el=e.target;
-  if(el&&el.tagName==='INPUT'){
-    setTimeout(()=>{ try{ el.scrollIntoView({block:'center',behavior:'smooth'}); }catch(_){ } },250);
-  }
-});
+function keepInputVisible(){
+  const el=document.activeElement;
+  if(!el||el.tagName!=='INPUT')return;
+  try{
+    const r=el.getBoundingClientRect();
+    const visH=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+    const targetY=Math.max(84, visH*0.40); // taruh input di ~40% area terlihat → soal di atasnya tetap kebaca
+    const delta=r.top-targetY;
+    if(Math.abs(delta)>24) window.scrollBy({top:delta,behavior:'smooth'});
+  }catch(_){}
+}
+document.addEventListener('focusin',e=>{ if(e.target&&e.target.tagName==='INPUT') setTimeout(keepInputVisible,300); });
+// keyboard buka/tutup → viewport berubah → pastikan input tetap kelihatan
+if(window.visualViewport){ window.visualViewport.addEventListener('resize',()=>setTimeout(keepInputVisible,60)); }
 
 // ─── BOOT ───
 ld();
