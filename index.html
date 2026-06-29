@@ -682,7 +682,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="spacer"></div>
   <div style="text-align:center">
     <div id="vic-ico" style="font-size:76px;margin-bottom:14px">⚡</div>
-    <p class="eyebrow">Musuh Dikalahkan!</p>
+    <p class="eyebrow">Makhluk Disadarkan!</p>
     <h2 id="vic-title">Menang!</h2>
     <p id="vic-desc">Matematikamu kuat!</p>
     <div class="g12"></div>
@@ -774,7 +774,7 @@ input[type=number]{-moz-appearance:textfield}
   <h2>Buku Petualangan</h2>
   <p id="coll-sub" class="muted">Monster 0/10 · Harta 0/8</p>
   <div class="g8"></div>
-  <p class="eyebrow" style="margin-bottom:7px">👾 Buku Monster</p>
+  <p class="eyebrow" style="margin-bottom:7px">🤝 Teman yang Disadarkan</p>
   <div class="coll-grid" id="coll-monsters"></div>
   <div class="g12"></div>
   <p class="eyebrow" style="margin-bottom:7px">💎 Harta Karun</p>
@@ -1359,13 +1359,13 @@ function collectionCounts(){
 }
 function renderCollection(){
   const c=collectionCounts();
-  document.getElementById('coll-sub').textContent=`Monster ${c.mf}/${c.mt} · Harta ${c.tf}/${c.tt}`;
+  document.getElementById('coll-sub').textContent=`Teman ${c.mf}/${c.mt} · Harta ${c.tf}/${c.tt}`;
   const mons=(S.collection&&S.collection.monsters)||{};
   document.getElementById('coll-monsters').innerHTML=SKILL_ORDER.map(id=>{
     const d=SKILL_DEFS[id], rec=mons[id];
     return (rec&&rec.defeated>0)
-      ? `<div class="coll-cell"><span class="coll-spr" data-ek="${enemySpriteKey(id)}" style="font-size:28px;display:inline-block;min-height:34px">${d.icon}</span><div class="coll-name">${rec.shiny?'✨':''}${d.enemyName}</div><div class="coll-meta">×${rec.defeated}</div></div>`
-      : `<div class="coll-cell locked"><span style="font-size:28px">❓</span><div class="coll-name">???</div><div class="coll-meta">belum</div></div>`;
+      ? `<div class="coll-cell"><span class="coll-spr" data-ek="${enemySpriteKey(id)}" style="font-size:28px;display:inline-block;min-height:34px">${d.icon}</span><div class="coll-name">${rec.shiny?'✨':''}${d.enemyName}</div><div class="coll-meta">disadarkan ×${rec.defeated}</div></div>`
+      : `<div class="coll-cell locked"><span style="font-size:28px">❓</span><div class="coll-name">???</div><div class="coll-meta">belum disadarkan</div></div>`;
   }).join('');
   // codex pakai sprite Makhluk (fallback emoji bila sprite tak ada)
   document.querySelectorAll('#coll-monsters .coll-spr').forEach(el=>setSprite(el,el.getAttribute('data-ek'),36));
@@ -3173,8 +3173,8 @@ const G={
     const ico=document.getElementById('vic-ico');
     if(!setSprite(ico,enemySpriteKey(E.sid),96)) ico.textContent=d.icon;
     ico.classList.remove('celebrate');void ico.offsetWidth;ico.classList.add('celebrate');
-    document.getElementById('vic-title').textContent=d.enemyName+' dikalahkan!';
-    document.getElementById('vic-desc').textContent=S.player.companion?`${S.player.companion.name}: ${pickCompLine('correct')}`:`Jawabanmu tepat, ${S.player.name}!`;
+    document.getElementById('vic-title').textContent=d.enemyName+' disadarkan!';
+    document.getElementById('vic-desc').textContent=`Kamu menyadarkannya — kini jadi teman & masuk koleksi. `+(S.player.companion?`${S.player.companion.name}: ${pickCompLine('correct')}`:`Hebat, ${S.player.name}!`);
     // mana regen on win
     S.player.mana=Math.min(computeMaxMana(S.player),S.player.mana+3);
     // pemulihan HP saat menang (bisa pulih): kesalahan bisa ditebus dgn terus maju
