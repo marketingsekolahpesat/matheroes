@@ -67,9 +67,9 @@ Ada dugaan file `PROMPT-LANJUT-MEKANIK.md` (M1–M9) **belum dijalankan**, TAPI 
 **Hasil:** `DIAG_OPS` termasuk `frac` → pecahan dapat gelombang basic adaptif sendiri ("🍰 JURUS PECAHAN") di pre & post → `pecahan_lvl`/`pecahan_dtk` terisi, benih `adaptF.frac` dari level diagnosa. Diagnosa kini nyentuh **kelima operasi**.
 **Verifikasi:** `verify_item2.js` (frac_lvl terukur) + render Edge (wave pecahan "½ dari 4 = ?").
 
-### ITEM 5 *(refinement, bukan mendesak)* — Pijar diagnosa kesalahan spesifik
-**Sekarang:** scaffold kuat & spesifik per operasi, TAPI petunjuk nggak nebak miskonsepsi dari **jawaban salah** anak.
-**Kerjakan (nanti):** deteksi pola error umum (mis. lupa simpan puluhan, salah nilai tempat) dari jawaban yang dimasukin → petunjuk Pijar yang lebih nyasar. VISI sebut feedback spesifik = make-or-break, tapi ini peningkatan, bukan gap besar.
+### ✅ ITEM 5 — Pijar nebak miskonsepsi dari jawaban salah — **SELESAI (2026-06-29 sesi 5)**
+**Hasil:** `diagnoseMistake(q,v)` (+ helper `digitsNoCarrySum`/`digitsAbsDiff`) menebak pola error umum dari **angka yang anak masukin** → 1 kalimat Pijar LEMBUT ("Sepertinya/Kayaknya…") sebelum cara umum. Pola: **add** lupa simpan puluhan / hampir(±2); **sub** kebalik (kurangi kecil-dari-besar → "pinjam"), tukar urutan; **mul** jadi tambah (=a+b), kurang/lebih 1 kelompok; **div** jadi kali (=a×b) / dikurangi (=a−b) / hampir; **frac** dikali penyebut / jawab jumlah / jawab penyebut. Integrasi: `E.lastWrong` (di-set `submitEnc`, reset saat `timedOut`/benar, init `startEncState`) → `renderGuide`→`renderExplain(q,wrong)`→diag dulu lalu `guideHint`. **Tak salah-tuduh:** benar/ngawur-jauh → null → petunjuk generik. **Timeout ≠ salah hitung** (lastWrong null). Untuk SEMUA operasi & soal cerita (pakai a,b,ans,op).
+**Verifikasi:** `verify_item5.js` 27/27 (helper, deteksi tiap pola, anti-salah-tuduh) + harness lama no-regresi + render Edge (Guide "Kayaknya tiap angka dikurangi yang kecil dari yang besar — pinjam dulu…").
 
 ---
 

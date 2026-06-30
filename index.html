@@ -1900,6 +1900,7 @@ function startEncState(sid){
     berserk:null,berserkDone:false, // mode berserk: dipicu sekali saat HP musuh mau habis
     lastQKey:null, // anti-kembar: kunci soal serangan sebelumnya
     pantangUsed:false, // Teguh "Pantang Mundur": jatah tahan-tumbang sekali per tarung
+    lastWrong:null, // ITEM 5: jawaban salah terakhir anak (utk tebak miskonsepsi)
     timerOn,ended:false
   };
   E.lastQKey=qKey(E.q);
@@ -2218,6 +2219,45 @@ function guideHint(q){
   if(op==='frac'){const f=FRAC_SYM[q.den]||('1/'+q.den);return `${f} dari ${q.whole}: bagi jadi ${q.den} bagian sama, ambil 1 → ${ans}.`;}
   return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
 }
+// ── ITEM 5 — Pijar nebak MISKONSEPSI dari jawaban SALAH anak → petunjuk lebih nyasar (lembut, VISI) ──
+function digitsNoCarrySum(a,b){ // jumlah digit-per-digit TANPA menyimpan (pola lupa simpan)
+  let res=0,pos=1; a=Math.abs(a);b=Math.abs(b);
+  while(a>0||b>0){ res += (((a%10)+(b%10))%10)*pos; a=Math.floor(a/10); b=Math.floor(b/10); pos*=10; }
+  return res;
+}
+function digitsAbsDiff(a,b){ // |digit−digit| per posisi (pola "kurangi yang kecil dari yang besar")
+  let res=0,pos=1; a=Math.abs(a);b=Math.abs(b);
+  while(a>0||b>0){ res += Math.abs((a%10)-(b%10))*pos; a=Math.floor(a/10); b=Math.floor(b/10); pos*=10; }
+  return res;
+}
+// kembalikan 1 kalimat Pijar yang menebak salahnya (LEMBUT, "sepertinya/kayaknya"), atau null kalau pola tak kenal
+function diagnoseMistake(q, v){
+  if(q==null||v==null||isNaN(v)||v===q.ans) return null;
+  const {a,b,ans,op}=q;
+  if(op==='add'){
+    const nc=digitsNoCarrySum(a,b);
+    if(v===nc && nc!==ans) return 'Sepertinya puluhannya belum disimpan, ya.';
+    if(Math.abs(v-ans)<=2 && v!==ans) return 'Tinggal sedikit lagi — coba hitung maju pelan-pelan.';
+  } else if(op==='sub'){
+    const da=digitsAbsDiff(a,b);
+    if(v===da && da!==ans) return 'Kayaknya tiap angka dikurangi yang kecil dari yang besar — kalau yang atas lebih kecil, kita pinjam dulu.';
+    if(v===b-a) return 'Coba tukar urutannya: kita ambil dari yang lebih besar dulu.';
+    if(Math.abs(v-ans)<=2 && v!==ans) return 'Hampir! Selisihnya tipis, coba hitung mundur pelan-pelan.';
+  } else if(op==='mul'){
+    if(v===a+b) return 'Ini perkalian, bukan penjumlahan ya — pikirkan kelompok yang sama.';
+    if(v===a*(b-1)||v===(a-1)*b) return 'Kayaknya kurang satu kelompok.';
+    if(v===a*(b+1)||v===(a+1)*b) return 'Kayaknya kelebihan satu kelompok.';
+  } else if(op==='div'){
+    if(v===a*b) return 'Ini pembagian, bukan perkalian ya.';
+    if(v===a-b) return 'Ini dibagi rata, bukan dikurangi.';
+    if(Math.abs(v-ans)<=1 && v!==ans) return 'Hampir pas — coba bagi ratanya sekali lagi.';
+  } else if(op==='frac'){
+    if(v===q.whole*q.den) return 'Bukan dikali, tapi dibagi jadi bagian yang sama dulu.';
+    if(v===q.whole) return 'Itu jumlah semuanya — kita cari isi SATU bagian.';
+    if(v===q.den) return 'Itu banyak bagiannya — kita cari isi tiap bagian.';
+  }
+  return null;
+}
 // soal TEBUSAN serupa — tier sama dgn yang terlewat (AKM → AKM, ringan → ringan)
 function genRedeemQ(missed){
   const sid=missed.sid;
@@ -2234,17 +2274,19 @@ function setGuideMode(why){
   document.getElementById('guide-visual').style.display='none'; // detail selalu mulai tersembunyi (bisa di-skip)
   document.getElementById('guide-detail-toggle').textContent='Lihat caranya 👁️';
 }
-// isi petunjuk Pijar (1 baris) + detail CPA (tersembunyi)
-function renderExplain(q){
+// isi petunjuk Pijar (1 baris) + detail CPA (tersembunyi). `wrong` = jawaban salah anak (ITEM 5)
+function renderExplain(q, wrong){
   document.getElementById('guide-visual').innerHTML=buildGuideVisual(q);
   const name=S.player.companion?S.player.companion.name:'Pijar';
   const emoji=S.player.companion?compStage(S.player.companion.bond).emoji:'🔥';
-  document.getElementById('guide-comp').innerHTML=`<span style="font-size:20px;line-height:1">${emoji}</span><span><strong style="color:var(--gold)">${name}:</strong> ${guideHint(q)}</span>`;
+  const diag=(wrong!=null)?diagnoseMistake(q,wrong):null; // tebak miskonsepsi
+  const hint=diag ? `${diag} ${guideHint(q)}` : guideHint(q); // tebakan dulu (nyasar), lalu cara
+  document.getElementById('guide-comp').innerHTML=`<span style="font-size:20px;line-height:1">${emoji}</span><span><strong style="color:var(--gold)">${name}:</strong> ${hint}</span>`;
 }
 // SALAH → petunjuk singkat + soal tebusan serupa
 function renderGuide(missed){
   setGuideMode(false);
-  renderExplain(missed);
+  renderExplain(missed, (E&&E.lastWrong!=null)?E.lastWrong:null); // ITEM 5: kirim jawaban salah anak
   E.subQ=genRedeemQ(missed);
   const subEl=document.getElementById('guide-subq');
   subEl.textContent=qText(E.subQ);
@@ -3314,6 +3356,7 @@ const G={
   },
 
   timedOut(){
+    E.lastWrong=null; // habis waktu, bukan salah hitung → petunjuk generik (jangan tebak miskonsepsi)
     recordAnswer(false,E.isDefend);flash('⏰',500);
     const em=document.getElementById('enc-emoji');
     em.classList.add('anim-shake');setTimeout(()=>em.classList.remove('anim-shake'),450);
@@ -3494,6 +3537,7 @@ const G={
     if(isNaN(v)||inp.value.trim()===''){inp.focus();if(E.timerOn)startTimer();return;}
     inp.value='';
     const correct=v===E.q.ans;
+    E.lastWrong=correct?null:v; // ITEM 5: simpan jawaban salah utk tebak miskonsepsi di Guide
     if(E.skillActive){
       E.skillActive=false;
       // restore button label

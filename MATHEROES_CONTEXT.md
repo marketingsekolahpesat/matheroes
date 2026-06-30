@@ -241,7 +241,7 @@ Saat salah → layar `s-guide`:
 3. **Soal tebusan** (`genRedeemQ`) — serupa, **tier sama** (AKM→AKM, ringan→ringan).
 4. Mode "Kenapa? 🤔" — anak penasaran bisa lihat penjelasan walau nggak salah.
 
-> Scaffold-nya **kuat & spesifik per operasi**. Yang belum: **diagnosa kesalahan spesifik anak** (nebak miskonsepsi dari jawaban salah yang dia masukin) — itu refinement, bukan gap besar.
+> Scaffold-nya **kuat & spesifik per operasi**. ✅ **ITEM 5 SELESAI** — `diagnoseMistake(q,v)` nebak miskonsepsi dari **angka salah anak** (add: lupa simpan/`digitsNoCarrySum`; sub: kebalik/`digitsAbsDiff`→pinjam; mul: jadi tambah/kelompok ±1; div: jadi kali/kurang; frac: dikali penyebut/jawab jumlah/penyebut) → 1 kalimat Pijar lembut sebelum `guideHint`. Wired via `E.lastWrong` (`submitEnc`→set, `timedOut`→null, `renderGuide`→`renderExplain(q,wrong)`). Benar/ngawur-jauh/timeout → null (generik, tak salah-tuduh). Verif `verify_item5.js` 27/27.
 
 ---
 
