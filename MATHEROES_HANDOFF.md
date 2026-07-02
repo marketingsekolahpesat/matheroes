@@ -86,6 +86,10 @@ Daffa minta **2 fitur timer** (dulu zona parkir) — dieksekusi dengan arah **"t
 
 ---
 
+## 📱 MOBILE LAYOUT + PWA (2026-06-29 sesi 6)
+- **Layout padat HP:** `@media(max-height:780px)` & `650px` — kecilkan sprite musuh, padding q-box/input, keypad `.np-key`, `.btn`, `.comp-bubble`. Layar tarung muat 1 layar (✓-keypad = submit selalu kelihatan). Desktop tak berubah.
+- **PWA:** `manifest.json` (standalone, icons 192/512) + `sw.js` (**network-first**: online=fresh, offline=cache) + meta di `<head>` + `icon-192/512.png`. Bisa **Add to Home Screen → fullscreen tanpa address bar**. ⚠️ **Daftar SW `<script>` HARUS sebelum `</body>`** — kalau di `<head>` jadi `<script>` pertama, semua harness (`m[1]`) baca script itu bukan game → fail total. File PWA sejajar `index.html` di repo.
+
 ## CARA RUN & VERIFIKASI
 
 - Buka `matheroes.html` langsung di browser (HP/desktop). Tidak ada build step.
