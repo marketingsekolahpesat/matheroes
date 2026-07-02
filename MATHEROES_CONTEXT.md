@@ -281,7 +281,7 @@ Tiap soal Prolog ada tombol **"🤔 Belum bisa, lewati"** (`skipProlog`): skip =
 | Domain AKM | Status | Catatan |
 |---|---|---|
 | **Bilangan** | ✅ **Lengkap** | 5 operasi (tambah/kurang/kali/bagi/pecahan) |
-| **Geometri & Pengukuran** | ❌ | Belum ada |
+| **Geometri & Pengukuran** | 🟡 **v1 (2026-06-29)** | 2 skill: **Keliling** & **Luas** persegi/persegi panjang (`gkel`/`gluas`, region "Negeri Bentuk" setelah Pecahan). Konten BONUS — BELUM masuk diagnosa/Sheet. Berikutnya: satuan panjang, keliling/luas segitiga/lingkaran, volume. |
 | **Aljabar** | ❌ | Belum ada |
 | **Data & Ketidakpastian** | ❌ | Belum ada |
 
@@ -298,6 +298,9 @@ Tiap soal Prolog ada tombol **"🤔 Belum bisa, lewati"** (`skipProlog`): skip =
 | Saintifik | ✅ liter air, cm pita/tali (template kurang/bagi/pecahan) |
 
 ---
+
+### 17b. CARA NAMBAH DOMAIN AKM BARU (pola dari Geometri v1)
+Titik sentuh (semua di `matheroes.html`): (1) `SKILL_DEFS` skill baru {op unik, group, range param, enemy, xpStat, prev/next} + sambung `.next` skill terakhir sebelumnya; (2) `SKILL_ORDER` append; (3) `blankState().skills` + `ld()` sudah auto-migrasi via loop `SKILL_ORDER` (skill hilang → blankSkill); (4) generator: `genQ`/`genHardQ`/`genAdaptiveQ`+`ADAPT_BANDS` per op + AKM story (`gen<X>AkmQ` + dispatch di `genAkmQ`); (5) `qText` (tampilan) + `guideHint` (1-baris) + `buildGuideVisual` (CPA, boleh return '' → aman); (6) peta OTOMATIS dari `group` — cukup tambah `GICON`/`GSTAT`/`STORY_REGIONS` (opsional `GDIM`/`GPENJAGA` kalau wilayah Penjaga); (7) `renderQuestion` `classList.toggle('story',...)` utk teks panjang; (8) musuh tanpa sprite → fallback `d.icon` emoji (aman). **adaptF pakai fallback default 3 + self-init** (tak perlu ubah blankState.adaptF/harness item3). Domain BONUS = JANGAN masuk `DIAG_OPS` (biar skema Sheet tak berubah). Verif: bikin `verify_<domain>.js` (uji kebenaran rumus tiap generator). Geometri: `verify_geo.js` 47/47.
 
 ## 18. Konvensi Kode
 

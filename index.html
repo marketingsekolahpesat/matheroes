@@ -967,10 +967,17 @@ const SKILL_DEFS = {
     enemySkills:['Kekacauan Total','Sebar Remah']},
   // ── PECAHAN · tumbuh PINTAR ✨ ──
   'frac_simple':{op:'frac', group:'Pecahan', name:'Pecahan dari Bilangan', desc:'½, ⅓, ¼ dari sebuah jumlah', icon:'😾', enemyName:'Si Egois',
-    enemyHP:22, maxDen:4, maxK:5, xpStat:'pintar', prev:'div_1_10', next:null,
-    enemySkills:['Peluk Harta','Tolak Berbagi']}
+    enemyHP:22, maxDen:4, maxK:5, xpStat:'pintar', prev:'div_1_10', next:'geo_kel',
+    enemySkills:['Peluk Harta','Tolak Berbagi']},
+  // ── GEOMETRI & PENGUKURAN · tumbuh PINTAR ✨ (domain AKM baru — konten bonus, belum diukur) ──
+  'geo_kel':{op:'gkel', group:'Geometri', name:'Keliling Bangun', desc:'Keliling persegi & persegi panjang', icon:'📐', enemyName:'Si Kusut',
+    enemyHP:22, maxSide:9, xpStat:'pintar', prev:'frac_simple', next:'geo_luas',
+    enemySkills:['Belok Bingung','Putar Kusut']},
+  'geo_luas':{op:'gluas', group:'Geometri', name:'Luas Bangun', desc:'Luas persegi & persegi panjang', icon:'🟦', enemyName:'Si Melebar',
+    enemyHP:24, maxSide:7, xpStat:'pintar', prev:'geo_kel', next:null,
+    enemySkills:['Lebar Berantakan','Tumpang Tindih']}
 };
-const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple'];
+const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas'];
 
 // Companion "Pijar" — tumbuh dari bond (main + menang + reuni harian). Tema: cahaya/api.
 const COMPANION_STAGES=[
@@ -1353,7 +1360,7 @@ function checkNewDay(){
 // ═══════════════════════════════════════════
 // NARASI & MISI HARIAN
 // ═══════════════════════════════════════════
-const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan'};
+const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan',Geometri:'Negeri Bentuk'};
 const MISSION_POOL=[
   {id:'win',    target:3,  reward:4, label:t=>`Menangkan ${t} pertarungan`},
   {id:'play',   target:5,  reward:3, label:t=>`Mainkan ${t} pertarungan`},
@@ -1571,7 +1578,8 @@ function blankState(){
       'add_0_10':blankSkill(),'add_0_20':blankSkill(),'add_0_100':blankSkill(),
       'sub_0_20':blankSkill(),'sub_0_100':blankSkill(),
       'mul_1_5':blankSkill(),'mul_1_10':blankSkill(),
-      'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill()
+      'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill(),
+      'geo_kel':blankSkill(),'geo_luas':blankSkill()
     },
     session:{count:0},
     meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{}},
@@ -1738,9 +1746,26 @@ function ansOf(a,b,op){return op==='sub'?a-b:op==='mul'?a*b:op==='div'?a/b:a+b;}
 function qText(q){
   if(q.story)return q.story; // soal AKM/cerita: tampilkan teksnya
   if(q.op==='frac')return `${FRAC_SYM[q.den]||('1/'+q.den)} dari ${q.whole} = ?`;
+  if(q.op==='gkel'||q.op==='gluas'){
+    const lbl=q.op==='gkel'?'Keliling':'Luas', u=q.op==='gluas'?' cm²':' cm';
+    return q.shape==='persegi'
+      ? `${lbl} persegi ⬛ (sisi ${q.s} cm) = ?${u}`
+      : `${lbl} persegi panjang ▭ (${q.p}×${q.l} cm) = ?${u}`;
+  }
   return `${q.a} ${OP_SYM[q.op]||'+'} ${q.b} = ?`;
 }
 
+// generator soal GEOMETRI (keliling/luas persegi & persegi panjang) — jawaban tetap ANGKA (cocok keypad)
+function genGeoQ(op, maxSide, sid, tier, hard){
+  const lo=2, hi=Math.max(3, maxSide);
+  if(rand(0,1)===0){ // persegi
+    const s=rand(lo,hi);
+    return {shape:'persegi', s, op, ans:(op==='gkel'?4*s:s*s), sid, tier:tier||'ringan', hard:!!hard};
+  }
+  let p=rand(lo,hi), l=rand(lo,hi), t=0;      // persegi panjang (usahakan p≠l biar beda jelas)
+  while(p===l && t<10){ l=rand(lo,hi); t++; }
+  return {shape:'pp', p, l, op, ans:(op==='gkel'?2*(p+l):p*l), sid, tier:tier||'ringan', hard:!!hard};
+}
 // soal SERANGAN (giliran kita) — "ringan", bangun kelancaran
 function genQ(sid){
   const d=SKILL_DEFS[sid];
@@ -1762,6 +1787,7 @@ function genQ(sid){
     const den=rand(2,d.maxDen), k=rand(1,d.maxK); // 1/den dari (den·k) = k
     return{den,k,whole:den*k,num:1,op:'frac',ans:k,sid,tier:'ringan'};
   }
+  if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, d.maxSide, sid, 'ringan');
   // add (default)
   let a,b,t=0;
   do{a=rand(0,d.maxA);b=rand(0,d.maxA);t++;}
@@ -1792,6 +1818,7 @@ function genHardQ(sid){
     const den=rand(2,d.maxDen+1), k=rand(2,d.maxK+1);
     return{den,k,whole:den*k,num:1,op:'frac',ans:k,sid,hard:true};
   }
+  if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, Math.min(15,d.maxSide+3), sid, undefined, true);
   const lim=Math.min(Math.floor(d.maxSum*1.3),d.maxSum+10);
   let a=rand(0,Math.floor(lim/2)),b=rand(0,Math.floor(lim/2));
   if(a+b===0)b=1;
@@ -1897,6 +1924,28 @@ function genFracAkmQ(sid){
   return{den,k,whole,num:1,op:'frac',ans:k,sid,tier:'akm',story};
 }
 
+// soal AKM Geometri — konteks nyata, jawaban tetap ANGKA (keliling/luas)
+const GEO_AKM={
+  gkel:{
+    persegi:[ (s)=>`Kebun berbentuk persegi bersisi ${s} m akan dipagari mengelilinginya. Berapa meter pagar yang dibutuhkan?`,
+              (s)=>`Sapu tangan persegi bersisi ${s} cm dijahit renda di seluruh tepinya. Berapa cm renda yang perlu?` ],
+    pp:[ (p,l)=>`Taman persegi panjang ${p} m × ${l} m dipasang lampu mengelilinginya. Berapa meter total tepi taman itu?`,
+         (p,l)=>`Bingkai foto ${p} cm × ${l} cm diberi lis di seluruh pinggirnya. Berapa cm lis yang dibutuhkan?` ]
+  },
+  gluas:{
+    persegi:[ (s)=>`Ubin berbentuk persegi bersisi ${s} cm. Berapa cm² luas permukaannya?`,
+              (s)=>`Kertas origami persegi bersisi ${s} cm. Berapa cm² luasnya?` ],
+    pp:[ (p,l)=>`Karton berukuran ${p} cm × ${l} cm. Berapa cm² luas karton itu?`,
+         (p,l)=>`Lantai kamar ${p} m × ${l} m akan ditutup karpet. Berapa m² karpet yang dibutuhkan?` ]
+  }
+};
+function genGeoAkmQ(sid){
+  const d=SKILL_DEFS[sid];
+  const q=genGeoQ(d.op, d.maxSide, sid, 'akm');
+  const tpls=GEO_AKM[d.op][q.shape];
+  q.story = q.shape==='persegi' ? tpls[rand(0,tpls.length-1)](q.s) : tpls[rand(0,tpls.length-1)](q.p,q.l);
+  return q;
+}
 // dispatcher AKM per operasi
 function genAkmQ(sid){
   const op=SKILL_DEFS[sid].op;
@@ -1904,6 +1953,7 @@ function genAkmQ(sid){
   if(op==='mul') return genMulAkmQ(sid);
   if(op==='div') return genDivAkmQ(sid);
   if(op==='frac') return genFracAkmQ(sid);
+  if(op==='gkel'||op==='gluas') return genGeoAkmQ(sid);
   return genAddAkmQ(sid); // add
 }
 // soal BERTAHAN (giliran musuh): KELIMA operasi kini soal cerita AKM bernalar (bukan cuma angka besar)
@@ -2067,7 +2117,7 @@ function renderQuestion(){
   const q=E.q;
   const qEl=document.getElementById('enc-q');
   qEl.textContent=qText(q);
-  qEl.classList.toggle('story',!!q.story); // soal cerita → font lebih kecil & rata kiri
+  qEl.classList.toggle('story',!!q.story||q.op==='gkel'||q.op==='gluas'); // cerita & geo → font lebih kecil (teks panjang)
   // label tingkat (Penjumlahan): ringan = serangan kita, AKM = bertahan bernalar
   let sub='';
   if(q.tier==='akm'){
@@ -2189,6 +2239,16 @@ function buildGuideVisual(q){
       <div style="font-size:20px;letter-spacing:3px;margin-bottom:4px">${pg}</div>
       <div class="guide-arrow">↓ ambil 1 bagian (yang berwarna)</div>
       <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:4px">${fsym} dari ${whole} = ${part} ✓</div></div>`;
+  }else if(op==='gkel'||op==='gluas'){
+    const isP=q.shape==='persegi';
+    const dims=isP?`sisi ${q.s} cm`:`${q.p} cm × ${q.l} cm`;
+    const formula = op==='gkel'
+      ? (isP?`4 × ${q.s} = ${ans}`:`2 × (${q.p} + ${q.l}) = ${ans}`)
+      : (isP?`${q.s} × ${q.s} = ${ans}`:`${q.p} × ${q.l} = ${ans}`);
+    vis=`<div class="guide-step">
+      <div style="font-size:44px;line-height:1">${isP?'⬛':'▭'}</div>
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin:6px 0">${op==='gkel'?'Keliling = jumlah semua tepi':'Luas = banyak petak di dalamnya'}<br>${isP?'Persegi':'Persegi panjang'} (${dims})</p>
+      <div style="font-size:18px;font-weight:700;color:var(--green)">${op==='gkel'?'Keliling':'Luas'} = ${formula} ✓</div></div>`;
   }else if(op==='sub'){
     if(a<=15){
       const kept='●'.repeat(ans), gone='●'.repeat(b);
@@ -2251,6 +2311,12 @@ function guideHint(q){
   if(op==='mul') return `${a} kelompok berisi ${b} → ${b} ditambah ${a} kali = ${ans}.`;
   if(op==='div') return `Bagi ${a} rata ke ${b} kelompok → tiap kelompok dapat ${ans}.`;
   if(op==='frac'){const f=FRAC_SYM[q.den]||('1/'+q.den);return `${f} dari ${q.whole}: bagi jadi ${q.den} bagian sama, ambil 1 → ${ans}.`;}
+  if(op==='gkel') return q.shape==='persegi'
+    ? `Keliling persegi = 4 × sisi = 4 × ${q.s} = ${ans}.`
+    : `Keliling persegi panjang = 2 × (panjang + lebar) = 2 × (${q.p} + ${q.l}) = ${ans}.`;
+  if(op==='gluas') return q.shape==='persegi'
+    ? `Luas persegi = sisi × sisi = ${q.s} × ${q.s} = ${ans}.`
+    : `Luas persegi panjang = panjang × lebar = ${q.p} × ${q.l} = ${ans}.`;
   return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
 }
 // ── ITEM 5 — Pijar nebak MISKONSEPSI dari jawaban SALAH anak → petunjuk lebih nyasar (lembut, VISI) ──
@@ -2393,8 +2459,8 @@ function renderMap(){
   }
   const due=dueReviews();
   document.getElementById('map-sub').textContent=due.length?`${due.length} skill jadwal review!`:'Pilih wilayah untuk berlatih.';
-  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰'};
-  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR'};
+  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰',Geometri:'📐'};
+  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR',Geometri:'✨ PINTAR'};
   // TEMA §3: tiap wilayah (operasi) dipasangkan ke 1 Dimensi Profil Lulusan — label "Wilayah · Nilai"
   // selalu tampil → anak HAPAL lewat asosiasi berulang (bukan ceramah). Pecahan bukan wilayah Penjaga.
   const GDIM={Penjumlahan:'Kolaborasi',Pengurangan:'Kemandirian',Perkalian:'Kreativitas',Pembagian:'Keadilan'};
@@ -2717,7 +2783,9 @@ const ADAPT_BANDS={
   sub:[null,{maxA:10},{maxA:15},{maxA:20},{maxA:40},{maxA:70},{maxA:100}],
   mul:[null,{mf:3},{mf:4},{mf:5},{mf:6},{mf:8},{mf:10}],
   div:[null,{mf:3},{mf:4},{mf:5},{mf:6},{mf:8},{mf:10}],
-  frac:[null,{maxDen:2,maxK:3},{maxDen:2,maxK:4},{maxDen:3,maxK:4},{maxDen:3,maxK:5},{maxDen:4,maxK:5},{maxDen:4,maxK:6}]
+  frac:[null,{maxDen:2,maxK:3},{maxDen:2,maxK:4},{maxDen:3,maxK:4},{maxDen:3,maxK:5},{maxDen:4,maxK:5},{maxDen:4,maxK:6}],
+  gkel:[null,{maxSide:4},{maxSide:5},{maxSide:7},{maxSide:9},{maxSide:12},{maxSide:15}],
+  gluas:[null,{maxSide:3},{maxSide:4},{maxSide:5},{maxSide:6},{maxSide:8},{maxSide:10}]
 };
 function clampLvl(l){ return Math.max(1,Math.min(6,l)); }
 // tingkat adaptif terpakai (floor) untuk operasi tertentu
@@ -2760,6 +2828,7 @@ function genAdaptiveQ(op, level, sid){
     const den=rand(2,L.maxDen), k=rand(1,L.maxK);
     return {den,k,whole:den*k,num:1,op:'frac',ans:k,sid,tier:'ringan'};
   }
+  if(op==='gkel'||op==='gluas') return genGeoQ(op, ADAPT_BANDS[op][level].maxSide, sid, 'ringan');
   // add (default): pakai generator Ujian Kekuatan (rentang TRIAL_LEVELS)
   const tq=genTrialQ(level);
   return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
