@@ -76,6 +76,11 @@ Ada dugaan file `PROMPT-LANJUT-MEKANIK.md` (M1–M9) **belum dijalankan**, TAPI 
 **Verifikasi:** `verify_geo.js` **47/47** (kebenaran rumus tiap generator, adaptif 6 tingkat, AKM) + harness lama no-regresi + render Edge (combat Keliling+Luas, peta region Geometri).
 **Berikutnya (Geometri lanjutan):** satuan panjang (cm↔m), keliling/luas segitiga & lingkaran, volume. **Atau domain lain:** Aljabar / Data & Ketidakpastian. **Kalau mau geo DIUKUR** (pre/post+Sheet) → tambah ke `DIAG_OPS` + Daffa redeploy `.gs`.
 
+### ✅ KEYPAD DINAMIS + BILANGAN BULAT (negatif) — **SELESAI (2026-06-29 sesi 8)** *(konten BONUS, belum diukur)*
+**Keypad dinamis:** `buildNumpad` tambah tombol tersembunyi `−`(`np-neg`) & `,`(`np-dot`) full-width; `updateNumpadKeys(op,scEl)` tampilin sesuai op (di `renderQuestion`+`renderGuide`); `npFeed` handle toggle `−` & sekali `.`; `inp-enc`/`inp-guide` → **`type="text"`** (biar terima "−"; number-input nolak "-" sendirian) + `data-max`. Keyboard fisik "-"/"." jalan. **Buka jalan buat desimal (`,`) & √ nanti.** **Bilangan Bulat:** region **"Kutub Beku"** (`iadd`/`isub`, setelah Geometri), jawaban BISA negatif. `genIntQ(op,maxN)` (a,b ∈ [−maxN,maxN], ans a±b); wired genQ/genHardQ/genAdaptiveQ+`ADAPT_BANDS.iadd/isub` + AKM (`genIntAkmQ`: suhu/lift-basement/penyelam) + `qText`(negatif dibungkus kurung: `(−5) + 4`) + `guideHint`/`buildGuideVisual` (garis bilangan) + peta + `blankState.skills`. Musuh ❄️ Si Beku, 🥶 Si Dingin. ITEM 5 diagnoseMistake → null utk int (aman). Detail keypad+cara di CONTEXT §17b.
+**Verifikasi:** `verify_int.js` **51/51** (a±b benar, negatif muncul, adaptif 6 tingkat, AKM, qText/guideHint, keypad wiring) + harness lama no-regresi (verify_geo assertion SKILL_ORDER diupdate) + render Edge (combat "3−8=?" + input "-12" + tombol "−" muncul). Backup `matheroes_int_v1_done.html`.
+**Berikutnya (paling nyambung): DESIMAL** (`,` sudah siap di keypad; `dadd`/`dsub` pakai tenths anti-floating-point + `parseFloat`) — melengkapi Bilangan. Lalu Geometri lanjutan / Aljabar / Data.
+
 ---
 
 ## ✅ TIMER — KEPUTUSAN DAFFA SUDAH DIAMBIL (2026-06-29): "timer LEMBUT"

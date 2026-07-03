@@ -280,7 +280,7 @@ Tiap soal Prolog ada tombol **"🤔 Belum bisa, lewati"** (`skipProlog`): skip =
 
 | Domain AKM | Status | Catatan |
 |---|---|---|
-| **Bilangan** | ✅ **Lengkap** | 5 operasi (tambah/kurang/kali/bagi/pecahan) |
+| **Bilangan** | ✅ **Lengkap+** | 5 operasi (tambah/kurang/kali/bagi/pecahan) + **Bilangan Bulat/negatif** (2026-06-29: `iadd`/`isub`, region "Kutub Beku", keypad tombol "−" dinamis). Belum: desimal. |
 | **Geometri & Pengukuran** | 🟡 **v1 (2026-06-29)** | 2 skill: **Keliling** & **Luas** persegi/persegi panjang (`gkel`/`gluas`, region "Negeri Bentuk" setelah Pecahan). Konten BONUS — BELUM masuk diagnosa/Sheet. Berikutnya: satuan panjang, keliling/luas segitiga/lingkaran, volume. |
 | **Aljabar** | ❌ | Belum ada |
 | **Data & Ketidakpastian** | ❌ | Belum ada |
@@ -301,6 +301,8 @@ Tiap soal Prolog ada tombol **"🤔 Belum bisa, lewati"** (`skipProlog`): skip =
 
 ### 17b. CARA NAMBAH DOMAIN AKM BARU (pola dari Geometri v1)
 Titik sentuh (semua di `matheroes.html`): (1) `SKILL_DEFS` skill baru {op unik, group, range param, enemy, xpStat, prev/next} + sambung `.next` skill terakhir sebelumnya; (2) `SKILL_ORDER` append; (3) `blankState().skills` + `ld()` sudah auto-migrasi via loop `SKILL_ORDER` (skill hilang → blankSkill); (4) generator: `genQ`/`genHardQ`/`genAdaptiveQ`+`ADAPT_BANDS` per op + AKM story (`gen<X>AkmQ` + dispatch di `genAkmQ`); (5) `qText` (tampilan) + `guideHint` (1-baris) + `buildGuideVisual` (CPA, boleh return '' → aman); (6) peta OTOMATIS dari `group` — cukup tambah `GICON`/`GSTAT`/`STORY_REGIONS` (opsional `GDIM`/`GPENJAGA` kalau wilayah Penjaga); (7) `renderQuestion` `classList.toggle('story',...)` utk teks panjang; (8) musuh tanpa sprite → fallback `d.icon` emoji (aman). **adaptF pakai fallback default 3 + self-init** (tak perlu ubah blankState.adaptF/harness item3). Domain BONUS = JANGAN masuk `DIAG_OPS` (biar skema Sheet tak berubah). Verif: bikin `verify_<domain>.js` (uji kebenaran rumus tiap generator). Geometri: `verify_geo.js` 47/47.
+
+**KEYPAD DINAMIS (2026-06-29, buat jawaban non-standar mis. negatif/desimal):** `buildNumpad` punya tombol tersembunyi `np-neg`("−") & `np-dot`(",") full-width; `updateNumpadKeys(op, scEl)` tampilin sesuai op (dipanggil di `renderQuestion` & `renderGuide`); `npFeed` handle `neg`(toggle "-") & `dot`(sekali "."); input `inp-enc`/`inp-guide` = `type="text"` (biar terima "−"/"."; number-input nolak "-" sendirian); `data-max` ganti `max` utk batas digit; keyboard fisik "-"/"." juga jalan. Buat domain baru dgn jawaban negatif → set op ke cek di `updateNumpadKeys` + parsing pakai `parseInt` (int) / nanti `parseFloat`+tenths (desimal). Bilangan Bulat (`iadd`/`isub`): region "Kutub Beku", musuh ❄️🥶, AKM konteks suhu/lift/penyelam, guide garis bilangan. `verify_int.js` 51/51.
 
 ## 18. Konvensi Kode
 

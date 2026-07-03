@@ -711,7 +711,7 @@ input[type=number]{-moz-appearance:textfield}
   </div>
   <!-- skill button -->
   <button class="skill-btn" id="skill-btn" onclick="G.useSkill()">💫 Gunakan Jurus! (Mana penuh)</button>
-  <input type="number" id="inp-enc" placeholder="Jawaban…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="99999" onkeydown="if(event.key==='Enter')G.submitEnc()">
+  <input type="text" id="inp-enc" placeholder="Jawaban…" inputmode="none" autocomplete="off" readonly class="ans-input" data-max="99999" onkeydown="if(event.key==='Enter')G.submitEnc()">
   <div class="g12"></div>
   <button class="btn btn-green" id="enc-action-btn" onclick="G.submitEnc()">Serang! ⚔️</button>
   <div class="g6"></div>
@@ -736,7 +736,7 @@ input[type=number]{-moz-appearance:textfield}
   <div class="card" id="guide-redeem" style="background:rgba(91,75,230,.12);border-color:rgba(91,75,230,.28)">
     <p class="eyebrow" style="color:var(--indigo)">Tebus — soal serupa</p>
     <div class="q-text" id="guide-subq" style="font-size:clamp(20px,7vw,30px);margin:8px 0;line-height:1.25">2 + 1 = ?</div>
-    <input type="number" id="inp-guide" placeholder="Jawaban…" inputmode="none" pattern="[0-9]*" autocomplete="off" readonly class="ans-input" min="0" max="9999" style="margin-top:10px" onkeydown="if(event.key==='Enter')G.submitGuide()">
+    <input type="text" id="inp-guide" placeholder="Jawaban…" inputmode="none" autocomplete="off" readonly class="ans-input" data-max="9999" style="margin-top:10px" onkeydown="if(event.key==='Enter')G.submitGuide()">
     <div class="g12"></div>
     <button class="btn btn-primary" onclick="G.submitGuide()">Tebus! →</button>
   </div>
@@ -974,10 +974,17 @@ const SKILL_DEFS = {
     enemyHP:22, maxSide:9, xpStat:'pintar', prev:'frac_simple', next:'geo_luas',
     enemySkills:['Belok Bingung','Putar Kusut']},
   'geo_luas':{op:'gluas', group:'Geometri', name:'Luas Bangun', desc:'Luas persegi & persegi panjang', icon:'🟦', enemyName:'Si Melebar',
-    enemyHP:24, maxSide:7, xpStat:'pintar', prev:'geo_kel', next:null,
-    enemySkills:['Lebar Berantakan','Tumpang Tindih']}
+    enemyHP:24, maxSide:7, xpStat:'pintar', prev:'geo_kel', next:'int_add',
+    enemySkills:['Lebar Berantakan','Tumpang Tindih']},
+  // ── BILANGAN BULAT · tumbuh PINTAR ✨ (domain baru — pakai negatif, konten bonus, belum diukur) ──
+  'int_add':{op:'iadd', group:'Bilangan Bulat', name:'Penjumlahan Bulat', desc:'Termasuk bilangan negatif (mis. −5 + 4)', icon:'❄️', enemyName:'Si Beku',
+    enemyHP:24, maxN:10, xpStat:'pintar', prev:'geo_luas', next:'int_sub',
+    enemySkills:['Beku Mendadak','Angin Dingin']},
+  'int_sub':{op:'isub', group:'Bilangan Bulat', name:'Pengurangan Bulat', desc:'Hasil bisa negatif (mis. 3 − 8 = −5)', icon:'🥶', enemyName:'Si Dingin',
+    enemyHP:26, maxN:10, xpStat:'pintar', prev:'int_add', next:null,
+    enemySkills:['Menggigil Hebat','Salju Berat']}
 };
-const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas'];
+const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub'];
 
 // Companion "Pijar" — tumbuh dari bond (main + menang + reuni harian). Tema: cahaya/api.
 const COMPANION_STAGES=[
@@ -1360,7 +1367,7 @@ function checkNewDay(){
 // ═══════════════════════════════════════════
 // NARASI & MISI HARIAN
 // ═══════════════════════════════════════════
-const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan',Geometri:'Negeri Bentuk'};
+const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan',Geometri:'Negeri Bentuk','Bilangan Bulat':'Kutub Beku'};
 const MISSION_POOL=[
   {id:'win',    target:3,  reward:4, label:t=>`Menangkan ${t} pertarungan`},
   {id:'play',   target:5,  reward:3, label:t=>`Mainkan ${t} pertarungan`},
@@ -1579,7 +1586,8 @@ function blankState(){
       'sub_0_20':blankSkill(),'sub_0_100':blankSkill(),
       'mul_1_5':blankSkill(),'mul_1_10':blankSkill(),
       'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill(),
-      'geo_kel':blankSkill(),'geo_luas':blankSkill()
+      'geo_kel':blankSkill(),'geo_luas':blankSkill(),
+      'int_add':blankSkill(),'int_sub':blankSkill()
     },
     session:{count:0},
     meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{}},
@@ -1752,6 +1760,10 @@ function qText(q){
       ? `${lbl} persegi ⬛ (sisi ${q.s} cm) = ?${u}`
       : `${lbl} persegi panjang ▭ (${q.p}×${q.l} cm) = ?${u}`;
   }
+  if(q.op==='iadd'||q.op==='isub'){ // bilangan bulat: negatif dibungkus kurung biar jelas
+    const f=n=> n<0?`(−${-n})`:`${n}`;
+    return `${f(q.a)} ${q.op==='iadd'?'+':'−'} ${f(q.b)} = ?`;
+  }
   return `${q.a} ${OP_SYM[q.op]||'+'} ${q.b} = ?`;
 }
 
@@ -1765,6 +1777,13 @@ function genGeoQ(op, maxSide, sid, tier, hard){
   let p=rand(lo,hi), l=rand(lo,hi), t=0;      // persegi panjang (usahakan p≠l biar beda jelas)
   while(p===l && t<10){ l=rand(lo,hi); t++; }
   return {shape:'pp', p, l, op, ans:(op==='gkel'?2*(p+l):p*l), sid, tier:tier||'ringan', hard:!!hard};
+}
+// generator BILANGAN BULAT (penjumlahan/pengurangan termasuk NEGATIF) — jawaban bisa minus
+function genIntQ(op, maxN, sid, tier, hard){
+  let a,b,t=0;
+  do{ a=rand(-maxN,maxN); b=rand(-maxN,maxN); t++; }
+  while(a===0&&b===0&&t<20); // hindari 0 op 0
+  return {a, b, op, ans:(op==='iadd'?a+b:a-b), sid, tier:tier||'ringan', hard:!!hard, isInt:true};
 }
 // soal SERANGAN (giliran kita) — "ringan", bangun kelancaran
 function genQ(sid){
@@ -1788,6 +1807,7 @@ function genQ(sid){
     return{den,k,whole:den*k,num:1,op:'frac',ans:k,sid,tier:'ringan'};
   }
   if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, d.maxSide, sid, 'ringan');
+  if(d.op==='iadd'||d.op==='isub') return genIntQ(d.op, d.maxN, sid, 'ringan');
   // add (default)
   let a,b,t=0;
   do{a=rand(0,d.maxA);b=rand(0,d.maxA);t++;}
@@ -1819,6 +1839,7 @@ function genHardQ(sid){
     return{den,k,whole:den*k,num:1,op:'frac',ans:k,sid,hard:true};
   }
   if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, Math.min(15,d.maxSide+3), sid, undefined, true);
+  if(d.op==='iadd'||d.op==='isub') return genIntQ(d.op, Math.min(25,d.maxN+5), sid, undefined, true);
   const lim=Math.min(Math.floor(d.maxSum*1.3),d.maxSum+10);
   let a=rand(0,Math.floor(lim/2)),b=rand(0,Math.floor(lim/2));
   if(a+b===0)b=1;
@@ -1946,6 +1967,23 @@ function genGeoAkmQ(sid){
   q.story = q.shape==='persegi' ? tpls[rand(0,tpls.length-1)](q.s) : tpls[rand(0,tpls.length-1)](q.p,q.l);
   return q;
 }
+// soal AKM BILANGAN BULAT — konteks di mana negatif itu NYATA (suhu, lantai basement, kedalaman laut)
+function genIntAkmQ(sid){
+  const d=SKILL_DEFS[sid], op=d.op, mx=d.maxN, kind=rand(0,1);
+  if(op==='iadd'){
+    let s=rand(-mx,mx), c=rand(-mx,mx); if(c===0)c=1;
+    const story = kind===0
+      ? `Suhu udara ${s}°C. Lalu ${c>=0?`naik ${c}`:`turun ${-c}`}°C. Berapa suhu sekarang?`
+      : `Lift di lantai ${s} (minus = basement). Lalu ${c>=0?`naik ${c}`:`turun ${-c}`} lantai. Sekarang di lantai berapa?`;
+    return {a:s,b:c,op,ans:s+c,sid,tier:'akm',story,isInt:true};
+  }
+  // isub: a − b (b>0 → cerita "turun/berkurang" natural; hasil bisa negatif)
+  let a=rand(-Math.floor(mx/2),mx), b=rand(1,mx);
+  const story = kind===0
+    ? `Suhu ${a}°C, lalu turun ${b}°C. Berapa suhu sekarang?`
+    : `Penyelam di ketinggian ${a} m (minus = di bawah permukaan laut), lalu turun ${b} m lagi. Sekarang di ketinggian berapa?`;
+  return {a,b,op,ans:a-b,sid,tier:'akm',story,isInt:true};
+}
 // dispatcher AKM per operasi
 function genAkmQ(sid){
   const op=SKILL_DEFS[sid].op;
@@ -1954,6 +1992,7 @@ function genAkmQ(sid){
   if(op==='div') return genDivAkmQ(sid);
   if(op==='frac') return genFracAkmQ(sid);
   if(op==='gkel'||op==='gluas') return genGeoAkmQ(sid);
+  if(op==='iadd'||op==='isub') return genIntAkmQ(sid);
   return genAddAkmQ(sid); // add
 }
 // soal BERTAHAN (giliran musuh): KELIMA operasi kini soal cerita AKM bernalar (bukan cuma angka besar)
@@ -2130,6 +2169,7 @@ function renderQuestion(){
   const wb=document.getElementById('why-btn');
   if(wb) wb.style.display=(E.lastQ&&!E.isDefend)?'':'none';
   document.getElementById('inp-enc').value='';
+  updateNumpadKeys(q.op, document.getElementById('s-enc')); // tampilkan tombol − utk bilangan bulat
 }
 function renderDefendMode(on, skillName){
   const banner=document.getElementById('defend-banner');
@@ -2249,6 +2289,13 @@ function buildGuideVisual(q){
       <div style="font-size:44px;line-height:1">${isP?'⬛':'▭'}</div>
       <p style="font-size:12px;color:rgba(255,255,255,.45);margin:6px 0">${op==='gkel'?'Keliling = jumlah semua tepi':'Luas = banyak petak di dalamnya'}<br>${isP?'Persegi':'Persegi panjang'} (${dims})</p>
       <div style="font-size:18px;font-weight:700;color:var(--green)">${op==='gkel'?'Keliling':'Luas'} = ${formula} ✓</div></div>`;
+  }else if(op==='iadd'||op==='isub'){
+    const move=op==='iadd'?b:-b; // isub: a−b = a + (−b)
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Bayangkan garis bilangan 🧊 (kiri makin kecil, kanan makin besar)</p>
+      <div style="font-size:16px;font-weight:700">Mulai di <span style="color:var(--gold)">${a}</span></div>
+      <div class="guide-arrow">${move>=0?'→ maju':'← mundur'} ${Math.abs(move)} langkah</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:4px">= ${ans} ✓</div></div>`;
   }else if(op==='sub'){
     if(a<=15){
       const kept='●'.repeat(ans), gone='●'.repeat(b);
@@ -2317,6 +2364,8 @@ function guideHint(q){
   if(op==='gluas') return q.shape==='persegi'
     ? `Luas persegi = sisi × sisi = ${q.s} × ${q.s} = ${ans}.`
     : `Luas persegi panjang = panjang × lebar = ${q.p} × ${q.l} = ${ans}.`;
+  if(op==='iadd') return `Garis bilangan: mulai dari ${a}, ${b>=0?`maju ${b}`:`mundur ${-b}`} langkah → ${ans}.`;
+  if(op==='isub') return `Mengurang = mundur di garis bilangan. Mulai dari ${a}, ${b>=0?`mundur ${b}`:`maju ${-b} (kurangi negatif = maju)`} → ${ans}.`;
   return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
 }
 // ── ITEM 5 — Pijar nebak MISKONSEPSI dari jawaban SALAH anak → petunjuk lebih nyasar (lembut, VISI) ──
@@ -2392,6 +2441,7 @@ function renderGuide(missed){
   subEl.textContent=qText(E.subQ);
   subEl.style.fontSize=E.subQ.story?'clamp(16px,4.6vw,20px)':'clamp(20px,7vw,30px)';
   document.getElementById('inp-guide').value='';
+  updateNumpadKeys(E.subQ.op, document.getElementById('s-guide')); // tombol − utk tebusan bilangan bulat
 }
 
 // ═══════════════════════════════════════════
@@ -2459,8 +2509,8 @@ function renderMap(){
   }
   const due=dueReviews();
   document.getElementById('map-sub').textContent=due.length?`${due.length} skill jadwal review!`:'Pilih wilayah untuk berlatih.';
-  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰',Geometri:'📐'};
-  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR',Geometri:'✨ PINTAR'};
+  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰',Geometri:'📐','Bilangan Bulat':'❄️'};
+  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR',Geometri:'✨ PINTAR','Bilangan Bulat':'✨ PINTAR'};
   // TEMA §3: tiap wilayah (operasi) dipasangkan ke 1 Dimensi Profil Lulusan — label "Wilayah · Nilai"
   // selalu tampil → anak HAPAL lewat asosiasi berulang (bukan ceramah). Pecahan bukan wilayah Penjaga.
   const GDIM={Penjumlahan:'Kolaborasi',Pengurangan:'Kemandirian',Perkalian:'Kreativitas',Pembagian:'Keadilan'};
@@ -2785,7 +2835,9 @@ const ADAPT_BANDS={
   div:[null,{mf:3},{mf:4},{mf:5},{mf:6},{mf:8},{mf:10}],
   frac:[null,{maxDen:2,maxK:3},{maxDen:2,maxK:4},{maxDen:3,maxK:4},{maxDen:3,maxK:5},{maxDen:4,maxK:5},{maxDen:4,maxK:6}],
   gkel:[null,{maxSide:4},{maxSide:5},{maxSide:7},{maxSide:9},{maxSide:12},{maxSide:15}],
-  gluas:[null,{maxSide:3},{maxSide:4},{maxSide:5},{maxSide:6},{maxSide:8},{maxSide:10}]
+  gluas:[null,{maxSide:3},{maxSide:4},{maxSide:5},{maxSide:6},{maxSide:8},{maxSide:10}],
+  iadd:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}],
+  isub:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}]
 };
 function clampLvl(l){ return Math.max(1,Math.min(6,l)); }
 // tingkat adaptif terpakai (floor) untuk operasi tertentu
@@ -2829,6 +2881,7 @@ function genAdaptiveQ(op, level, sid){
     return {den,k,whole:den*k,num:1,op:'frac',ans:k,sid,tier:'ringan'};
   }
   if(op==='gkel'||op==='gluas') return genGeoQ(op, ADAPT_BANDS[op][level].maxSide, sid, 'ringan');
+  if(op==='iadd'||op==='isub') return genIntQ(op, ADAPT_BANDS[op][level].maxN, sid, 'ringan');
   // add (default): pakai generator Ujian Kekuatan (rentang TRIAL_LEVELS)
   const tq=genTrialQ(level);
   return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
@@ -3810,11 +3863,22 @@ if(window.visualViewport){ window.visualViewport.addEventListener('resize',()=>s
 const ANS_SUBMIT={'s-prolog':'submitProlog','s-trial':'submitTrial','s-post':'submitPost','s-enc':'submitEnc','s-guide':'submitGuide'};
 function buildNumpad(){
   const np=document.createElement('div'); np.className='numpad';
-  np.innerHTML=['1','2','3','4','5','6','7','8','9','del','0','ok'].map(k=>
+  const base=['1','2','3','4','5','6','7','8','9','del','0','ok'].map(k=>
      k==='del'?'<button type="button" class="np-key np-del" data-k="del" aria-label="hapus">⌫</button>'
     :k==='ok' ?'<button type="button" class="np-key np-ok" data-k="ok" aria-label="jawab">✓</button>'
     :`<button type="button" class="np-key" data-k="${k}">${k}</button>`).join('');
+  // tombol dinamis (muncul sesuai tipe soal): − utk bilangan bulat, , utk desimal — full-width, hidden default
+  const extra='<button type="button" class="np-key np-extra np-neg" data-k="neg" style="display:none;grid-column:1/-1" aria-label="tanda minus">−</button>'
+    +'<button type="button" class="np-key np-extra np-dot" data-k="dot" style="display:none;grid-column:1/-1" aria-label="koma desimal">,</button>';
+  np.innerHTML=base+extra;
   return np;
+}
+// tampilkan/sembunyikan tombol dinamis (−/,) sesuai tipe operasi soal aktif
+function updateNumpadKeys(op, scEl){
+  const sc=scEl||document.querySelector('.screen.on'); if(!sc) return;
+  const neg=sc.querySelector('.np-neg'), dot=sc.querySelector('.np-dot');
+  if(neg) neg.style.display=(op==='iadd'||op==='isub')?'':'none';
+  if(dot) dot.style.display=(op==='dadd'||op==='dsub')?'':'none'; // desimal (nanti)
 }
 function attachNumpads(){
   Object.keys(ANS_SUBMIT).forEach(id=>{
@@ -3827,9 +3891,11 @@ function npFeed(k){
   const sc=document.querySelector('.screen.on'); if(!sc||!ANS_SUBMIT[sc.id]) return;
   if(k==='ok'){ if(typeof G[ANS_SUBMIT[sc.id]]==='function') G[ANS_SUBMIT[sc.id]](); return; }
   const inp=sc.querySelector('.ans-input'); if(!inp) return;
-  const maxLen=String(parseInt(inp.getAttribute('max')||'99999',10)).length;
+  const maxLen=String(parseInt(inp.getAttribute('data-max')||inp.getAttribute('max')||'99999',10)).length;
   if(k==='del') inp.value=inp.value.slice(0,-1);
-  else if(inp.value.length<maxLen) inp.value+=k;
+  else if(k==='neg') inp.value = inp.value.startsWith('-') ? inp.value.slice(1) : '-'+inp.value; // toggle tanda minus
+  else if(k==='dot'){ if(!inp.value.includes('.') && inp.value!=='' && inp.value!=='-') inp.value+='.'; } // koma desimal (sekali)
+  else if(inp.value.replace(/[-.]/g,'').length<maxLen) inp.value+=k; // batasi jumlah DIGIT (abaikan −/.)
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.np-key'); if(b) npFeed(b.getAttribute('data-k')); });
 // keyboard fisik (desktop) tetap bisa: angka & hapus (input readonly → diisi manual; Enter ditangani handler input)
@@ -3837,6 +3903,8 @@ document.addEventListener('keydown',e=>{
   const sc=document.querySelector('.screen.on'); if(!sc||!ANS_SUBMIT[sc.id]) return;
   if(e.key>='0'&&e.key<='9'){ npFeed(e.key); e.preventDefault(); }
   else if(e.key==='Backspace'){ npFeed('del'); e.preventDefault(); }
+  else if(e.key==='-'){ npFeed('neg'); e.preventDefault(); }
+  else if(e.key==='.'||e.key===','){ npFeed('dot'); e.preventDefault(); }
 });
 
 // ─── BOOT ───
