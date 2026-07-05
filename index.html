@@ -981,10 +981,17 @@ const SKILL_DEFS = {
     enemyHP:24, maxN:10, xpStat:'pintar', prev:'geo_luas', next:'int_sub',
     enemySkills:['Beku Mendadak','Angin Dingin']},
   'int_sub':{op:'isub', group:'Bilangan Bulat', name:'Pengurangan Bulat', desc:'Hasil bisa negatif (mis. 3 − 8 = −5)', icon:'🥶', enemyName:'Si Dingin',
-    enemyHP:26, maxN:10, xpStat:'pintar', prev:'int_add', next:null,
-    enemySkills:['Menggigil Hebat','Salju Berat']}
+    enemyHP:26, maxN:10, xpStat:'pintar', prev:'int_add', next:'dec_add',
+    enemySkills:['Menggigil Hebat','Salju Berat']},
+  // ── DESIMAL · tumbuh PINTAR ✨ (1 angka di belakang koma; keypad "," dinamis; konten bonus, belum diukur) ──
+  'dec_add':{op:'dadd', group:'Desimal', name:'Penjumlahan Desimal', desc:'Satu angka di belakang koma (mis. 0,5 + 0,3)', icon:'💧', enemyName:'Si Tetes',
+    enemyHP:24, maxT:30, xpStat:'pintar', prev:'int_sub', next:'dec_sub',
+    enemySkills:['Cipratan','Rembes Bingung']},
+  'dec_sub':{op:'dsub', group:'Desimal', name:'Pengurangan Desimal', desc:'Hasil tidak minus (mis. 2,5 − 1,2)', icon:'🌊', enemyName:'Si Ombak',
+    enemyHP:26, maxT:30, xpStat:'pintar', prev:'dec_add', next:null,
+    enemySkills:['Ombak Kecil','Pasang Surut']}
 };
-const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub'];
+const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub','dec_add','dec_sub'];
 
 // Companion "Pijar" — tumbuh dari bond (main + menang + reuni harian). Tema: cahaya/api.
 const COMPANION_STAGES=[
@@ -1367,7 +1374,7 @@ function checkNewDay(){
 // ═══════════════════════════════════════════
 // NARASI & MISI HARIAN
 // ═══════════════════════════════════════════
-const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan',Geometri:'Negeri Bentuk','Bilangan Bulat':'Kutub Beku'};
+const STORY_REGIONS={Penjumlahan:'Lembah Tambah',Pengurangan:'Gua Kurang',Perkalian:'Menara Kali',Pembagian:'Danau Bagi',Pecahan:'Taman Pecahan',Geometri:'Negeri Bentuk','Bilangan Bulat':'Kutub Beku',Desimal:'Telaga Titik'};
 const MISSION_POOL=[
   {id:'win',    target:3,  reward:4, label:t=>`Menangkan ${t} pertarungan`},
   {id:'play',   target:5,  reward:3, label:t=>`Mainkan ${t} pertarungan`},
@@ -1587,7 +1594,8 @@ function blankState(){
       'mul_1_5':blankSkill(),'mul_1_10':blankSkill(),
       'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill(),
       'geo_kel':blankSkill(),'geo_luas':blankSkill(),
-      'int_add':blankSkill(),'int_sub':blankSkill()
+      'int_add':blankSkill(),'int_sub':blankSkill(),
+      'dec_add':blankSkill(),'dec_sub':blankSkill()
     },
     session:{count:0},
     meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{}},
@@ -1764,7 +1772,21 @@ function qText(q){
     const f=n=> n<0?`(−${-n})`:`${n}`;
     return `${f(q.a)} ${q.op==='iadd'?'+':'−'} ${f(q.b)} = ?`;
   }
+  if(q.op==='dadd'||q.op==='dsub'){ // desimal: tampil koma (gaya Indonesia)
+    const f=n=>String(n).replace('.',',');
+    return `${f(q.a)} ${q.op==='dadd'?'+':'−'} ${f(q.b)} = ?`;
+  }
   return `${q.a} ${OP_SYM[q.op]||'+'} ${q.b} = ?`;
+}
+// parse & banding jawaban sesuai tipe soal: desimal → float (koma ID → titik, banding per-1/10 anti-FP); lainnya → integer
+function parseAnswer(raw, op){
+  raw=(raw||'').trim();
+  if(op==='dadd'||op==='dsub') return parseFloat(raw.replace(',','.'));
+  return parseInt(raw,10);
+}
+function answerCorrect(v, ans, op){
+  if(op==='dadd'||op==='dsub') return Math.round(v*10)===Math.round(ans*10);
+  return v===ans;
 }
 
 // generator soal GEOMETRI (keliling/luas persegi & persegi panjang) — jawaban tetap ANGKA (cocok keypad)
@@ -1784,6 +1806,15 @@ function genIntQ(op, maxN, sid, tier, hard){
   do{ a=rand(-maxN,maxN); b=rand(-maxN,maxN); t++; }
   while(a===0&&b===0&&t<20); // hindari 0 op 0
   return {a, b, op, ans:(op==='iadd'?a+b:a-b), sid, tier:tier||'ringan', hard:!!hard, isInt:true};
+}
+// generator DESIMAL (1 angka di belakang koma) — hitung di TENTHS (integer) → anti floating-point
+function genDecQ(op, maxT, sid, tier, hard){
+  let aT,bT,t=0;
+  do{ aT=rand(1,maxT); bT=rand(1,maxT); t++; }
+  while(op==='dsub'&&aT<bT&&t<40);      // sub: usahakan hasil ≥ 0 (belum campur desimal+negatif)
+  if(op==='dsub'&&aT<bT){ const s=aT; aT=bT; bT=s; } // jaminan tak minus
+  const ansT = op==='dadd'? aT+bT : aT-bT;
+  return {a:aT/10, b:bT/10, aT, bT, op, ans:ansT/10, sid, tier:tier||'ringan', hard:!!hard, isDec:true};
 }
 // soal SERANGAN (giliran kita) — "ringan", bangun kelancaran
 function genQ(sid){
@@ -1808,6 +1839,7 @@ function genQ(sid){
   }
   if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, d.maxSide, sid, 'ringan');
   if(d.op==='iadd'||d.op==='isub') return genIntQ(d.op, d.maxN, sid, 'ringan');
+  if(d.op==='dadd'||d.op==='dsub') return genDecQ(d.op, d.maxT, sid, 'ringan');
   // add (default)
   let a,b,t=0;
   do{a=rand(0,d.maxA);b=rand(0,d.maxA);t++;}
@@ -1840,6 +1872,7 @@ function genHardQ(sid){
   }
   if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, Math.min(15,d.maxSide+3), sid, undefined, true);
   if(d.op==='iadd'||d.op==='isub') return genIntQ(d.op, Math.min(25,d.maxN+5), sid, undefined, true);
+  if(d.op==='dadd'||d.op==='dsub') return genDecQ(d.op, Math.min(99,d.maxT+15), sid, undefined, true);
   const lim=Math.min(Math.floor(d.maxSum*1.3),d.maxSum+10);
   let a=rand(0,Math.floor(lim/2)),b=rand(0,Math.floor(lim/2));
   if(a+b===0)b=1;
@@ -1984,6 +2017,23 @@ function genIntAkmQ(sid){
     : `Penyelam di ketinggian ${a} m (minus = di bawah permukaan laut), lalu turun ${b} m lagi. Sekarang di ketinggian berapa?`;
   return {a,b,op,ans:a-b,sid,tier:'akm',story,isInt:true};
 }
+// soal AKM DESIMAL — konteks ukur nyata (uang ribuan, meter, liter, kg)
+function genDecAkmQ(sid){
+  const d=SKILL_DEFS[sid], op=d.op, f=n=>String(n).replace('.',',');
+  const q=genDecQ(op, d.maxT, sid, 'akm');
+  const A=f(q.a), B=f(q.b);
+  const T = op==='dadd'
+    ? [ `Beli buku Rp ${A} ribu dan pensil Rp ${B} ribu. Berapa ribu total belanjanya?`,
+        `Pita ${A} m disambung pita ${B} m. Berapa meter panjangnya sekarang?`,
+        `Botol berisi ${A} liter air, ditambah ${B} liter. Berapa liter sekarang?`,
+        `Berat apel ${A} kg dan jeruk ${B} kg. Berapa kg totalnya?` ]
+    : [ `Uang Rp ${A} ribu dipakai Rp ${B} ribu. Sisa berapa ribu?`,
+        `Tali ${A} m dipotong ${B} m. Sisa berapa meter?`,
+        `Air ${A} liter dipakai ${B} liter. Sisa berapa liter?`,
+        `Gula ${A} kg diambil ${B} kg. Sisa berapa kg?` ];
+  q.story = T[rand(0,T.length-1)];
+  return q;
+}
 // dispatcher AKM per operasi
 function genAkmQ(sid){
   const op=SKILL_DEFS[sid].op;
@@ -1993,6 +2043,7 @@ function genAkmQ(sid){
   if(op==='frac') return genFracAkmQ(sid);
   if(op==='gkel'||op==='gluas') return genGeoAkmQ(sid);
   if(op==='iadd'||op==='isub') return genIntAkmQ(sid);
+  if(op==='dadd'||op==='dsub') return genDecAkmQ(sid);
   return genAddAkmQ(sid); // add
 }
 // soal BERTAHAN (giliran musuh): KELIMA operasi kini soal cerita AKM bernalar (bukan cuma angka besar)
@@ -2296,6 +2347,12 @@ function buildGuideVisual(q){
       <div style="font-size:16px;font-weight:700">Mulai di <span style="color:var(--gold)">${a}</span></div>
       <div class="guide-arrow">${move>=0?'→ maju':'← mundur'} ${Math.abs(move)} langkah</div>
       <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:4px">= ${ans} ✓</div></div>`;
+  }else if(op==='dadd'||op==='dsub'){
+    const f=n=>String(n).replace('.',',');
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Sejajarkan tanda komanya, lalu hitung 💧</p>
+      <div style="font-size:20px;font-weight:700;font-family:ui-monospace,monospace">${f(a)} ${op==='dadd'?'+':'−'} ${f(b)}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">= ${f(ans)} ✓</div></div>`;
   }else if(op==='sub'){
     if(a<=15){
       const kept='●'.repeat(ans), gone='●'.repeat(b);
@@ -2366,6 +2423,7 @@ function guideHint(q){
     : `Luas persegi panjang = panjang × lebar = ${q.p} × ${q.l} = ${ans}.`;
   if(op==='iadd') return `Garis bilangan: mulai dari ${a}, ${b>=0?`maju ${b}`:`mundur ${-b}`} langkah → ${ans}.`;
   if(op==='isub') return `Mengurang = mundur di garis bilangan. Mulai dari ${a}, ${b>=0?`mundur ${b}`:`maju ${-b} (kurangi negatif = maju)`} → ${ans}.`;
+  if(op==='dadd'||op==='dsub'){ const f=n=>String(n).replace('.',','); return `Sejajarkan komanya dulu, baru ${op==='dadd'?'jumlahkan':'kurangi'} seperti biasa: ${f(a)} ${op==='dadd'?'+':'−'} ${f(b)} = ${f(ans)}.`; }
   return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
 }
 // ── ITEM 5 — Pijar nebak MISKONSEPSI dari jawaban SALAH anak → petunjuk lebih nyasar (lembut, VISI) ──
@@ -2509,8 +2567,8 @@ function renderMap(){
   }
   const due=dueReviews();
   document.getElementById('map-sub').textContent=due.length?`${due.length} skill jadwal review!`:'Pilih wilayah untuk berlatih.';
-  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰',Geometri:'📐','Bilangan Bulat':'❄️'};
-  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR',Geometri:'✨ PINTAR','Bilangan Bulat':'✨ PINTAR'};
+  const GICON={Penjumlahan:'➕',Pengurangan:'➖',Perkalian:'✖️',Pembagian:'➗',Pecahan:'🍰',Geometri:'📐','Bilangan Bulat':'❄️',Desimal:'💧'};
+  const GSTAT={Penjumlahan:'💪 KUAT',Pengurangan:'🛡️ TEGAR',Perkalian:'✨ PINTAR',Pembagian:'✨ PINTAR',Pecahan:'✨ PINTAR',Geometri:'✨ PINTAR','Bilangan Bulat':'✨ PINTAR',Desimal:'✨ PINTAR'};
   // TEMA §3: tiap wilayah (operasi) dipasangkan ke 1 Dimensi Profil Lulusan — label "Wilayah · Nilai"
   // selalu tampil → anak HAPAL lewat asosiasi berulang (bukan ceramah). Pecahan bukan wilayah Penjaga.
   const GDIM={Penjumlahan:'Kolaborasi',Pengurangan:'Kemandirian',Perkalian:'Kreativitas',Pembagian:'Keadilan'};
@@ -2837,7 +2895,9 @@ const ADAPT_BANDS={
   gkel:[null,{maxSide:4},{maxSide:5},{maxSide:7},{maxSide:9},{maxSide:12},{maxSide:15}],
   gluas:[null,{maxSide:3},{maxSide:4},{maxSide:5},{maxSide:6},{maxSide:8},{maxSide:10}],
   iadd:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}],
-  isub:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}]
+  isub:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}],
+  dadd:[null,{maxT:10},{maxT:15},{maxT:20},{maxT:30},{maxT:50},{maxT:99}],
+  dsub:[null,{maxT:10},{maxT:15},{maxT:20},{maxT:30},{maxT:50},{maxT:99}]
 };
 function clampLvl(l){ return Math.max(1,Math.min(6,l)); }
 // tingkat adaptif terpakai (floor) untuk operasi tertentu
@@ -2882,6 +2942,7 @@ function genAdaptiveQ(op, level, sid){
   }
   if(op==='gkel'||op==='gluas') return genGeoQ(op, ADAPT_BANDS[op][level].maxSide, sid, 'ringan');
   if(op==='iadd'||op==='isub') return genIntQ(op, ADAPT_BANDS[op][level].maxN, sid, 'ringan');
+  if(op==='dadd'||op==='dsub') return genDecQ(op, ADAPT_BANDS[op][level].maxT, sid, 'ringan');
   // add (default): pakai generator Ujian Kekuatan (rentang TRIAL_LEVELS)
   const tq=genTrialQ(level);
   return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
@@ -3689,10 +3750,10 @@ const G={
   submitEnc(){
     stopTimer();
     const inp=document.getElementById('inp-enc');
-    const v=parseInt(inp.value,10);
+    const v=parseAnswer(inp.value, E.q.op);
     if(isNaN(v)||inp.value.trim()===''){inp.focus();if(E.timerOn)startTimer();return;}
     inp.value='';
-    const correct=v===E.q.ans;
+    const correct=answerCorrect(v, E.q.ans, E.q.op);
     E.lastWrong=correct?null:v; // ITEM 5: simpan jawaban salah utk tebak miskonsepsi di Guide
     if(E.skillActive){
       E.skillActive=false;
@@ -3728,9 +3789,9 @@ const G={
 
   // ─── GUIDE SUBMIT ───
   submitGuide(){
-    const v=parseInt(document.getElementById('inp-guide').value,10);
+    const v=parseAnswer(document.getElementById('inp-guide').value, E.subQ.op);
     if(isNaN(v)){document.getElementById('inp-guide').focus();return;}
-    if(v===E.subQ.ans){
+    if(answerCorrect(v, E.subQ.ans, E.subQ.op)){
       flash('✅');
       // M6: hargai PERSISTENSI (bangkit & menebus setelah salah)
       if(E&&E.sid) addStatXP(SKILL_DEFS[E.sid].xpStat,REDEEM_XP);
@@ -3894,8 +3955,8 @@ function npFeed(k){
   const maxLen=String(parseInt(inp.getAttribute('data-max')||inp.getAttribute('max')||'99999',10)).length;
   if(k==='del') inp.value=inp.value.slice(0,-1);
   else if(k==='neg') inp.value = inp.value.startsWith('-') ? inp.value.slice(1) : '-'+inp.value; // toggle tanda minus
-  else if(k==='dot'){ if(!inp.value.includes('.') && inp.value!=='' && inp.value!=='-') inp.value+='.'; } // koma desimal (sekali)
-  else if(inp.value.replace(/[-.]/g,'').length<maxLen) inp.value+=k; // batasi jumlah DIGIT (abaikan −/.)
+  else if(k==='dot'){ if(!inp.value.includes(',') && inp.value!=='' && inp.value!=='-') inp.value+=','; } // koma desimal (sekali, gaya ID)
+  else if(inp.value.replace(/[-.,]/g,'').length<maxLen) inp.value+=k; // batasi jumlah DIGIT (abaikan −/,)
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.np-key'); if(b) npFeed(b.getAttribute('data-k')); });
 // keyboard fisik (desktop) tetap bisa: angka & hapus (input readonly → diisi manual; Enter ditangani handler input)
