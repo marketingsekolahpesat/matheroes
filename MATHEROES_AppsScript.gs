@@ -23,15 +23,17 @@
  *   Claude Code agar game ikut mengirim token yang sama. Kosong = nonaktif.
  ***********************************************************************/
 
-// Urutan kolom kanonik (Diagnosa v2). Tiap topik: _lvl (kemampuan 0–6) & _dtk (kelancaran, detik).
+// Urutan kolom kanonik (Diagnosa v2 + SKOR). Tiap topik: _lvl (kemampuan 0–6), _dtk (kelancaran, detik),
+// & _skor (poin gabungan benar-salah + waktu, selalu positif — headline rapor per 2026-07-08).
 var HEADER = [
   'nama','kelas',
-  'tambah_lvl_awal','tambah_lvl_akhir','tambah_dtk_awal','tambah_dtk_akhir',
-  'kurang_lvl_awal','kurang_lvl_akhir','kurang_dtk_awal','kurang_dtk_akhir',
-  'kali_lvl_awal','kali_lvl_akhir','kali_dtk_awal','kali_dtk_akhir',
-  'bagi_lvl_awal','bagi_lvl_akhir','bagi_dtk_awal','bagi_dtk_akhir',
-  'pecahan_lvl_awal','pecahan_lvl_akhir','pecahan_dtk_awal','pecahan_dtk_akhir',
-  'nalar_awal','nalar_akhir',
+  'tambah_lvl_awal','tambah_lvl_akhir','tambah_dtk_awal','tambah_dtk_akhir','tambah_skor_awal','tambah_skor_akhir',
+  'kurang_lvl_awal','kurang_lvl_akhir','kurang_dtk_awal','kurang_dtk_akhir','kurang_skor_awal','kurang_skor_akhir',
+  'kali_lvl_awal','kali_lvl_akhir','kali_dtk_awal','kali_dtk_akhir','kali_skor_awal','kali_skor_akhir',
+  'bagi_lvl_awal','bagi_lvl_akhir','bagi_dtk_awal','bagi_dtk_akhir','bagi_skor_awal','bagi_skor_akhir',
+  'pecahan_lvl_awal','pecahan_lvl_akhir','pecahan_dtk_awal','pecahan_dtk_akhir','pecahan_skor_awal','pecahan_skor_akhir',
+  'nalar_awal','nalar_akhir','nalar_skor_awal','nalar_skor_akhir',
+  'total_skor_awal','total_skor_akhir',
   'rata_lvl_awal','rata_lvl_akhir','rata_dtk_awal','rata_dtk_akhir',
   'total_gain','menit_main','skill_dikuasai','akurasi_latihan','level_pemain',
   'sesi','terakhir','id','versi','waktu_server'
