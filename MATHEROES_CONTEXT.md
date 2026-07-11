@@ -284,6 +284,7 @@ Ganti tampilan headline rapor dari "Level 4/3" jadi **SKOR poin** (Daffa: *"dari
 ## 16. Lain-lain
 
 - **Misi harian** (`genDailyMissions`, pool acak), **koleksi monster + treasure** (sprite pixel, shiny 10%), **SFX** WebAudio (mute toggle), **welcome screen** harian (sambutan + progres kemarin).
+- **AUDIO L2 — SFX event game (2026-07-11):** `SFX.LIB` diperluas dari 'tap' saja jadi 13 suara sintesis (Web Audio, tanpa file): `correct` (benar/serang, naik ceria), `wrong` (**LEMBUT 1 nada turun — VISI #2, bukan buzzer**), `defend`/`hurt`, `berserk`, `victory`, `mastery`, `star`, `reward`, `bond` (Pijar naik-tahap saja, anti-berisik), `select`, `newday`. Di-hook via `SFX.play(name)` di handler: `_handleAttackCorrect/Wrong`, `_handleDefendCorrect/Wrong`, berserk-wrong, `_startBerserk`, `_showVictory`, `renderMastery`, `awardStar`, `dropTreasure`, `addBond` (stage-up), `confirmHero`, `_renderWelcome`, + submit prolog/trial/post (diagnosa). Semua pendek/pelan (HP murah), mute toggle tetap. **SFX aman-inert saat AudioContext gagal** (harness/no-audio → try/catch+null). Verif `verify_audio.js` 29/29 (semua suara ada/berbunyi/senyap-saat-muted; `wrong`=1 nada) + 14 harness lama no-regresi. Backup `_mh_verify/matheroes_pre_audio.html`. **Tak menyentuh Sheet/.gs.**
 
 ---
 

@@ -1229,9 +1229,33 @@ const SFX = (function(){
     (notes || []).forEach((n, i) => setTimeout(() => tone(n), Math.round(i * gap * 1000)));
   }
 
-  // pustaka SFX bernama — L1 cukup 'tap' (konfirmasi); event game disambung di L2/L3
+  // pustaka SFX bernama — sintesis Web Audio (tanpa file). PRINSIP VISI: suara SALAH LEMBUT (bukan buzzer
+  // nakutin), suara BENAR/menang ceria. Semua pendek & pelan (ramah HP murah + tak berisik).
   const LIB = {
-    tap: () => tone({ type:'sine', freq:660, to:880, dur:0.07, vol:0.16 })
+    tap:     () => tone({ type:'sine',     freq:660, to:880,  dur:0.07, vol:0.15 }),
+    select:  () => tone({ type:'triangle', freq:523, to:698,  dur:0.09, vol:0.16 }),
+    // BENAR = serangan kena musuh: dua nada naik ceria
+    correct: () => seq([{type:'triangle',freq:784,dur:0.08,vol:0.18},{type:'triangle',freq:1047,dur:0.11,vol:0.18}], 0.075),
+    // SALAH = LEMBUT & hangat (VISI #2: salah ≠ hukuman) — sine turun pelan, pelan, BUKAN buzzer
+    wrong:   () => tone({ type:'sine',     freq:392, to:311,  dur:0.22, vol:0.11, atk:0.02 }),
+    // BLOK bertahan berhasil: dentang mantap
+    defend:  () => seq([{type:'triangle',freq:587,dur:0.07,vol:0.16},{type:'square',freq:880,dur:0.10,vol:0.11}], 0.06),
+    // KENA damage: dentum rendah lembut (tidak menakutkan)
+    hurt:    () => tone({ type:'sine',     freq:196, to:147,  dur:0.20, vol:0.13, atk:0.01 }),
+    // MENANG: fanfare pendek C–E–G–C
+    victory: () => seq([{type:'triangle',freq:523,dur:0.10,vol:0.18},{type:'triangle',freq:659,dur:0.10,vol:0.18},{type:'triangle',freq:784,dur:0.10,vol:0.18},{type:'triangle',freq:1047,dur:0.18,vol:0.20}], 0.10),
+    // SKILL DIKUASAI: kilau naik lebih megah
+    mastery: () => seq([{type:'triangle',freq:659,dur:0.09,vol:0.18},{type:'triangle',freq:988,dur:0.09,vol:0.18},{type:'triangle',freq:1319,dur:0.09,vol:0.18},{type:'sine',freq:1760,dur:0.22,vol:0.16}], 0.09),
+    // BINTANG karakter: kerlip tinggi lembut
+    star:    () => seq([{type:'sine',freq:1319,dur:0.08,vol:0.14},{type:'sine',freq:1760,dur:0.12,vol:0.13}], 0.07),
+    // HADIAH gear/harta: "koin" klasik
+    reward:  () => seq([{type:'square',freq:988,dur:0.07,vol:0.12},{type:'square',freq:1319,dur:0.12,vol:0.12}], 0.06),
+    // PIJAR naik tahap: chime hangat
+    bond:    () => seq([{type:'sine',freq:880,dur:0.10,vol:0.15},{type:'sine',freq:1174,dur:0.16,vol:0.14}], 0.08),
+    // BERSERK: tegang dramatis (rendah naik) — volume rendah, dramatis bukan seram
+    berserk: () => tone({ type:'triangle', freq:147, to:294,  dur:0.40, vol:0.14, atk:0.02 }),
+    // hari baru / sambutan hangat
+    newday:  () => seq([{type:'sine',freq:659,dur:0.12,vol:0.15},{type:'sine',freq:880,dur:0.16,vol:0.14}], 0.10)
   };
   function play(name){
     if(muted) return;
@@ -1338,6 +1362,7 @@ function addBond(n){
   S.player.companion.bond+=n;
   const after=compStage(S.player.companion.bond);
   if(after.title!==before.title){
+    SFX.play('bond'); // Pijar naik tahap (bukan tiap +bond → tak berisik)
     setTimeout(()=>showToast(`${after.emoji} ${S.player.companion.name} berkembang jadi ${after.title}!`,2800),300);
   }
   sv();
@@ -1482,7 +1507,7 @@ function awardStar(key, perilaku){
   if(!S.meta.stars) S.meta.stars={};
   if(S.meta.stars[key]) return;
   const d=DIM_BY_KEY[key]; if(!d||d.soon) return;
-  S.meta.stars[key]=true; sv();
+  S.meta.stars[key]=true; sv(); SFX.play('star');
   setTimeout(()=>showToast(`✨ Bintang ${d.name}! Kamu ${perilaku||d.cara}.`, 3400), 500);
 }
 // lencana wilayah: saat satu grup operasi pulih sepenuhnya (idempotent)
@@ -1549,7 +1574,7 @@ function dropTreasure(force,biasRare){
   for(let i=0;i<TREASURES.length;i++){ r-=w[i]; if(r<=0){pick=TREASURES[i];break;} }
   if(!S.collection) S.collection={monsters:{},treasures:{}};
   S.collection.treasures[pick.id]=(S.collection.treasures[pick.id]||0)+1;
-  sv(); return pick;
+  sv(); SFX.play('reward'); return pick;
 }
 function collectionCounts(){
   const mons=(S.collection&&S.collection.monsters)||{}, tre=(S.collection&&S.collection.treasures)||{};
@@ -2658,6 +2683,7 @@ function renderMap(){
 // ═══════════════════════════════════════════
 function renderMastery(sid){
   const sk=S.skills[sid],d=SKILL_DEFS[sid];
+  SFX.play('mastery');
   const acc=Math.round(sk.accuracyRecent*100);
   const ico=document.getElementById('mas-ico');
   ico.classList.remove('celebrate');void ico.offsetWidth;ico.classList.add('celebrate');
@@ -3095,6 +3121,7 @@ const G={
   },
   confirmHero(){
     if(!selectedHero)return;
+    SFX.play('select');
     S.player.hero=selectedHero;
     const bonuses=HEROES[selectedHero].bonuses;
     for(const k in bonuses)S.player.statXP[k]+=bonuses[k]*10;
@@ -3154,10 +3181,11 @@ const G={
     const boss=document.getElementById('prolog-boss');
     const rect=boss.getBoundingClientRect();
     if(res.correct){
-      flash('⚡',450);
+      flash('⚡',450); SFX.play('correct');
       boss.classList.remove('anim-hit');void boss.offsetWidth;boss.classList.add('anim-hit');
       floatDmg('-'+rand(18,30)+'!','#f5e042',rect.left+rect.width/2,rect.top);
     }else{
+      SFX.play('wrong');
       boss.classList.remove('anim-shake');void boss.offsetWidth;boss.classList.add('anim-shake');
       floatDmg('meleset','#9fb0c8',rect.left+rect.width/2,rect.top);
     }
@@ -3258,10 +3286,11 @@ const G={
     const meta=TRIAL_OP_META[TR.op];
     const orb=document.getElementById('trial-orb'), rect=orb.getBoundingClientRect();
     if(correct){
-      flash(fast?'⚡':'✨',420);
+      flash(fast?'⚡':'✨',420); SFX.play('correct');
       orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
       floatDmg(fast?`+2 ${meta.stat}!`:`+1 ${meta.stat.toLowerCase()}`,'#f5e042',rect.left+rect.width/2,rect.top);
     }else{
+      SFX.play('wrong');
       orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake');
       floatDmg('meleset','#9fb0c8',rect.left+rect.width/2,rect.top);
     }
@@ -3473,9 +3502,9 @@ const G={
     inp.value=''; // cegah double-submit
     const res=diagAnswer(DG,v);
     const orb=document.getElementById('post-orb'), rect=orb.getBoundingClientRect();
-    if(res.correct){ flash('⚡',360); orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
+    if(res.correct){ flash('⚡',360); SFX.play('correct'); orb.classList.remove('anim-hit');void orb.offsetWidth;orb.classList.add('anim-hit');
       floatDmg('+1','#f5e042',rect.left+rect.width/2,rect.top); }
-    else{ orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake'); }
+    else{ SFX.play('wrong'); orb.classList.remove('anim-shake');void orb.offsetWidth;orb.classList.add('anim-shake'); }
     const pct=Math.round(DG.done/DG.total*100);
     document.getElementById('post-prog-fill').style.width=pct+'%';
     document.getElementById('post-prog-val').textContent=pct+'%';
@@ -3618,6 +3647,7 @@ const G={
     renderMap();show('map');
   },
   _renderWelcome(){
+    SFX.play('newday');
     const c=S.player.companion, st=compStage(c.bond);
     document.getElementById('wel-emoji').textContent=st.emoji;
     setPijarSprite(document.getElementById('wel-emoji'),c.bond,72);
@@ -3683,7 +3713,7 @@ const G={
   },
 
   _handleAttackCorrect(){
-    flash('✅');
+    flash('✅'); SFX.play('correct');
     const em=document.getElementById('enc-emoji');
     em.classList.add('anim-hit');setTimeout(()=>em.classList.remove('anim-hit'),380);
     const sb=heroStreakBonus(); // Tangkas "Semangat Bersama": momentum dari beruntun
@@ -3709,7 +3739,7 @@ const G={
 
   _handleAttackWrong(){
     // miss — no HP loss, but show brief guide then continue
-    flash('💨',500);
+    flash('💨',500); SFX.play('wrong');
     setTimeout(()=>{
       renderGuide(E.q);show('guide');
       setTimeout(()=>document.getElementById('inp-guide').focus(),80);
@@ -3728,7 +3758,7 @@ const G={
   },
 
   _handleDefendCorrect(){
-    flash('🛡️',600);
+    flash('🛡️',600); SFX.play('defend');
     // umpan balik jelas: serangan DIBLOKIR penuh, 0 damage
     const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
     floatDmg('BLOK! 🛡️','var(--c-tegar)',rect.left+rect.width/2,rect.top+30);
@@ -3740,7 +3770,7 @@ const G={
     // take damage — moderat & tidak mematikan dari kondisi sehat
     const dmg=defendDamage();
     S.player.hp=Math.max(0,S.player.hp-dmg);sv();
-    flash('💥',600);
+    flash('💥',600); SFX.play('hurt');
     const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
     floatDmg(`-${dmg}HP`,'var(--hp-color)',rect.left+60,rect.top+40);
     renderEncHUD();
@@ -3777,7 +3807,7 @@ const G={
     const d=SKILL_DEFS[E.sid];
     E.berserk={i:0,n:BERSERK_N};
     E.isDefend=true; E.skillActive=false;
-    flash('🔥',700);
+    flash('🔥',700); SFX.play('berserk');
     const em=document.getElementById('enc-emoji');
     em.classList.remove('anim-shake');void em.offsetWidth;em.classList.add('anim-shake');
     showToast(`🔥 ${d.enemyName} BERSERK! Tangkis ${BERSERK_N} soal nalar untuk menyadarkannya!`,2800);
@@ -3810,7 +3840,7 @@ const G={
     // salah/telat saat berserk: damage MODERAT yang bisa pulih + dituntun (VISI: salah ≠ hukuman)
     const dmg=defendDamage();
     S.player.hp=Math.max(0,S.player.hp-dmg);sv();
-    flash('💥',600);
+    flash('💥',600); SFX.play('hurt');
     const rect=document.querySelector('.enemy-arena').getBoundingClientRect();
     floatDmg(`-${dmg}HP`,'var(--hp-color)',rect.left+60,rect.top+40);
     renderEncHUD();
@@ -3934,7 +3964,7 @@ const G={
 
   // ─── VICTORY ───
   _showVictory(){
-    stopTimer();
+    stopTimer(); SFX.play('victory');
     accruePlay(); // pertarungan selesai → catat waktu main
     const d=SKILL_DEFS[E.sid],sk=S.skills[E.sid];
     const acc=Math.round(sk.accuracyRecent*100);
