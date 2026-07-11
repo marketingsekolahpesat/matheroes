@@ -1586,6 +1586,7 @@ function blankState(){
       hp:20,mana:15,
       companion:{name:'Pijar',bond:0},
       statXP:{kuat:0,tegar:0,pintar:0,gesit:0},
+      records:{bestStreak:0,maxWrongStreak:0}, // rekor diri (M7) + salah-beruntun maks (proxy frustrasi, tracking pilot Paket A)
       gear:'none', // senjata+armor (hadiah diagnosa tanpa skip): none|biasa|legendaris
       adaptF:{add:3,sub:3,mul:3,div:3,frac:2}},  // (ITEM 3) tingkat adaptif per operasi (diisi ulang di _finishTrials)
     skills:{
@@ -1598,7 +1599,7 @@ function blankState(){
       'dec_add':blankSkill(),'dec_sub':blankSkill()
     },
     session:{count:0},
-    meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{}},
+    meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{},lastError:null},
     collection:{monsters:{},treasures:{}},
     student:{id:genStudentId(),kelas:''},          // identitas ringan: kunci 1 baris/anak (layer pengukuran)
     measure:{pre:null,post:null,playSeconds:0,dirty:false,lastSync:null}, // before/after per topik + waktu main
@@ -1642,6 +1643,10 @@ function ld(){
       if(!S.measure)S.measure={pre:null,post:null,playSeconds:0,dirty:false,lastSync:null};
       if(S.measure.playSeconds==null)S.measure.playSeconds=0;
       if(S.measure.lastSync===undefined)S.measure.lastSync=null;
+      // ── migrasi TRACKING PILOT (Paket A): rekor frustrasi + log error ──
+      if(!S.player.records)S.player.records={bestStreak:0,maxWrongStreak:0};
+      if(S.player.records.maxWrongStreak==null)S.player.records.maxWrongStreak=0;
+      if(S.meta.lastError===undefined)S.meta.lastError=null;
     }
   }catch(e){}
 }
@@ -1695,6 +1700,17 @@ function skorGain(){
 }
 // Bentuk SATU baris snapshot per anak (Diagnosa v2): per topik = LEVEL kemampuan + DETIK kelancaran,
 // + nalar + ringkasan rata2. Dipakai utk rapor & sync Sheets. Pecahan kini ikut (ITEM 4).
+// TRACKING PILOT (Paket A): tangkap error runtime → simpan RINGKAS ke S.meta.lastError (log crash utk guru/dev).
+// Best-effort, tak pernah menimbulkan error sendiri. Listener didaftarkan di BOOT.
+function logError(msg, src, line){
+  try{
+    if(!S||!S.meta) return;
+    let t=''; try{ t=new Date().toISOString().slice(0,16).replace('T',' '); }catch(_){}
+    S.meta.lastError=(String(msg||'error').slice(0,140))+(line?(' @'+line):'')+(t?(' ['+t+']'):'');
+    if(S.measure) S.measure.dirty=true;   // ikut ke-sync di checkpoint berikutnya
+    sv();
+  }catch(_){}
+}
 const DIAG_NAMA={add:'tambah',sub:'kurang',mul:'kali',div:'bagi',frac:'pecahan'};
 function measureRow(){
   const pre=(S.measure&&S.measure.pre)||{}, post=(S.measure&&S.measure.post)||{};
@@ -1719,6 +1735,16 @@ function measureRow(){
   row.skill_dikuasai=_mastered;                                  // berapa skill mastered (dari 10)
   row.akurasi_latihan=_att>0?Math.round(_corr/_att*100):'';      // % benar keseluruhan latihan
   row.level_pemain=(S.player&&S.player.level)||1;
+  // ── TRACKING PILOT (Paket A): retensi · churn · frustrasi · engagement · crash ──
+  row.hari_main=(S.meta&&S.meta.totalDays)||0;                   // jumlah hari-berbeda main (retensi)
+  row.streak_hari=(S.meta&&S.meta.dayStreak)||0;                 // hari berturut-turut
+  let _mulai=''; try{ if(pre&&pre.ts) _mulai=new Date(pre.ts).toISOString().slice(0,10); }catch(e){}
+  row.tanggal_mulai=_mulai;                                      // tanggal baseline/mulai (utk hitung D1/D7)
+  row.skill_sekarang=(S&&S.currentSkill)||'';                    // operasi/level terkini = titik anak berhenti (churn)
+  row.salah_beruntun_max=(S.player&&S.player.records&&S.player.records.maxWrongStreak)||0; // proxy frustrasi
+  row.pijar_bond=(S.player&&S.player.companion&&S.player.companion.bond)||0;               // engagement (relatedness Pijar)
+  row.bintang=(S.meta&&S.meta.stars)?Object.keys(S.meta.stars).length:0;                   // Bintang Karakter earned
+  row.error_terakhir=(S.meta&&S.meta.lastError)||'';             // log crash/error terakhir
   row.sesi=(S.session&&S.session.count)||0;
   row.terakhir=tgl; row.versi=SAVE_KEY;
   return row;
@@ -2275,6 +2301,7 @@ function dueReviews(){
 // ═══════════════════════════════════════════
 // RECORD ANSWER & MASTERY
 // ═══════════════════════════════════════════
+let _wrongRun=0; // TRACKING PILOT (Paket A): salah beruntun berjalan (volatil, reset saat benar/reload)
 function recordAnswer(correct, isDefend){
   if(E&&E.q)E.lastQ=Object.assign({},E.q); // simpan soal terakhir untuk tombol "kenapa?"
   const sk=S.skills[E.sid];
@@ -2300,7 +2327,10 @@ function recordAnswer(correct, isDefend){
   if(!isDefend && E.q && E.q.tier==='ringan'){ adaptDifficulty(SKILL_DEFS[E.sid].op, correct); }
   // M6: imbalan usaha (mencoba) + rekor diri
   S.player.effort=(S.player.effort||0)+1;
-  if(!S.player.records) S.player.records={bestStreak:0};
+  if(!S.player.records) S.player.records={bestStreak:0,maxWrongStreak:0};
+  // TRACKING PILOT (Paket A): salah beruntun = proxy frustrasi/churn. _wrongRun volatil (per-sesi),
+  // maxWrongStreak persisten (rekor terburuk) → guru lihat anak sempat "mentok" seberapa jauh.
+  if(correct){ _wrongRun=0; } else { _wrongRun++; if(_wrongRun>(S.player.records.maxWrongStreak||0)) S.player.records.maxWrongStreak=_wrongRun; }
   const rw=answerRewards(correct, sk.streak, S.player.records.bestStreak, S.player.effort);
   if(rw.effortXP){ addStatXP(SKILL_DEFS[E.sid].xpStat,rw.effortXP); showToast('💗 Semangat berlatihmu tumbuh!',1700); }
   S.player.records.bestStreak=rw.newBest;
@@ -4041,6 +4071,11 @@ document.addEventListener('keydown',e=>{
 
 // ─── BOOT ───
 ld();
+// TRACKING PILOT (Paket A): pasang penangkap error global → S.meta.lastError (crash log, best-effort)
+try{
+  window.addEventListener('error', function(ev){ logError(ev&&ev.message, ev&&ev.filename, ev&&ev.lineno); });
+  window.addEventListener('unhandledrejection', function(ev){ const r=ev&&ev.reason; logError('promise: '+((r&&r.message)||r), '', 0); });
+}catch(_){}
 if(S&&S.player&&S.player.name){
   // ada progres tersimpan → "Lanjutkan" jadi tombol utama; "Mulai Baru" jadi sekunder + jelas menghapus
   document.getElementById('btn-lanjut').style.display='';

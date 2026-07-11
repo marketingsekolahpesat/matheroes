@@ -36,6 +36,7 @@ var HEADER = [
   'total_skor_awal','total_skor_akhir',
   'rata_lvl_awal','rata_lvl_akhir','rata_dtk_awal','rata_dtk_akhir',
   'total_gain','menit_main','skill_dikuasai','akurasi_latihan','level_pemain',
+  'hari_main','streak_hari','tanggal_mulai','skill_sekarang','salah_beruntun_max','pijar_bond','bintang','error_terakhir',
   'sesi','terakhir','id','versi','waktu_server'
 ];
 
