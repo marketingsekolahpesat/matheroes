@@ -257,15 +257,17 @@ input[type=number]{-moz-appearance:textfield}
 .coll-name{font-size:12px;font-weight:700;margin-top:4px;color:rgba(255,255,255,.85)}
 .coll-meta{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px;font-family:ui-monospace,monospace}
 /* tombol mute (audio) */
-#mute-btn{
+#mute-btn,#music-btn{
   position:fixed;top:8px;right:8px;z-index:210;
   width:34px;height:34px;padding:0;border:1px solid rgba(255,255,255,.18);border-radius:50%;
   background:rgba(255,255,255,.12);color:#fff;font-size:16px;line-height:32px;text-align:center;
   cursor:pointer;opacity:.7;transition:opacity .15s,transform .12s;
   -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;
 }
-#mute-btn:hover{opacity:1}
-#mute-btn:active{transform:scale(.88)}
+#music-btn{right:48px}                              /* di kiri tombol suara */
+#music-btn.on{opacity:1;color:#f5e042;border-color:rgba(245,224,66,.5)} /* musik nyala → highlight emas */
+#mute-btn:hover,#music-btn:hover{opacity:1}
+#mute-btn:active,#music-btn:active{transform:scale(.88)}
 /* responsive */
 @media(max-width:380px){.screen{padding:16px 14px 28px}h1{font-size:38px}.q-text{font-size:30px}.enemy-emoji{font-size:66px}}
 /* HP pendek (address bar browser makan ruang vertikal) → padatkan layar gameplay biar muat 1 layar */
@@ -299,6 +301,7 @@ input[type=number]{-moz-appearance:textfield}
 </head>
 <body>
 
+<button id="music-btn" type="button" onclick="toggleMusic()" aria-label="Nyalakan musik" title="Nyalakan musik">🎵</button>
 <button id="mute-btn" type="button" onclick="toggleMute()" aria-label="Matikan suara" title="Matikan suara">🔊</button>
 
 <!-- INTRO -->
@@ -1202,6 +1205,7 @@ const SFX = (function(){
   function unlock(){
     const c = ensure(); if(!c) return;
     if(c.state === 'suspended'){ try{ c.resume(); }catch(e){} }
+    if(musicOn && !musicTimer){ try{ musicBegin(); }catch(e){} } // lanjut musik bila intent ON (autoplay perlu gesture)
   }
 
   // satu nada: {type, freq, to, dur, vol, atk}  (to = glide frekuensi opsional)
@@ -1270,7 +1274,66 @@ const SFX = (function(){
   }
   function toggle(){ setMuted(!muted); if(!muted) play('tap'); return muted; }
 
-  return { play, tone, seq, toggle, setMuted, unlock, isMuted: () => muted, lib: LIB };
+  // ── MUSIK LATAR (chiptune sintesis, opt-in — tombol 🎵 TERPISAH dari 🔊 SFX) ──
+  // Progresi hangat I–vi–IV–V (C–Am–F–G): arpeggio lembut + bass pelan → selalu konsonan, kalem,
+  // tak ganggu fokus matematika (VISI: musik cuma frosting tipis). Gain sendiri (independen SFX mute).
+  const MUSIC_KEY = 'matheroes-music', MUSIC_VOL = 0.11;
+  const M_CHORDS = [
+    { bass:130.81, notes:[261.63,329.63,392.00,523.25] }, // C
+    { bass:110.00, notes:[220.00,261.63,329.63,440.00] }, // Am
+    { bass: 87.31, notes:[174.61,220.00,261.63,349.23] }, // F
+    { bass: 98.00, notes:[196.00,246.94,293.66,392.00] }  // G
+  ];
+  const M_STEP = 0.42; // detik per langkah (tenang)
+  let musicOn = false, musicGain = null, musicTimer = null, mStep = 0, mNext = 0;
+  try { musicOn = (localStorage.getItem(MUSIC_KEY) === '1'); } catch(e){}
+  function mNote(freq, dur, vol, type){
+    const c = ensure(); if(!c || !musicGain) return;
+    try{
+      const t = c.currentTime, osc = c.createOscillator(), g = c.createGain();
+      osc.type = type || 'triangle'; osc.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(musicGain);
+      osc.start(t); osc.stop(t + dur + 0.03);
+    }catch(e){}
+  }
+  function mSchedule(){
+    const c = ensure(); if(!c) return;
+    let guard = 0;
+    while(mNext < c.currentTime + 0.2 && guard++ < 32){
+      const ch = M_CHORDS[Math.floor(mStep/4) % M_CHORDS.length], ni = mStep % 4;
+      mNote(ch.notes[ni], M_STEP*0.9, 0.09, 'triangle');   // melodi lembut
+      if(ni === 0) mNote(ch.bass, M_STEP*3.6, 0.05, 'sine'); // bass pelan tiap ganti akor
+      mNext += M_STEP;
+      mStep = (mStep + 1) % 16;
+    }
+  }
+  function musicBegin(){
+    const c = ensure(); if(!c) return;
+    if(c.state === 'suspended'){ try{ c.resume(); }catch(e){} }
+    if(!musicGain){ musicGain = c.createGain(); musicGain.gain.value = 0.0001; musicGain.connect(c.destination); }
+    try{ const t = c.currentTime; musicGain.gain.cancelScheduledValues(t);
+      musicGain.gain.setValueAtTime(Math.max(0.0001, musicGain.gain.value), t);
+      musicGain.gain.exponentialRampToValueAtTime(MUSIC_VOL, t + 1.4); }catch(e){} // fade-in lembut
+    mStep = 0; mNext = c.currentTime + 0.1;
+    if(!musicTimer) musicTimer = setInterval(mSchedule, 25);
+  }
+  function musicHalt(){
+    if(musicTimer){ clearInterval(musicTimer); musicTimer = null; }
+    if(musicGain && ctx){ try{ const t = ctx.currentTime; musicGain.gain.cancelScheduledValues(t);
+      musicGain.gain.setValueAtTime(Math.max(0.0001, musicGain.gain.value), t);
+      musicGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.5); }catch(e){} } // fade-out
+  }
+  function musicToggle(){
+    musicOn = !musicOn; try{ localStorage.setItem(MUSIC_KEY, musicOn ? '1' : '0'); }catch(e){}
+    if(musicOn) musicBegin(); else musicHalt();
+    return musicOn;
+  }
+  const music = { toggle: musicToggle, begin: musicBegin, halt: musicHalt, isOn: () => musicOn };
+
+  return { play, tone, seq, toggle, setMuted, unlock, isMuted: () => muted, music, lib: LIB };
 })();
 
 // buka audio pada interaksi pertama (kebijakan autoplay mobile); aman dipanggil berulang
@@ -1285,6 +1348,14 @@ function updateMuteBtn(){
   b.title = m ? 'Bunyikan suara' : 'Matikan suara';
 }
 function toggleMute(){ SFX.toggle(); updateMuteBtn(); }
+function updateMusicBtn(){
+  const b = document.getElementById('music-btn'); if(!b) return;
+  const on = SFX.music.isOn();
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-label', on ? 'Matikan musik' : 'Nyalakan musik');
+  b.title = on ? 'Matikan musik' : 'Nyalakan musik';
+}
+function toggleMusic(){ SFX.music.toggle(); updateMusicBtn(); }
 
 // ═══════════════════════════════════════════
 // STATE
@@ -4114,6 +4185,7 @@ if(S&&S.player&&S.player.name){
 }
 show('intro');
 updateMuteBtn(); // tampilkan ikon mute sesuai state tersimpan
+updateMusicBtn(); // ikon musik sesuai state tersimpan (musik nyala nyusul di gesture pertama via unlock)
 // pasang sprite hero ke kartu pilih karakter
 ['adira','kira','reno'].forEach(h=>{ setSprite(document.querySelector('#hc-'+h+' .hico'),'hero_'+h,54); });
 attachNumpads(); // pasang keypad angka in-app di tiap layar jawaban
