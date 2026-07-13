@@ -268,6 +268,12 @@ input[type=number]{-moz-appearance:textfield}
 #music-btn.on{opacity:1;color:#f5e042;border-color:rgba(245,224,66,.5)} /* musik nyala → highlight emas */
 #mute-btn:hover,#music-btn:hover{opacity:1}
 #mute-btn:active,#music-btn:active{transform:scale(.88)}
+.mood-btn{display:flex;align-items:center;justify-content:flex-start;gap:13px;width:100%;padding:13px 16px;
+  border:1.5px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.07);color:#fff;
+  font-size:15px;font-weight:600;cursor:pointer;text-align:left;transition:transform .1s,background .12s,border-color .12s}
+.mood-btn .mood-face{font-size:26px;line-height:1}
+.mood-btn:hover{background:rgba(255,255,255,.12);border-color:rgba(245,224,66,.4)}
+.mood-btn:active{transform:scale(.98)}
 /* responsive */
 @media(max-width:380px){.screen{padding:16px 14px 28px}h1{font-size:38px}.q-text{font-size:30px}.enemy-emoji{font-size:66px}}
 /* HP pendek (address bar browser makan ruang vertikal) → padatkan layar gameplay biar muat 1 layar */
@@ -406,6 +412,15 @@ input[type=number]{-moz-appearance:textfield}
   <input type="text" id="inp-buddy" maxlength="12" placeholder="Nama temanmu…" autocomplete="off" value="Pijar" onkeydown="if(event.key==='Enter')G.confirmBuddy()">
   <div class="g12"></div>
   <button class="btn btn-primary" onclick="G.confirmBuddy()">Jadi teman! →</button>
+</div>
+
+<!-- SURVEI RASA (takut matematika) — baseline & akhir -->
+<div id="s-mood" class="screen">
+  <div class="g6"></div>
+  <p class="eyebrow" style="color:var(--gold)">Sebentar ya 💛</p>
+  <h2 id="mood-title" style="font-size:20px">Kalau ketemu soal matematika, kamu ngerasa gimana?</h2>
+  <p class="muted" id="mood-sub" style="font-size:12px;margin-bottom:16px">Nggak ada jawaban salah — jujur aja. Ini rahasia kamu, buat bantu kamu makin nyaman.</p>
+  <div id="mood-opts" style="display:flex;flex-direction:column;gap:9px"></div>
 </div>
 
 <!-- PROLOG: INTRO -->
@@ -1698,7 +1713,7 @@ function blankState(){
     meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{},lastError:null},
     collection:{monsters:{},treasures:{}},
     student:{id:genStudentId(),kelas:''},          // identitas ringan: kunci 1 baris/anak (layer pengukuran)
-    measure:{pre:null,post:null,playSeconds:0,dirty:false,lastSync:null}, // before/after per topik + waktu main
+    measure:{pre:null,post:null,playSeconds:0,dirty:false,lastSync:null,moodPre:null,moodPost:null}, // before/after per topik + waktu main + rasa takut-matematika
     diagDone:false,
     currentSkill:'add_0_10'
   };
@@ -1739,6 +1754,8 @@ function ld(){
       if(!S.measure)S.measure={pre:null,post:null,playSeconds:0,dirty:false,lastSync:null};
       if(S.measure.playSeconds==null)S.measure.playSeconds=0;
       if(S.measure.lastSync===undefined)S.measure.lastSync=null;
+      if(S.measure.moodPre===undefined)S.measure.moodPre=null;   // survei takut-matematika (save lama)
+      if(S.measure.moodPost===undefined)S.measure.moodPost=null;
       // ── migrasi TRACKING PILOT (Paket A): rekor frustrasi + log error ──
       if(!S.player.records)S.player.records={bestStreak:0,maxWrongStreak:0};
       if(S.player.records.maxWrongStreak==null)S.player.records.maxWrongStreak=0;
@@ -1841,6 +1858,8 @@ function measureRow(){
   row.pijar_bond=(S.player&&S.player.companion&&S.player.companion.bond)||0;               // engagement (relatedness Pijar)
   row.bintang=(S.meta&&S.meta.stars)?Object.keys(S.meta.stars).length:0;                   // Bintang Karakter earned
   row.error_terakhir=(S.meta&&S.meta.lastError)||'';             // log crash/error terakhir
+  row.takut_awal=(S.measure&&S.measure.moodPre!=null)?S.measure.moodPre:'';   // rasa takut-matematika 1–5 (VISI T1)
+  row.takut_akhir=(S.measure&&S.measure.moodPost!=null)?S.measure.moodPost:'';
   row.sesi=(S.session&&S.session.count)||0;
   row.terakhir=tgl; row.versi=SAVE_KEY;
   return row;
@@ -2202,6 +2221,17 @@ let PX=null; // (lama, tak dipakai lagi)
 let DG=null; // mesin diagnosa v2 (dipakai pre=Prolog & post=Uji Kemampuan)
 let selectedHero=null;
 let pendingJobUp=false;
+// SURVEI TAKUT-MATEMATIKA (indikator VISI Tingkat 1) — skala wajah 1 (suka) … 5 (takut banget).
+// Ditanya sekali di awal (baseline) & lagi saat Uji Kemampuan → rapor before/after + Sheet.
+let _moodPhase='pre';
+const MOOD_OPTS=[
+  {v:1, face:'😄', label:'Asyik, aku suka!'},
+  {v:2, face:'🙂', label:'Biasa aja, santai'},
+  {v:3, face:'😐', label:'Nggak yakin'},
+  {v:4, face:'😟', label:'Agak deg-degan'},
+  {v:5, face:'😰', label:'Takut / bingung banget'}
+];
+const MOOD_FACE={1:'😄',2:'🙂',3:'😐',4:'😟',5:'😰'};
 
 function startEncState(sid){
   const d=SKILL_DEFS[sid];
@@ -3180,7 +3210,32 @@ const G={
     const kEl=document.getElementById('inp-kelas');
     if(kEl) S.student.kelas=(kEl.value||'').trim().slice(0,16);
     sv();
-    show('prolog-intro');
+    G.askMood('pre'); // tanya rasa (takut matematika) SEBELUM mulai → baseline
+  },
+
+  // ─── SURVEI RASA (takut matematika) — baseline (pre) & akhir (post) ───
+  askMood(phase){
+    _moodPhase=phase;
+    document.getElementById('mood-title').textContent = phase==='post'
+      ? 'Sekarang, kalau ketemu soal matematika, kamu ngerasa gimana?'
+      : 'Kalau ketemu soal matematika, kamu ngerasa gimana?';
+    const box=document.getElementById('mood-opts');
+    if(box) box.innerHTML=MOOD_OPTS.map(o=>`<button class="mood-btn" onclick="G.answerMood(${o.v})"><span class="mood-face">${o.face}</span><span>${o.label}</span></button>`).join('');
+    show('mood');
+  },
+  answerMood(n){
+    if(!S.measure) S.measure={pre:null,post:null,playSeconds:0,dirty:false};
+    if(_moodPhase==='post') S.measure.moodPost=n; else S.measure.moodPre=n;
+    S.measure.dirty=true; sv();
+    if(typeof SFX!=='undefined') SFX.play('select');
+    if(_moodPhase==='post') G._beginPost();   // rasa terekam → jalankan Uji Kemampuan
+    else show('prolog-intro');                // lanjut onboarding
+  },
+  _beginPost(){
+    DG=diagInit('post'); // mesin diagnosa SAMA dgn Prolog → setara
+    show('posttest');
+    G._showPost();
+    setTimeout(()=>document.getElementById('inp-post').focus(),80);
   },
 
   // ─── HERO SELECT ───
@@ -3536,20 +3591,26 @@ const G={
     html+=`<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.08)">
       ${skorRow('🧠 Nalar (cerita)', skorArrow(pre.nalar_skor, post?post.nalar_skor:null))}
       <div style="font-size:10px;color:rgba(255,255,255,.4)">${nb!=null?`${na} → ${nb}`:`${na}`} jawaban benar</div></div></div>`;
+    const mp=(S.measure&&S.measure.moodPre), mq=(S.measure&&S.measure.moodPost);
+    let moodHtml='';
+    if(mp!=null||mq!=null){
+      const mf=v=>(v!=null)?`${MOOD_FACE[v]||''} ${v}`:'—';
+      let mtag='';
+      if(mp!=null&&mq!=null){ const d=mp-mq; // turun (angka kecil) = makin nyaman ke matematika
+        mtag = d>0?` <span style="color:var(--green)">▼ makin nyaman</span>`:(d<0?` <span style="opacity:.6">masih grogi — tak apa</span>`:' <span style="opacity:.45">=</span>'); }
+      moodHtml=`<div class="mv-stat" style="font-size:13px"><span>😌 Rasa ke matematika</span><span class="mv-val">${mf(mp)} → ${mf(mq)}${mtag}</span></div>`;
+    }
     html+=`<div class="card" style="padding:10px 12px;margin-top:8px">
       ${skorRow('🏆 SKOR TOTAL', skorArrow(pre.total_skor, post?post.total_skor:null), true)}
       <div class="mv-stat" style="font-size:13px;margin-top:4px"><span>📊 Rata-rata kemampuan</span><span class="mv-val">${lvlArrow(pre.rata_lvl, post?post.rata_lvl:null)}</span></div>
-      <div class="mv-stat" style="font-size:13px"><span>⏱ Rata-rata kelancaran</span><span class="mv-val">${(pre.rata_dtk!==''&&pre.rata_dtk!=null)?pre.rata_dtk+'s':'—'}${(post&&post.rata_dtk!==''&&post.rata_dtk!=null)?' → '+post.rata_dtk+'s':''}</span></div></div>`;
+      <div class="mv-stat" style="font-size:13px"><span>⏱ Rata-rata kelancaran</span><span class="mv-val">${(pre.rata_dtk!==''&&pre.rata_dtk!=null)?pre.rata_dtk+'s':'—'}${(post&&post.rata_dtk!==''&&post.rata_dtk!=null)?' → '+post.rata_dtk+'s':''}</span></div>${moodHtml}</div>`;
     document.getElementById('meas-body').innerHTML=html;
     runBtn.textContent = post ? '🔁 Uji Ulang Kemampuan' : '🎓 Jalankan Uji Kemampuan';
   },
   startPostTest(){
     if(!confirm('Untuk guru: jalankan Uji Kemampuan (±'+DIAG_TOTAL+' soal) untuk mengukur kemampuan akhir? Hasil terbaru jadi skor akhir.')) return;
     accruePlay();
-    DG=diagInit('post'); // mesin diagnosa SAMA dgn Prolog → setara
-    show('posttest');
-    G._showPost();
-    setTimeout(()=>document.getElementById('inp-post').focus(),80);
+    G.askMood('post'); // tanya rasa (takut matematika) akhir dulu → lalu _beginPost menjalankan soal
   },
   _showPost(){
     diagGenQ(DG);
