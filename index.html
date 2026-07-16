@@ -1025,10 +1025,33 @@ const SKILL_DEFS = {
     enemyHP:24, maxT:30, xpStat:'pintar', prev:'int_sub', next:'dec_sub',
     enemySkills:['Cipratan','Rembes Bingung']},
   'dec_sub':{op:'dsub', group:'Desimal', name:'Pengurangan Desimal', desc:'Hasil tidak minus (mis. 2,5 − 1,2)', icon:'🌊', enemyName:'Si Ombak',
-    enemyHP:26, maxT:30, xpStat:'pintar', prev:'dec_add', next:null,
-    enemySkills:['Ombak Kecil','Pasang Surut']}
+    enemyHP:26, maxT:30, xpStat:'pintar', prev:'dec_add', next:'dec_mul',
+    enemySkills:['Ombak Kecil','Pasang Surut']},
+  'dec_mul':{op:'dmul', group:'Desimal', name:'Perkalian Desimal', desc:'Desimal × bilangan bulat (mis. 0,5 × 2)', icon:'🌀', enemyName:'Si Pusar',
+    enemyHP:26, maxT:20, maxB:5, xpStat:'pintar', prev:'dec_sub', next:'dec_div',
+    enemySkills:['Pusaran Lipat','Ulur Berputar']},
+  'dec_div':{op:'ddiv', group:'Desimal', name:'Pembagian Desimal', desc:'Desimal ÷ bilangan bulat (mis. 1,5 ÷ 3)', icon:'💦', enemyName:'Si Percik',
+    enemyHP:28, maxQ:20, maxB:5, xpStat:'pintar', prev:'dec_mul', next:null,
+    enemySkills:['Percik Terbagi','Tetes Merata']}
 };
-const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub','dec_add','dec_sub'];
+const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub','dec_add','dec_sub','dec_mul','dec_div'];
+
+// ── EMBER SKOR (keputusan Daffa 2026-07-11): materi boleh tumbuh sebanyak apa pun, tapi kolom skor
+// rapor/Sheet TETAP segitu-gitu (tak melebar). Aturannya: **ember ditentukan OPERASI yang dikerjakan,
+// BUKAN bentuk angkanya.** Contoh Daffa: "½ + 1,4" → menjumlah → ember Penjumlahan; "2/4 disederhanakan"
+// → menyederhanakan (bukan membagi) → ember Pecahan. Tak ada operasi dasar (keliling/luas) → null.
+// Dikunci by-OP (bukan per-skill) supaya konsisten & tak perlu disentuh tiap nambah skill.
+const SCORE_OP = {
+  add:'add', sub:'sub', mul:'mul', div:'div', frac:'frac', // inti
+  iadd:'add', isub:'sub',        // bilangan bulat: tetap menjumlah/mengurang
+  dadd:'add', dsub:'sub',        // desimal: tetap menjumlah/mengurang
+  dmul:'mul', ddiv:'div',        // desimal: tetap mengali/membagi
+  gkel:null,  gluas:null         // keliling/luas: bukan operasi dasar → tak nyetor ember mana pun
+};
+function scoreOpOf(sid){
+  const d=SKILL_DEFS[sid]; if(!d) return null;
+  return Object.prototype.hasOwnProperty.call(SCORE_OP, d.op) ? SCORE_OP[d.op] : null;
+}
 
 // Companion "Pijar" — tumbuh dari bond (main + menang + reuni harian). Tema: cahaya/api.
 const COMPANION_STAGES=[
@@ -1726,7 +1749,8 @@ function blankState(){
       'div_1_5':blankSkill(),'div_1_10':blankSkill(),'frac_simple':blankSkill(),
       'geo_kel':blankSkill(),'geo_luas':blankSkill(),
       'int_add':blankSkill(),'int_sub':blankSkill(),
-      'dec_add':blankSkill(),'dec_sub':blankSkill()
+      'dec_add':blankSkill(),'dec_sub':blankSkill(),
+      'dec_mul':blankSkill(),'dec_div':blankSkill()
     },
     session:{count:0},
     meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{},lastError:null},
@@ -1945,16 +1969,23 @@ function qText(q){
     const f=n=>String(n).replace('.',',');
     return `${f(q.a)} ${q.op==='dadd'?'+':'−'} ${f(q.b)} = ?`;
   }
+  if(q.op==='dmul'||q.op==='ddiv'){ // desimal × / ÷ bilangan bulat (pengali/pembagi tetap bulat)
+    const f=n=>String(n).replace('.',',');
+    return `${f(q.a)} ${q.op==='dmul'?'×':'÷'} ${q.b} = ?`;
+  }
   return `${q.a} ${OP_SYM[q.op]||'+'} ${q.b} = ?`;
 }
 // parse & banding jawaban sesuai tipe soal: desimal → float (koma ID → titik, banding per-1/10 anti-FP); lainnya → integer
+// operasi yang JAWABANNYA desimal (1 angka koma) → ketik pakai koma + banding per-PERSEPULUHAN (anti floating-point)
+const DEC_ANS_OPS=['dadd','dsub','dmul','ddiv'];
+function isDecAnsOp(op){ return DEC_ANS_OPS.indexOf(op)>=0; }
 function parseAnswer(raw, op){
   raw=(raw||'').trim();
-  if(op==='dadd'||op==='dsub') return parseFloat(raw.replace(',','.'));
+  if(isDecAnsOp(op)) return parseFloat(raw.replace(',','.'));
   return parseInt(raw,10);
 }
 function answerCorrect(v, ans, op){
-  if(op==='dadd'||op==='dsub') return Math.round(v*10)===Math.round(ans*10);
+  if(isDecAnsOp(op)) return Math.round(v*10)===Math.round(ans*10);
   return v===ans;
 }
 
@@ -1985,6 +2016,18 @@ function genDecQ(op, maxT, sid, tier, hard){
   const ansT = op==='dadd'? aT+bT : aT-bT;
   return {a:aT/10, b:bT/10, aT, bT, op, ans:ansT/10, sid, tier:tier||'ringan', hard:!!hard, isDec:true};
 }
+// DESIMAL × / ÷ BILANGAN BULAT — hasil DIJAMIN 1 angka koma. Hitung di PERSEPULUHAN (integer) → anti floating-point.
+// dmul: (aT/10) × b  → ansT = aT*b.  ddiv: dibangun MUNDUR dari hasil (aT = qT*b) → selalu habis, tak ada sisa.
+function genDecMulDivQ(op, band, sid, tier, hard){
+  const b=rand(2, Math.max(2, band.maxB||3));            // pengali/pembagi = bilangan BULAT (biar hasil tetap 1 koma)
+  if(op==='dmul'){
+    const aT=rand(1, Math.max(1, band.maxT||5));
+    return {a:aT/10, b, aT, op:'dmul', ans:(aT*b)/10, sid, tier:tier||'ringan', hard:!!hard, isDec:true};
+  }
+  const qT=rand(1, Math.max(1, band.maxQ||5));           // hasil dulu (persepuluhan)…
+  const aT=qT*b;                                          // …baru yang dibagi → dijamin habis
+  return {a:aT/10, b, aT, qT, op:'ddiv', ans:qT/10, sid, tier:tier||'ringan', hard:!!hard, isDec:true};
+}
 // soal SERANGAN (giliran kita) — "ringan", bangun kelancaran
 function genQ(sid){
   const d=SKILL_DEFS[sid];
@@ -2009,6 +2052,7 @@ function genQ(sid){
   if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, d.maxSide, sid, 'ringan');
   if(d.op==='iadd'||d.op==='isub') return genIntQ(d.op, d.maxN, sid, 'ringan');
   if(d.op==='dadd'||d.op==='dsub') return genDecQ(d.op, d.maxT, sid, 'ringan');
+  if(d.op==='dmul'||d.op==='ddiv') return genDecMulDivQ(d.op, d, sid, 'ringan'); // band diambil dari SKILL_DEFS (maxT/maxQ/maxB)
   // add (default)
   let a,b,t=0;
   do{a=rand(0,d.maxA);b=rand(0,d.maxA);t++;}
@@ -2042,6 +2086,8 @@ function genHardQ(sid){
   if(d.op==='gkel'||d.op==='gluas') return genGeoQ(d.op, Math.min(15,d.maxSide+3), sid, undefined, true);
   if(d.op==='iadd'||d.op==='isub') return genIntQ(d.op, Math.min(25,d.maxN+5), sid, undefined, true);
   if(d.op==='dadd'||d.op==='dsub') return genDecQ(d.op, Math.min(99,d.maxT+15), sid, undefined, true);
+  if(d.op==='dmul'||d.op==='ddiv') return genDecMulDivQ(d.op,
+    {maxT:Math.min(30,(d.maxT||10)+5), maxQ:Math.min(30,(d.maxQ||10)+5), maxB:Math.min(9,(d.maxB||3)+2)}, sid, undefined, true);
   const lim=Math.min(Math.floor(d.maxSum*1.3),d.maxSum+10);
   let a=rand(0,Math.floor(lim/2)),b=rand(0,Math.floor(lim/2));
   if(a+b===0)b=1;
@@ -2213,9 +2259,28 @@ function genDecAkmQ(sid, level){
   q.story = T[rand(0,T.length-1)];
   return q;
 }
+// soal AKM DESIMAL ×/÷ — konteks ukur nyata (isi botol, potong tali, bagi rata). Jawaban tetap ANGKA (desimal).
+function genDecMulDivAkmQ(sid, level){
+  const d=SKILL_DEFS[sid], op=d.op, f=n=>String(n).replace('.',',');
+  const band = level!=null ? ADAPT_BANDS[op][clampLvl(level)] : d;
+  const q=genDecMulDivQ(op, band, sid, 'akm');
+  const A=f(q.a), B=q.b;
+  const T = op==='dmul'
+    ? [ `Satu botol berisi ${A} liter air. Ada ${B} botol. Berapa liter semuanya?`,
+        `Harga satu pensil Rp ${A} ribu. Ani membeli ${B} pensil. Berapa ribu totalnya?`,
+        `Satu langkah panjangnya ${A} meter. Berapa meter jarak ${B} langkah?`,
+        `Satu bungkus gula beratnya ${A} kg. Ada ${B} bungkus. Berapa kg semuanya?` ]
+    : [ `Tali ${A} meter dipotong jadi ${B} bagian sama panjang. Berapa meter tiap bagian?`,
+        `Air ${A} liter dibagi rata ke ${B} gelas. Berapa liter tiap gelas?`,
+        `Uang Rp ${A} ribu dibagi rata ke ${B} anak. Berapa ribu tiap anak?`,
+        `Gula ${A} kg dibagi rata ke ${B} kantong. Berapa kg tiap kantong?` ];
+  q.story = T[rand(0,T.length-1)];
+  return q;
+}
 // dispatcher AKM per operasi
 function genAkmQ(sid, level){
   const op=SKILL_DEFS[sid].op;
+  if(op==='dmul'||op==='ddiv') return genDecMulDivAkmQ(sid, level);
   if(op==='sub') return genSubAkmQ(sid, level);
   if(op==='mul') return genMulAkmQ(sid, level);
   if(op==='div') return genDivAkmQ(sid, level);
@@ -2550,6 +2615,16 @@ function buildGuideVisual(q){
       <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Sejajarkan tanda komanya, lalu hitung 💧</p>
       <div style="font-size:20px;font-weight:700;font-family:ui-monospace,monospace">${f(a)} ${op==='dadd'?'+':'−'} ${f(b)}</div>
       <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">= ${f(ans)} ✓</div></div>`;
+  }else if(op==='dmul'||op==='ddiv'){
+    // CPA nilai-tempat: ubah ke PERSEPULUHAN (jadi bilangan bulat biasa) → hitung → pasang koma lagi
+    const f=n=>String(n).replace('.',',');
+    const aT=Math.round(a*10), ansT=Math.round(ans*10);
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Lupakan komanya dulu — pakai persepuluhan 🌀</p>
+      <div style="font-size:13px;color:rgba(255,255,255,.6)">${f(a)} = <b>${aT}</b> persepuluhan</div>
+      <div style="font-size:20px;font-weight:700;font-family:ui-monospace,monospace;margin-top:5px">${aT} ${op==='dmul'?'×':'÷'} ${b} = ${ansT}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:5px">${ansT} persepuluhan → pasang koma lagi</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">= ${f(ans)} ✓</div></div>`;
   }else if(op==='sub'){
     if(a<=15){
       const kept='●'.repeat(ans), gone='●'.repeat(b);
@@ -2621,6 +2696,8 @@ function guideHint(q){
   if(op==='iadd') return `Garis bilangan: mulai dari ${a}, ${b>=0?`maju ${b}`:`mundur ${-b}`} langkah → ${ans}.`;
   if(op==='isub') return `Mengurang = mundur di garis bilangan. Mulai dari ${a}, ${b>=0?`mundur ${b}`:`maju ${-b} (kurangi negatif = maju)`} → ${ans}.`;
   if(op==='dadd'||op==='dsub'){ const f=n=>String(n).replace('.',','); return `Sejajarkan komanya dulu, baru ${op==='dadd'?'jumlahkan':'kurangi'} seperti biasa: ${f(a)} ${op==='dadd'?'+':'−'} ${f(b)} = ${f(ans)}.`; }
+  if(op==='dmul'||op==='ddiv'){ const f=n=>String(n).replace('.',','); const aT=Math.round(a*10), ansT=Math.round(ans*10);
+    return `Lupakan komanya dulu: ${f(a)} itu ${aT} persepuluhan. ${aT} ${op==='dmul'?'×':'÷'} ${b} = ${ansT}, lalu pasang koma lagi → ${f(ans)}.`; }
   return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
 }
 // ── ITEM 5 — Pijar nebak MISKONSEPSI dari jawaban SALAH anak → petunjuk lebih nyasar (lembut, VISI) ──
@@ -3119,7 +3196,11 @@ const ADAPT_BANDS={
   iadd:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}],
   isub:[null,{maxN:5},{maxN:7},{maxN:10},{maxN:15},{maxN:20},{maxN:30}],
   dadd:[null,{maxT:10},{maxT:15},{maxT:20},{maxT:30},{maxT:50},{maxT:99}],
-  dsub:[null,{maxT:10},{maxT:15},{maxT:20},{maxT:30},{maxT:50},{maxT:99}]
+  dsub:[null,{maxT:10},{maxT:15},{maxT:20},{maxT:30},{maxT:50},{maxT:99}],
+  // desimal × bulat: aT (persepuluhan) & b (pengali bulat) — hasil selalu 1 angka koma
+  dmul:[null,{maxT:5,maxB:2},{maxT:8,maxB:3},{maxT:10,maxB:4},{maxT:15,maxB:5},{maxT:20,maxB:6},{maxT:25,maxB:8}],
+  // desimal ÷ bulat: qT (hasil, persepuluhan) & b (pembagi bulat) — dibangun mundur biar habis
+  ddiv:[null,{maxQ:5,maxB:2},{maxQ:8,maxB:3},{maxQ:10,maxB:4},{maxQ:15,maxB:5},{maxQ:20,maxB:6},{maxQ:25,maxB:8}]
 };
 function clampLvl(l){ return Math.max(1,Math.min(6,l)); }
 // tingkat adaptif terpakai (floor) untuk operasi tertentu
@@ -3165,6 +3246,7 @@ function genAdaptiveQ(op, level, sid){
   if(op==='gkel'||op==='gluas') return genGeoQ(op, ADAPT_BANDS[op][level].maxSide, sid, 'ringan');
   if(op==='iadd'||op==='isub') return genIntQ(op, ADAPT_BANDS[op][level].maxN, sid, 'ringan');
   if(op==='dadd'||op==='dsub') return genDecQ(op, ADAPT_BANDS[op][level].maxT, sid, 'ringan');
+  if(op==='dmul'||op==='ddiv') return genDecMulDivQ(op, ADAPT_BANDS[op][level], sid, 'ringan');
   // add (default): pakai generator Ujian Kekuatan (rentang TRIAL_LEVELS)
   const tq=genTrialQ(level);
   return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
@@ -4221,7 +4303,7 @@ function updateNumpadKeys(op, scEl){
   const sc=scEl||document.querySelector('.screen.on'); if(!sc) return;
   const neg=sc.querySelector('.np-neg'), dot=sc.querySelector('.np-dot');
   if(neg) neg.style.display=(op==='iadd'||op==='isub')?'':'none';
-  if(dot) dot.style.display=(op==='dadd'||op==='dsub')?'':'none'; // desimal (nanti)
+  if(dot) dot.style.display=isDecAnsOp(op)?'':'none'; // koma muncul utk semua op berjawaban desimal
 }
 function attachNumpads(){
   Object.keys(ANS_SUBMIT).forEach(id=>{
