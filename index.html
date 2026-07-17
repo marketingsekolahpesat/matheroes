@@ -1039,10 +1039,17 @@ const SKILL_DEFS = {
     enemyHP:26, dens:[2,5,10], maxW:1, xpStat:'pintar', prev:'dec_div', next:'frac_add',
     enemySkills:['Wujud Ganda','Kabur Bentuk']},
   'frac_add':{op:'fadd', group:'Pecahan', name:'Jumlah Pecahan', desc:'Pecahan + desimal (mis. ½ + 1,4)', icon:'🧩', enemyName:'Si Campur',
-    enemyHP:28, maxT:20, dens:[2,5,10], mix:1, useK:1, xpStat:'pintar', prev:'frac_dec', next:null,
-    enemySkills:['Aduk Bingung','Campur Kacau']}
+    enemyHP:28, maxT:20, dens:[2,5,10], mix:1, useK:1, xpStat:'pintar', prev:'frac_dec', next:'frac_simp',
+    enemySkills:['Aduk Bingung','Campur Kacau']},
+  // ── PECAHAN SEJATI · jawaban BENTUK PECAHAN (input "/" di keypad) ──
+  'frac_simp':{op:'fsimp', group:'Pecahan', name:'Sederhanakan Pecahan', desc:'Bentuk paling sederhana (mis. 2/4 = ½)', icon:'🪢', enemyName:'Si Ruwet',
+    enemyHP:28, maxD0:5, maxM:3, xpStat:'pintar', prev:'frac_add', next:'frac_sum',
+    enemySkills:['Simpul Kusut','Lilit Ganda']},
+  'frac_sum':{op:'fsum', group:'Pecahan', name:'Tambah Pecahan Sejati', desc:'Jawaban bentuk pecahan (mis. ½ + ¼ = ¾)', icon:'🍕', enemyName:'Si Belah',
+    enemyHP:30, mode:'nest', maxD:10, xpStat:'pintar', prev:'frac_simp', next:null,
+    enemySkills:['Belah Dua','Potong Silang']}
 };
-const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub','dec_add','dec_sub','dec_mul','dec_div','frac_dec','frac_add'];
+const SKILL_ORDER = ['add_0_10','add_0_20','add_0_100','sub_0_20','sub_0_100','mul_1_5','mul_1_10','div_1_5','div_1_10','frac_simple','geo_kel','geo_luas','int_add','int_sub','dec_add','dec_sub','dec_mul','dec_div','frac_dec','frac_add','frac_simp','frac_sum'];
 
 // ── EMBER SKOR (keputusan Daffa 2026-07-11): materi boleh tumbuh sebanyak apa pun, tapi kolom skor
 // rapor/Sheet TETAP segitu-gitu (tak melebar). Aturannya: **ember ditentukan OPERASI yang dikerjakan,
@@ -1056,6 +1063,8 @@ const SCORE_OP = {
   dmul:'mul', ddiv:'div',        // desimal: tetap mengali/membagi
   fadd:'add',                    // ½ + 1,4 → yang dikerjakan MENJUMLAH → ember Penjumlahan (contoh Daffa)
   fdec:'frac',                   // ½ = 0,5 → konversi bentuk (bukan operasi) → ember Pecahan
+  fsimp:'frac',                  // 2/4 → ½ = MENYEDERHANAKAN, BUKAN membagi → ember Pecahan (contoh Daffa!)
+  fsum:'add',                    // ½ + ¼ = ¾ → yang dikerjakan MENJUMLAH → ember Penjumlahan
   gkel:null,  gluas:null         // keliling/luas: bukan operasi dasar → tak nyetor ember mana pun
 };
 function scoreOpOf(sid){
@@ -1761,7 +1770,8 @@ function blankState(){
       'int_add':blankSkill(),'int_sub':blankSkill(),
       'dec_add':blankSkill(),'dec_sub':blankSkill(),
       'dec_mul':blankSkill(),'dec_div':blankSkill(),
-      'frac_dec':blankSkill(),'frac_add':blankSkill()
+      'frac_dec':blankSkill(),'frac_add':blankSkill(),
+      'frac_simp':blankSkill(),'frac_sum':blankSkill()
     },
     session:{count:0},
     meta:{lastDay:null,dayStreak:0,totalDays:0,firstWinDay:null,missions:[],missionDay:null,stars:{},metPenjaga:{},lastError:null},
@@ -1989,21 +1999,39 @@ function qText(q){
     return `${fracSym(q.fk,q.fden)} + ${q.kind==='frac'?fracSym(q.gk,q.gden):f(q.b)} = ?`;
   }
   if(q.op==='fdec') return `${fracSym(q.fk,q.fden)} = ? (desimal)`; // konversi: ½ = 0,5
+  if(q.op==='fsimp') return `Sederhanakan: ${q.gn}/${q.gd} = ?`;   // jawab bentuk pecahan (tombol "/")
+  if(q.op==='fsum') return `${fracSym(q.n1,q.d1)} + ${fracSym(q.n2,q.d2)} = ?`; // jawab bentuk pecahan
   return `${q.a} ${OP_SYM[q.op]||'+'} ${q.b} = ?`;
 }
 // parse & banding jawaban sesuai tipe soal: desimal → float (koma ID → titik, banding per-1/10 anti-FP); lainnya → integer
 // operasi yang JAWABANNYA desimal (1 angka koma) → ketik pakai koma + banding per-PERSEPULUHAN (anti floating-point)
 const DEC_ANS_OPS=['dadd','dsub','dmul','ddiv','fadd','fdec'];
 function isDecAnsOp(op){ return DEC_ANS_OPS.indexOf(op)>=0; }
+// operasi yang JAWABANNYA BENTUK PECAHAN ("n/d") → tombol "/" di keypad, dibanding PEMBILANG+PENYEBUT
+// (bukan nilai! karena 2/4 dan 1/2 nilainya sama — utk "sederhanakan", bentuknya justru intinya)
+const FRAC_ANS_OPS=['fsimp','fsum'];
+function isFracAnsOp(op){ return FRAC_ANS_OPS.indexOf(op)>=0; }
+function parseFrac(raw){
+  const m=/^(\d{1,3})\s*\/\s*(\d{1,3})$/.exec((raw||'').trim()); if(!m) return null;
+  const n=parseInt(m[1],10), d=parseInt(m[2],10); if(!d) return null; return {n,d};
+}
 function parseAnswer(raw, op){
   raw=(raw||'').trim();
+  if(isFracAnsOp(op)){ const f=parseFrac(raw); return f ? (f.n+'/'+f.d) : null; } // string kanonik "n/d"
   if(isDecAnsOp(op)) return parseFloat(raw.replace(',','.'));
   return parseInt(raw,10);
 }
 function answerCorrect(v, ans, op){
+  if(isFracAnsOp(op)){
+    const va=parseFrac(v), an=parseFrac(ans); if(!va||!an) return false;
+    if(op==='fsimp') return va.n===an.n && va.d===an.d;   // WAJIB bentuk paling sederhana — itulah skill-nya
+    return va.n*an.d===an.n*va.d;                          // fsum: bentuk senilai (6/8=¾) diterima → tak menghukum
+  }
   if(isDecAnsOp(op)) return Math.round(v*10)===Math.round(ans*10);
   return v===ans;
 }
+// jawaban layak disubmit? (pecahan → parse non-null; lainnya → angka)
+function validAnswer(v, op){ return isFracAnsOp(op) ? (v!=null) : !isNaN(v); }
 
 // generator soal GEOMETRI (keliling/luas persegi & persegi panjang) — jawaban tetap ANGKA (cocok keypad)
 function genGeoQ(op, maxSide, sid, tier, hard){
@@ -2067,6 +2095,33 @@ function genFracDecQ(op, band, sid, tier, hard){
   const bT=rand(1, Math.max(1, band.maxT||9)); // varian pecahan + desimal (mis. ½ + 1,4 = 1,9)
   return {op:'fadd', fk:k, fden:den, fT, kind:'dec', bT, b:bT/10, ans:(fT+bT)/10, sid, tier:tier||'ringan', hard:!!hard, isDec:true};
 }
+// PECAHAN SEJATI — jawaban BENTUK PECAHAN (string kanonik "n/d", diketik pakai tombol "/").
+// fsimp: 2/4 → ½ (jawaban WAJIB bentuk paling sederhana — itulah skill-nya).
+// fsum: ½ + ¼ = ¾ (jawaban kanonik = paling sederhana; bentuk senilai tetap diterima → tak menghukum).
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ const t=a%b; a=b; b=t; } return a||1; }
+function simplifyFrac(n,d){ const g=gcd(n,d); return {n:n/g, d:d/g}; }
+// sederhanakan: bikin pecahan SEDERHANA dulu (gcd(n0,d0)=1, n0<d0), kalikan m≥2 → soal PASTI bisa disederhanakan
+function genFracSimpQ(band, sid, tier, hard){
+  let n0,d0,t=0;
+  do{ d0=rand(2, Math.max(2,band.maxD0||4)); n0=rand(1,d0-1); t++; }while(gcd(n0,d0)!==1 && t<40);
+  if(gcd(n0,d0)!==1) n0=1;                                   // fallback aman: 1/d0 selalu sederhana
+  const m=rand(2, Math.max(2,band.maxM||2));
+  return {op:'fsimp', gn:n0*m, gd:d0*m, ansN:n0, ansD:d0, ans:n0+'/'+d0, sid, tier:tier||'ringan', hard:!!hard, isFrac:true};
+}
+// tambah pecahan sejati: penyebut sama → bersarang (satu kelipatan yg lain) → beda (LCD kecil)
+function genFracSumQ(band, sid, tier, hard){
+  const mode=band.mode||'same', maxD=band.maxD||6;
+  let d1,d2,t=0;
+  if(mode==='same'){ d1=d2=rand(3,Math.max(3,maxD)); }
+  else if(mode==='nest'){ d1=rand(2,Math.max(2,Math.floor(maxD/2))); d2=d1*rand(2,Math.max(2,Math.floor(maxD/d1))); }
+  else { do{ d1=rand(2,6); d2=rand(2,6); t++; }while((d1===d2 || d2%d1===0 || d1%d2===0 || (d1*d2)/gcd(d1,d2)>maxD+2) && t<60);
+         if(d1===d2) d2=(d1===6?5:d1+1); }
+  const L=(d1*d2)/gcd(d1,d2);
+  let n1,n2,t2=0;
+  do{ n1=rand(1,d1-1); n2=rand(1,d2-1); t2++; }while(n1*(L/d1)+n2*(L/d2)>=L && t2<40); // usahakan hasil pecahan biasa (<1)
+  const sumN=n1*(L/d1)+n2*(L/d2), s=simplifyFrac(sumN,L);
+  return {op:'fsum', n1,d1,n2,d2, L, ansN:s.n, ansD:s.d, ans:s.n+'/'+s.d, sid, tier:tier||'ringan', hard:!!hard, isFrac:true};
+}
 // soal SERANGAN (giliran kita) — "ringan", bangun kelancaran
 function genQ(sid){
   const d=SKILL_DEFS[sid];
@@ -2093,6 +2148,8 @@ function genQ(sid){
   if(d.op==='dadd'||d.op==='dsub') return genDecQ(d.op, d.maxT, sid, 'ringan');
   if(d.op==='dmul'||d.op==='ddiv') return genDecMulDivQ(d.op, d, sid, 'ringan'); // band diambil dari SKILL_DEFS (maxT/maxQ/maxB)
   if(d.op==='fadd'||d.op==='fdec') return genFracDecQ(d.op, d, sid, 'ringan');
+  if(d.op==='fsimp') return genFracSimpQ(d, sid, 'ringan');
+  if(d.op==='fsum') return genFracSumQ(d, sid, 'ringan');
   // add (default)
   let a,b,t=0;
   do{a=rand(0,d.maxA);b=rand(0,d.maxA);t++;}
@@ -2130,6 +2187,8 @@ function genHardQ(sid){
     {maxT:Math.min(30,(d.maxT||10)+5), maxQ:Math.min(30,(d.maxQ||10)+5), maxB:Math.min(9,(d.maxB||3)+2)}, sid, undefined, true);
   if(d.op==='fadd'||d.op==='fdec') return genFracDecQ(d.op,
     {dens:d.dens||[2,5,10], maxW:Math.min(2,(d.maxW||0)+1), maxT:Math.min(30,(d.maxT||9)+5), mix:1, useK:1}, sid, undefined, true);
+  if(d.op==='fsimp') return genFracSimpQ({maxD0:Math.min(8,(d.maxD0||4)+1), maxM:Math.min(6,(d.maxM||2)+1)}, sid, undefined, true);
+  if(d.op==='fsum') return genFracSumQ({mode:'any', maxD:Math.min(12,(d.maxD||6)+2)}, sid, undefined, true);
   const lim=Math.min(Math.floor(d.maxSum*1.3),d.maxSum+10);
   let a=rand(0,Math.floor(lim/2)),b=rand(0,Math.floor(lim/2));
   if(a+b===0)b=1;
@@ -2341,11 +2400,32 @@ function genFracDecAkmQ(sid, level){
   q.story=T[rand(0,T.length-1)];
   return q;
 }
+// soal AKM PECAHAN SEJATI — jawaban bentuk pecahan (input "/"); anak diminta bentuk paling sederhana
+function genFracTrueAkmQ(sid, level){
+  const d=SKILL_DEFS[sid], op=d.op;
+  const band = level!=null ? ADAPT_BANDS[op][clampLvl(level)] : d;
+  if(op==='fsimp'){
+    const q=genFracSimpQ(band, sid, 'akm');
+    const T=[ `${q.gn} dari ${q.gd} potong pizza sudah dimakan. Tulis bagian yang dimakan dalam pecahan PALING SEDERHANA!`,
+      `${q.gn} dari ${q.gd} siswa membawa bekal. Sederhanakan pecahannya!`,
+      `${q.gn} dari ${q.gd} kotak terisi penuh. Tulis dalam bentuk pecahan paling sederhana!` ];
+    q.story=T[rand(0,T.length-1)];
+    return q;
+  }
+  const q=genFracSumQ(band, sid, 'akm');
+  const S1=fracSym(q.n1,q.d1), S2=fracSym(q.n2,q.d2);
+  const T=[ `Ibu memakai ${S1} loyang untuk kue coklat dan ${S2} loyang untuk kue keju. Berapa loyang semuanya? (tulis pecahan)`,
+    `Adi minum ${S1} gelas susu pagi hari dan ${S2} gelas sore hari. Berapa gelas semuanya? (tulis pecahan)`,
+    `${S1} bagian kebun ditanami bayam dan ${S2} bagian ditanami tomat. Berapa bagian yang sudah ditanami? (tulis pecahan)` ];
+  q.story=T[rand(0,T.length-1)];
+  return q;
+}
 // dispatcher AKM per operasi
 function genAkmQ(sid, level){
   const op=SKILL_DEFS[sid].op;
   if(op==='dmul'||op==='ddiv') return genDecMulDivAkmQ(sid, level);
   if(op==='fadd'||op==='fdec') return genFracDecAkmQ(sid, level);
+  if(op==='fsimp'||op==='fsum') return genFracTrueAkmQ(sid, level);
   if(op==='sub') return genSubAkmQ(sid, level);
   if(op==='mul') return genMulAkmQ(sid, level);
   if(op==='div') return genDivAkmQ(sid, level);
@@ -2708,6 +2788,23 @@ function buildGuideVisual(q){
       <div style="font-size:14px;font-weight:700">${fracSym(q.fk,q.fden)} = ${f(q.fT/10)} &nbsp;·&nbsp; ${second}</div>
       <div style="font-size:20px;font-weight:700;font-family:ui-monospace,monospace;margin-top:5px">${f(q.fT/10)} + ${f(q.kind==='frac'?q.gT/10:q.b)}</div>
       <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">= ${f(ans)} ✓</div></div>`;
+  }else if(op==='fsimp'){
+    // CPA: bagi atas & bawah dengan angka yang SAMA sampai tak bisa dibagi lagi
+    const m=q.gn/q.ansN;
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Bagi atas & bawah dengan angka yang sama 🪢</p>
+      <div style="font-size:20px;font-weight:700;font-family:ui-monospace,monospace">${q.gn}/${q.gd} &nbsp;→ ÷${m} atas-bawah</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:5px">${q.gn}÷${m} = ${q.ansN} &nbsp;·&nbsp; ${q.gd}÷${m} = ${q.ansD}</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">= ${q.ansN}/${q.ansD} ✓</div></div>`;
+  }else if(op==='fsum'){
+    // CPA: samakan penyebut (LCD) → jumlahkan pembilang → sederhanakan bila perlu
+    const L=q.L, a1=q.n1*(L/q.d1), a2=q.n2*(L/q.d2);
+    vis=`<div class="guide-step">
+      <p style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:6px">Samakan penyebutnya dulu 🍕</p>
+      <div style="font-size:14px;font-weight:700">${fracSym(q.n1,q.d1)} = ${a1}/${L} &nbsp;·&nbsp; ${fracSym(q.n2,q.d2)} = ${a2}/${L}</div>
+      <div style="font-size:20px;font-weight:700;font-family:ui-monospace,monospace;margin-top:5px">${a1}/${L} + ${a2}/${L} = ${a1+a2}/${L}</div>
+      ${(a1+a2)!==q.ansN?`<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:5px">sederhanakan: ÷${(a1+a2)/q.ansN} atas-bawah</div>`:''}
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-top:6px">= ${q.ansN}/${q.ansD} ✓</div></div>`;
   }else if(op==='sub'){
     if(a<=15){
       const kept='●'.repeat(ans), gone='●'.repeat(b);
@@ -2786,6 +2883,10 @@ function guideHint(q){
   if(op==='fadd'){ const f=n=>String(n).replace('.',',');
     const s2 = q.kind==='frac' ? `${fracSym(q.gk,q.gden)} = ${f(q.gT/10)}` : null;
     return `Ubah pecahannya jadi desimal dulu: ${fracSym(q.fk,q.fden)} = ${f(q.fT/10)}${s2?` dan ${s2}`:''}. Lalu jumlahkan: ${f(q.fT/10)} + ${f(q.kind==='frac'?q.gT/10:q.b)} = ${f(ans)}.`; }
+  if(op==='fsimp'){ const m=q.gn/q.ansN;
+    return `Cari angka yang bisa membagi ATAS dan BAWAH: ${q.gn}/${q.gd} sama-sama dibagi ${m} → ${q.ansN}/${q.ansD}. Ketik pakai tombol "/".`; }
+  if(op==='fsum'){ const L=q.L, m1=L/q.d1, m2=L/q.d2;
+    return `Samakan penyebutnya dulu ke ${L}: ${fracSym(q.n1,q.d1)} = ${q.n1*m1}/${L} dan ${fracSym(q.n2,q.d2)} = ${q.n2*m2}/${L}. Jumlahkan atasnya: ${q.n1*m1}+${q.n2*m2} = ${q.n1*m1+q.n2*m2} → ${q.ansN}/${q.ansD}.`; }
   return `Gabungkan ${a} dan ${b}: mulai dari ${a}, hitung maju ${b} → ${ans}.`;
 }
 // ── ITEM 5 — Pijar nebak MISKONSEPSI dari jawaban SALAH anak → petunjuk lebih nyasar (lembut, VISI) ──
@@ -3241,7 +3342,17 @@ function genTrialQOp(op, level){
   return genAdaptiveQ(op, clampLvl(level), TRIAL_SID[op]);
 }
 // kunci unik soal → buat hindari soal kembar (random tapi tak boleh sama dalam satu babak)
-function qKey(q){ return q.op==='frac' ? `frac-${q.den}-${q.k}-${q.whole}` : `${q.op}-${q.a}-${q.b}`; }
+// kunci anti-kembar per soal — tiap bentuk soal pakai field pembedanya sendiri
+// (fix laten: dulu geo/fdec/fadd jatuh ke `${op}-undefined-undefined` → dedup diam-diam mati)
+function qKey(q){
+  if(q.op==='frac') return `frac-${q.den}-${q.k}-${q.whole}`;
+  if(q.op==='gkel'||q.op==='gluas') return `${q.op}-${q.shape}-${q.s||0}-${q.p||0}-${q.l||0}`;
+  if(q.op==='fdec') return `fdec-${q.fk}/${q.fden}`;
+  if(q.op==='fadd') return `fadd-${q.fk}/${q.fden}+${q.kind==='frac'?(q.gk+'/'+q.gden):('t'+q.bT)}`;
+  if(q.op==='fsimp') return `fsimp-${q.gn}/${q.gd}`;
+  if(q.op==='fsum') return `fsum-${q.n1}/${q.d1}+${q.n2}/${q.d2}`;
+  return `${q.op}-${q.a}-${q.b}`;
+}
 // generate soal yang BEDA dari yang sudah keluar (set seen); fallback terima kembar bila ruang soal habis
 function genTrialQOpFresh(op, level, seen){
   let q=genTrialQOp(op,level);
@@ -3292,7 +3403,11 @@ const ADAPT_BANDS={
   // pecahan→desimal: dens = penyebut yang boleh (2/5/10 → pasti 1 koma), maxW = bagian bulat maks (0 = pecahan biasa)
   fdec:[null,{dens:[2,10],maxW:0},{dens:[2,5,10],maxW:0},{dens:[2,5,10],maxW:0},{dens:[2,5,10],maxW:1},{dens:[2,5,10],maxW:1},{dens:[2,5,10],maxW:2}],
   // jumlah pecahan (jawaban desimal): maxT = desimal pendamping (persepuluhan), mix = boleh pecahan+pecahan, useK = pembilang boleh >1
-  fadd:[null,{maxT:9,dens:[2,10],mix:0,useK:0},{maxT:12,dens:[2,5,10],mix:0,useK:0},{maxT:15,dens:[2,5,10],mix:1,useK:0},{maxT:20,dens:[2,5,10],mix:1,useK:1},{maxT:25,dens:[2,5,10],mix:1,useK:1},{maxT:30,dens:[2,5,10],mix:1,useK:1}]
+  fadd:[null,{maxT:9,dens:[2,10],mix:0,useK:0},{maxT:12,dens:[2,5,10],mix:0,useK:0},{maxT:15,dens:[2,5,10],mix:1,useK:0},{maxT:20,dens:[2,5,10],mix:1,useK:1},{maxT:25,dens:[2,5,10],mix:1,useK:1},{maxT:30,dens:[2,5,10],mix:1,useK:1}],
+  // sederhanakan pecahan: maxD0 = penyebut SEDERHANA maks, maxM = pengali maks (soal = (n0·m)/(d0·m))
+  fsimp:[null,{maxD0:3,maxM:2},{maxD0:4,maxM:2},{maxD0:4,maxM:3},{maxD0:5,maxM:3},{maxD0:6,maxM:4},{maxD0:6,maxM:5}],
+  // tambah pecahan sejati: mode same (penyebut sama) → nest (satu penyebut kelipatan yg lain) → any (beda, LCD kecil)
+  fsum:[null,{mode:'same',maxD:6},{mode:'same',maxD:8},{mode:'nest',maxD:8},{mode:'nest',maxD:10},{mode:'any',maxD:10},{mode:'any',maxD:12}]
 };
 function clampLvl(l){ return Math.max(1,Math.min(6,l)); }
 // tingkat adaptif terpakai (floor) untuk operasi tertentu
@@ -3340,6 +3455,8 @@ function genAdaptiveQ(op, level, sid){
   if(op==='dadd'||op==='dsub') return genDecQ(op, ADAPT_BANDS[op][level].maxT, sid, 'ringan');
   if(op==='dmul'||op==='ddiv') return genDecMulDivQ(op, ADAPT_BANDS[op][level], sid, 'ringan');
   if(op==='fadd'||op==='fdec') return genFracDecQ(op, ADAPT_BANDS[op][level], sid, 'ringan');
+  if(op==='fsimp') return genFracSimpQ(ADAPT_BANDS.fsimp[level], sid, 'ringan');
+  if(op==='fsum') return genFracSumQ(ADAPT_BANDS.fsum[level], sid, 'ringan');
   // add (default): pakai generator Ujian Kekuatan (rentang TRIAL_LEVELS)
   const tq=genTrialQ(level);
   return {a:tq.a,b:tq.b,op:'add',ans:tq.ans,sid,tier:'ringan'};
@@ -4208,7 +4325,7 @@ const G={
     stopTimer();
     const inp=document.getElementById('inp-enc');
     const v=parseAnswer(inp.value, E.q.op);
-    if(isNaN(v)||inp.value.trim()===''){inp.focus();if(E.timerOn)startTimer();return;}
+    if(!validAnswer(v, E.q.op)||inp.value.trim()===''){inp.focus();if(E.timerOn)startTimer();return;}
     inp.value='';
     const correct=answerCorrect(v, E.q.ans, E.q.op);
     E.lastWrong=correct?null:v; // ITEM 5: simpan jawaban salah utk tebak miskonsepsi di Guide
@@ -4247,7 +4364,7 @@ const G={
   // ─── GUIDE SUBMIT ───
   submitGuide(){
     const v=parseAnswer(document.getElementById('inp-guide').value, E.subQ.op);
-    if(isNaN(v)){document.getElementById('inp-guide').focus();return;}
+    if(!validAnswer(v, E.subQ.op)){document.getElementById('inp-guide').focus();return;}
     if(answerCorrect(v, E.subQ.ans, E.subQ.op)){
       flash('✅');
       // M6: hargai PERSISTENSI (bangkit & menebus setelah salah)
@@ -4387,16 +4504,18 @@ function buildNumpad(){
     :`<button type="button" class="np-key" data-k="${k}">${k}</button>`).join('');
   // tombol dinamis (muncul sesuai tipe soal): − utk bilangan bulat, , utk desimal — full-width, hidden default
   const extra='<button type="button" class="np-key np-extra np-neg" data-k="neg" style="display:none;grid-column:1/-1" aria-label="tanda minus">−</button>'
-    +'<button type="button" class="np-key np-extra np-dot" data-k="dot" style="display:none;grid-column:1/-1" aria-label="koma desimal">,</button>';
+    +'<button type="button" class="np-key np-extra np-dot" data-k="dot" style="display:none;grid-column:1/-1" aria-label="koma desimal">,</button>'
+    +'<button type="button" class="np-key np-extra np-slash" data-k="slash" style="display:none;grid-column:1/-1" aria-label="garis pecahan">/</button>';
   np.innerHTML=base+extra;
   return np;
 }
 // tampilkan/sembunyikan tombol dinamis (−/,) sesuai tipe operasi soal aktif
 function updateNumpadKeys(op, scEl){
   const sc=scEl||document.querySelector('.screen.on'); if(!sc) return;
-  const neg=sc.querySelector('.np-neg'), dot=sc.querySelector('.np-dot');
+  const neg=sc.querySelector('.np-neg'), dot=sc.querySelector('.np-dot'), sl=sc.querySelector('.np-slash');
   if(neg) neg.style.display=(op==='iadd'||op==='isub')?'':'none';
   if(dot) dot.style.display=isDecAnsOp(op)?'':'none'; // koma muncul utk semua op berjawaban desimal
+  if(sl) sl.style.display=isFracAnsOp(op)?'':'none';  // garis pecahan "/" utk jawaban bentuk pecahan
 }
 function attachNumpads(){
   Object.keys(ANS_SUBMIT).forEach(id=>{
@@ -4413,7 +4532,8 @@ function npFeed(k){
   if(k==='del') inp.value=inp.value.slice(0,-1);
   else if(k==='neg') inp.value = inp.value.startsWith('-') ? inp.value.slice(1) : '-'+inp.value; // toggle tanda minus
   else if(k==='dot'){ if(!inp.value.includes(',') && inp.value!=='' && inp.value!=='-') inp.value+=','; } // koma desimal (sekali, gaya ID)
-  else if(inp.value.replace(/[-.,]/g,'').length<maxLen) inp.value+=k; // batasi jumlah DIGIT (abaikan −/,)
+  else if(k==='slash'){ if(!inp.value.includes('/') && /\d$/.test(inp.value)) inp.value+='/'; } // garis pecahan (sekali, harus ada angka dulu)
+  else if(inp.value.replace(/[-.,/]/g,'').length<maxLen) inp.value+=k; // batasi jumlah DIGIT (abaikan −/,//)
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.np-key'); if(b) npFeed(b.getAttribute('data-k')); });
 // keyboard fisik (desktop) tetap bisa: angka & hapus (input readonly → diisi manual; Enter ditangani handler input)
@@ -4423,6 +4543,7 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Backspace'){ npFeed('del'); e.preventDefault(); }
   else if(e.key==='-'){ npFeed('neg'); e.preventDefault(); }
   else if(e.key==='.'||e.key===','){ npFeed('dot'); e.preventDefault(); }
+  else if(e.key==='/'){ npFeed('slash'); e.preventDefault(); }
 });
 
 // ─── BOOT ───
